@@ -130,5 +130,10 @@ INCLUDE "asm/upper/workspace.asm"
 INCLUDE "asm/upper/wrch.asm"
 .dasmos_end
 
+; Layout constraints the code relies on
+ASSERT LO(room_walls) = 0               ; test_wall, draw_room and update_game point at a room with >room_walls and the room's offset
+ASSERT LO(object_free_map) = 0          ; test_object_free likewise
+ASSERT exit_shrink_continues = &2000    ; the exit animation runs on from the end of the game core into extra/exit.asm
+
 save "Dun1", dasmos_start, dasmos_end, &2000, &2000
 save "Coder", &5000, &59b0, &5000, &5000

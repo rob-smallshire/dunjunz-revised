@@ -4,6 +4,7 @@
 ; The game core ends at &1FFF in the middle of the exit animation's shrinking step
 ; (core/frame.asm), and execution runs on into these instructions at &2000. The two parts
 ; must stay adjacent while the layout is the original's.
+.exit_shrink_continues
     adc #1                              ; ...+1: their first sprite...
     tay                                 ; ...in Y, for the height loop...
     tax                                 ; ...and in X, for the width loop

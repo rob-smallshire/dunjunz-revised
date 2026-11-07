@@ -112,3 +112,21 @@ workspace, so the loader must close it (OSBYTE &77) before the game takes
 that workspace over. The original game, booted this way, never reaches
 play, so the baseline disc `*RUN`s a copy of `Dunjunz` as `!BOOT`
 (option 2) instead.
+
+## Constraints on moving code
+
+Found by searching the modules (`asm/dunjunz.asm` ASSERTs the first three):
+
+- `room_walls` and `object_free_map` must start on a page boundary.
+  `test_wall`, `test_object_free`, `draw_room` and `update_game` make a
+  pointer from the table's high byte and the room's offset.
+- The exit animation in `core/frame.asm` falls through from &1FFF into
+  `extra/exit.asm` at &2000, and `frame.asm` branches to `restore_exit`
+  there.
+- `collect_objects` (`upper/objects.asm`) branches to `magic_sword` in
+  `upper/hero_room.asm`.
+- The sprite address tables are label expressions, so sprites can move.
+  `test_sprites_match_the_original` reads all 120 sprites through the
+  tables in both builds.
+- `sprite_blank` (three sprites) is a run of zeros in the &0400 image.
+- Module sizes and places: `uv run dr-sizes`.
