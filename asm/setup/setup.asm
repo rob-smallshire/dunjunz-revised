@@ -9,6 +9,17 @@
 .setup_level
     jsr unpack_level                    ; Copy its objects, doors, keys and maps into play
     jsr reset_workspace                 ; Put the heroes, missiles and views back to the start
+    ldx #MONSTER_TABLES_LENGTH - &100   ; Put the monster tables back as GAME holds them:
+.restore_monster_tables_end
+    lda initial_monster_tables + &ff,x  ; ...the last 32 bytes...
+    sta monster_x + &ff,x               ; ...first...
+    dex                                 ; ...from the top down
+    bne restore_monster_tables_end      ; Until they are done
+.restore_monster_tables
+    lda initial_monster_tables,x        ; ...then the first 256 (X = 0, 255 ... 1)...
+    sta monster_x,x                     ; ...into the tables, all seven in a row
+    dex                                 ; Next byte down
+    bne restore_monster_tables          ; Until they are done
     jmp reset_monsters                  ; Monsters to the trapdoors; heroes carry no keys
 ; ***************************************************************************************
 ; Reset the game workspace for a new level
@@ -239,3 +250,31 @@
     equb &1e                            ; teleport_last: object &1E, the last
     equb &fd                            ; Copied to &0DFE: no variable starts here
     equb &00                            ; victory_sprite_copy: set before use
+; ***************************************************************************************
+; The monster tables as GAME holds them
+;
+; The 1987 release reloaded the whole game for every level, so each level began with the
+; monster tables as the file held them: setup_level restores them from this copy. Only
+; some entries are reset by reset_monsters and monster_reappears; a monster's animation
+; frame, for one, is not.
+.initial_monster_tables
+    equb &00, &04, &0b, &09, &1d, &08, &01, &06, &07, &0a, &01, &0b, &1a, &06, &0b, &16
+    equb &15, &0d, &1b, &14, &1a, &09, &1c, &0f, &1e, &02, &1a, &0b, &1c, &0e, &16, &00
+    equb &00, &00, &00, &1a, &00, &00, &00, &00, &00, &00, &24, &17, &25, &20, &24, &22
+    equb &14, &27, &0d, &20, &01, &26, &0a, &01, &12, &05, &20, &29, &0d, &26, &27, &08
+    equb &06, &1a, &14, &03, &1d, &07, &0d, &17, &00, &00, &00, &00, &1b, &00, &00, &00
+    equb &00, &00, &00, &09, &0d, &0b, &0b, &0b, &09, &0f, &0f, &0b, &0d, &0b, &0b, &0f
+    equb &0d, &0d, &09, &0f, &0b, &0f, &0b, &0b, &0f, &09, &0d, &0f, &0b, &09, &0d, &0b
+    equb &09, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &01, &00, &00
+    equb &01, &01, &00, &01, &01, &00, &01, &01, &01, &00, &01, &00, &01, &00, &01, &01
+    equb &00, &00, &01, &01, &00, &00, &00, &01, &01, &00, &00, &00, &00, &00, &00, &00
+    equb &00, &00, &00, &00, &00, &00, &00, &02, &02, &02, &00, &fd, &fe, &01, &00, &02
+    equb &03, &00, &00, &00, &00, &fe, &00, &00, &01, &00, &00, &00, &00, &00, &03, &00
+    equb &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &fd, &00
+    equb &00, &00, &00, &fa, &00, &00, &00, &03, &00, &00, &00, &06, &03, &fd, &00, &00
+    equb &00, &00, &00, &00, &00, &06, &00, &00, &f7, &00, &00, &f7, &00, &00, &00, &00
+    equb &00, &00, &00, &00, &00, &00, &00, &03, &00, &02, &02, &02, &02, &01, &02, &03
+    equb &03, &02, &01, &00, &02, &03, &03, &02, &00, &00, &03, &00, &00, &00, &02, &00
+    equb &01, &01, &00, &00, &01, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00
+MONSTER_TABLES_LENGTH = * - initial_monster_tables
+ASSERT MONSTER_TABLES_LENGTH = object_x - monster_x

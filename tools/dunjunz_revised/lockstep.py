@@ -58,16 +58,22 @@ STATE_BLOCKS = (
     ("hero_damage_taken", 4),
     ("exit_saved_x", 0x10),          # the exit animation's state
     ("object_free_map", 0xC9),
-    ("door_x", 21),                  # doors and keys, entries 0-20
-    ("door_y", 21),
-    ("door_sprite", 21),
-    ("key_x", 21),
-    ("key_y", 21),
+    ("door_x+1", 20),                # doors and keys, entries 1-20 (entry 0 is never used)
+    ("door_y+1", 20),
+    ("door_sprite+1", 20),
+    ("key_x+1", 20),
+    ("key_y+1", 20),
     ("hero_key", 5),                 # keys carried and dropped, doors bumped
     ("hero_key_dropped", 5),
     ("hero_door_x", 5),
     ("hero_door_y", 5),
-    ("monster_x", 0x11F),            # the monsters' seven tables
+    ("monster_x+1", 30),             # the monsters, entries 1-30 (31-40 are scratch)
+    ("monster_y+1", 30),             
+    ("monster_sprite+1", 30),        
+    ("monster_frame+1", 30),         
+    ("monster_offset_x+1", 30),      
+    ("monster_offset_y+1", 30),      
+    ("monster_step+1", 30),          
     ("object_x", 0x5F),              # objects and the exit
     ("sprite_widths", 0x78),         # changed by the exit animation
     ("sprite_heights", 0x78),
@@ -136,10 +142,12 @@ class GameRun:
     def poke(self, address: int, data: bytes) -> None:
         self.bbc.memory.address.bus.write(address, data)
 
-    def pin_randomness(self) -> int:
-        """Patch every `lda system_via_t1c_l` in the game into `jsr` RNG_ADDRESS."""
+    def pin_randomness(self, seed: bool = True) -> int:
+        """Patch every `lda system_via_t1c_l` in the game into `jsr` RNG_ADDRESS,
+        and (unless seed is false) seed the generator."""
         self.poke(RNG_ADDRESS, RNG_CODE)
-        self.poke(RNG_SEED_ADDRESS, bytes([RNG_SEED]))
+        if seed:
+            self.poke(RNG_SEED_ADDRESS, bytes([RNG_SEED]))
         jsr = bytes([0x20, RNG_ADDRESS & 0xFF, RNG_ADDRESS >> 8])
         patched = 0
         for start, end in self.game_ranges:
@@ -165,8 +173,22 @@ class GameRun:
         self.bbc.debugger.run_to(self.labels[UPDATE_GAME], skip_current=True, timeout=60)
         self.frame += 1
 
-    def address(self, label: str) -> int:
-        return self.labels[label] if label in self.labels else FIXED_ADDRESSES[label]
+    def address(self, name: str) -> int:
+        """The address of a label, a fixed address, or "label+N"."""
+        label, _, offset = name.partition("+")
+        base = self.labels[label] if label in self.labels else FIXED_ADDRESSES[label]
+        return base + (int(offset) if offset else 0)
+
+    def end_level(self, label: str) -> None:
+        """Leave the level as if a hero had survived it, by jumping to label (the
+        build's way on to the next level), and run to the next level's first frame.
+        A build that reloads itself for each level loses the randomness patches, so
+        they are made again, keeping the generator's state."""
+        self.set_keys(set())
+        self.bbc.cpu.pc = self.labels[label]
+        self.bbc.debugger.run_to(self.labels[UPDATE_GAME], timeout=120)
+        self.pin_randomness(seed=False)
+        self.frame += 1
 
     def state(self) -> dict[str, bytes]:
         state = {label: self.peek(self.address(label), length) for label, length in STATE_BLOCKS}
