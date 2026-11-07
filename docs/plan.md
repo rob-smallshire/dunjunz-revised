@@ -13,7 +13,9 @@ filing system, and keeps it resident. The goals:
 - behaves as the original does, without its bugs (see `bugs.md`);
 - joysticks through OSBYTE &80 (ADVAL), including four on the SPItFIRE
   interface (channels 1-4 and 16-20, buttons on 0 and 16);
-- "Dunjunz Revised 2026.1" on the disc title, `!BOOT` and the title screen.
+- "Dunjunz Revised 2026.1" on `!BOOT`'s banner and the title screen. The
+  disc title, limited to 12 characters by DFS, is "DUNJUNZ 26.1": "DUNJUNZ"
+  and the version with the year shortened (`build.disc_title`).
 
 ## Milestones
 
