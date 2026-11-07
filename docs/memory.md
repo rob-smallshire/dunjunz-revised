@@ -23,7 +23,7 @@ workspace).
 | DFS 2.26 + ADFS 1.30 | &1F00 | DFS &1C00, ADFS &1E00 | | `RTI` |
 | MMFS2 alone | &1900 (reported) | | | |
 | MMFS2 + DFS | &1B00 (reported) | | | |
-| MMFS (from its source) | &1D00 (reported) | &1700- | &0E00-&16FF (service 1 claims to &17) | |
+| MMFS, not supported (from its source) | &1D00 (reported) | &1700- | &0E00-&16FF (service 1 claims to &17) | |
 
 MMFS and MMFS2 are not yet emulated by beebium. The MMFS2 figures are as
 reported. Those for MMFS come from `~/Code/MMFS`
@@ -64,7 +64,7 @@ is the agnostic way to reselect. DFS 0.90 does not survive it, so the
 loader falls back on a small table from filing-system number to select
 command (4 `DISC`, 5 `NET`) issued through OSCLI. Still to measure: NFS
 and ANFS loading from a file server (beebium's L3FS preset can serve
-one), MMFS, and DFS 1.20 without Econet. That last one has to be measured
+one), MMFS2, and DFS 1.20 without Econet. That last one has to be measured
 from its real private page, which its table entry doesn't give.
 
 ## The plan for memory
@@ -75,14 +75,17 @@ from its real private page, which its table entry doesn't give.
 | &0400-&0CFF | Game, as in the original, keeping clear of what the MOS uses while sound and OSWRCH run |
 | &0D00-&0DFF | **Untouched**: the filing system's or the NFS's NMI code |
 | &0E00-&16FF | Game, borrowed with service &0A; stashed in screen memory while a level loads |
-| &1700-max PAGE | **Untouched**: private workspace |
-| max PAGE-&2FFF | Game |
+| &1700-&1BFF | **Untouched**: private workspace |
+| &1C00-&2FFF | Game |
 | &3000-&6E7F | Screen (25 rows); holds the stash while a level loads |
 | &6E80-&7FFF | Game |
 
-So the revised game loses &0D00-&0DFF and &1700 up to the highest PAGE we
-support, compared with the original's &0400-&2FFF. With PAGE at &1D00
-(MMFS), that is 1.75 KB. Against it: about 1 KB unused in play (see the
+**Decision:** the layout assumes PAGE is at most &1C00, the highest in the
+target set (ANFS 4.18 + DFS 2.26). MMFS2 is supported (&1B00 at most), and
+the original MMFS, at &1D00, is not.
+
+So the revised game loses &0D00-&0DFF and &1700-&1BFF, 1.5 KB, compared
+with the original's &0400-&2FFF. Against it: about 1 KB unused in play (see the
 acornaeology findings, "Space a revised version could recover"), the
 victory sequence loaded only when needed, the decryption and checksum
 code and the reset-between-levels machinery all gone, and more compact

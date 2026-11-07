@@ -7,8 +7,8 @@ filing system, and keeps it resident. The goals:
 - runs on a stock Model B and every machine above it (B+, Master), with
   progressive enhancement for more capable machines to come later;
 - loads only through the filing system: DFS 0.90, 1.2x and 2.2x,
-  NFS and ANFS over Econet, MMFS and MMFS2; works with a second processor
-  attached;
+  NFS and ANFS over Econet, and MMFS2 (not the original MMFS); works with a second processor
+  attached. The layout assumes PAGE is at most &1C00;
 - fits on one volume, an 80-track single-sided DFS disc (200 KB);
 - behaves as the original does, without its bugs (see `bugs.md`);
 - joysticks through OSBYTE &80 (ADVAL), including four on the SPItFIRE

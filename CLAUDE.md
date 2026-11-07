@@ -32,7 +32,8 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
 
 `tools/dunjunz_revised/machines.py` defines the tested configurations as
 beebium presets built from bundled ROMs. Econet uses AUN (no hardware).
-Beebium has no MMFS or Master yet; beebjit has a Master.
+Beebium has no MMFS2 or Master yet; beebjit has a Master. The memory
+layout assumes PAGE is at most &1C00 (ANFS + DFS); see `docs/memory.md`.
 
 ## Conventions
 
