@@ -36,7 +36,8 @@
 ; Send a 6845 set-up
 ;
 ; Send display_vdu from offset X to the next zero byte that follows a complete VDU 23.
-; Each set-up is a run of 10-byte VDU 23,0 commands ended by a zero.
+; Each set-up is a run of 10-byte VDU 23,0 commands ended by a zero. The bytes go
+; through mos_wrch, so saved_wrchv must be set.
 ;
 ; On Entry:
 ;     X: offset of the set-up in display_vdu
@@ -50,13 +51,18 @@
     ldy #10                             ; A VDU 23 command is ten bytes
 .send_display_vdu_byte
     lda display_vdu,x                   ; Send each of its bytes...
-    jsr oswrch                          ; ...to the VDU drivers
+    jsr mos_wrch                        ; ...to the VDU drivers, past wrch_handler
     inx                                 ; Next byte
     dey                                 ; One fewer of the ten to send
     bne send_display_vdu_byte           ; Until the command is sent
     beq send_display_vdu                ; Always taken: the next command
 .display_vdu_sent
     rts                                 ; Return with the display set up
+; Print A through the MOS's own WRCHV, as saved in saved_wrchv, not through wrch_handler,
+; which would print a letter or digit among the parameters of a VDU 23 (80 is "P") as
+; character 128.
+.mos_wrch
+    jmp (saved_wrchv)                   ; The MOS's WRCH routine returns to the caller
 ; ***************************************************************************************
 ; Load a file while the game owns the filing system's workspace
 ;

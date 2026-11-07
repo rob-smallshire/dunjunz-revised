@@ -136,7 +136,7 @@
     tya                                 ; Row = Y + this hero's panel row - 14...
     ldx panel_hero                      ; ...for the hero being drawn...
     clc                                 ; ...(carry clear for the add)
-    adc workspace_template + 208,x      ; ...(read from workspace_template, which page &0D copies)
+    adc hero_panel_y,x                  ; ...(the workspace copy of the template's rows)
     sec                                 ; ...(no borrow into the subtract)
     sbc #&0e                            ; ...less 14: row 0 is 14 above the health
     sta plot_y                          ; ...is the plot row

@@ -38,21 +38,48 @@ SCREEN = (0x3000, 0x6E80)
 
 # (label, length): blocks of game state compared between builds.
 STATE_BLOCKS = (
-    ("scratch", 0x100),              # page &0D: heroes, missiles, keys, views (per-level workspace)
-    ("hero_max_missiles", 0xD0),     # &0B20-&0BEF: hero attributes, queue, monster hit points, scores
-    ("room_walls", 0xD0),            # the wall map (its first bytes double as character 128)
+    ("scratch", 0x100),              # the per-level workspace: heroes, missiles, keys, views
+    ("hero_max_missiles", 4),        # hero attributes and counters
+    ("hero_magic_delay", 2),
+    ("magic_kill_count", 2),
+    ("returning_hero_queue", 5),
+    ("next_trapdoor", 1),
+    ("monster_hit_points", 31),
+    ("hero_missile_damage", 4),
+    ("missile_damage", 12),
+    ("trapdoor_x", 8),
+    ("trapdoor_y", 8),
+    ("hero_score_hundreds", 4),
+    ("hero_score_tens", 4),
+    ("hero_score_units", 4),
+    ("hero_score_thousands", 4),
+    ("hero_score_ten_thousands", 4),
+    ("room_walls", 0xC9),            # the wall map, map_bytes long (its first bytes double as character 128)
     ("hero_damage_taken", 4),
     ("exit_saved_x", 0x10),          # the exit animation's state
-    ("object_free_map", 0xD0),
-    ("door_x", 0xC0),                # doors and keys
-    ("hero_key", 0x1A),              # keys carried, dropped, door cells
-    ("monster_x", 0x120),            # monsters
-    ("object_x", 0x6F),              # objects and the exit
+    ("object_free_map", 0xC9),
+    ("door_x", 21),                  # doors and keys, entries 0-20
+    ("door_y", 21),
+    ("door_sprite", 21),
+    ("key_x", 21),
+    ("key_y", 21),
+    ("hero_key", 5),                 # keys carried and dropped, doors bumped
+    ("hero_key_dropped", 5),
+    ("hero_door_x", 5),
+    ("hero_door_y", 5),
+    ("monster_x", 0x11F),            # the monsters' seven tables
+    ("object_x", 0x5F),              # objects and the exit
     ("sprite_widths", 0x78),         # changed by the exit animation
     ("sprite_heights", 0x78),
     ("level_number", 1),
     ("monster_start_hit_points", 1),
 )
+
+# State at fixed addresses, defined with = rather than as labels, so absent
+# from beebasm's symbol dump.
+FIXED_ADDRESSES = {
+    "hero_score_ten_thousands": 0x08B0,
+}
 
 # Each hero's keys, as negative INKEY numbers from the workspace template:
 # up, down, right, left, fire, then magic for heroes 0 and 1 (hero_magic_key).
@@ -138,8 +165,11 @@ class GameRun:
         self.bbc.debugger.run_to(self.labels[UPDATE_GAME], skip_current=True, timeout=60)
         self.frame += 1
 
+    def address(self, label: str) -> int:
+        return self.labels[label] if label in self.labels else FIXED_ADDRESSES[label]
+
     def state(self) -> dict[str, bytes]:
-        state = {label: self.peek(self.labels[label], length) for label, length in STATE_BLOCKS}
+        state = {label: self.peek(self.address(label), length) for label, length in STATE_BLOCKS}
         state["screen"] = self.peek(SCREEN[0], SCREEN[1] - SCREEN[0])
         return state
 

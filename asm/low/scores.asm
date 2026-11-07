@@ -36,7 +36,7 @@
     sta sprite_number                   ; Plot the ten-thousands digit under the score...
     lda #panel_left                     ; ...at the panel's left column
     sta plot_x                          ; ...as the plot column
-    lda workspace_template + 208,x      ; ...hero_panel_y, read from workspace_template
+    lda hero_panel_y,x                  ; ...hero_panel_y, the workspace copy
     clc                                 ; ...(carry clear for the add)
     adc #&18                            ; ...+ &18: below the score's rows, &0C-&15
     sta plot_y                          ; ...as the plot row

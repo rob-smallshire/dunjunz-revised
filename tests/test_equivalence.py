@@ -22,6 +22,10 @@ from dunjunz_revised.lockstep import Script, game_run
 
 FRAMES = 400
 
+# Sprites the revised game no longer has: &76, the word LEVEL, which only the
+# cassette game's level-number screen drew.
+REMOVED_SPRITES = {0x76}
+
 # The memory the resident game occupies in play, searched for the timer reads.
 ORIGINAL_GAME_RANGES = ((0x0400, 0x3000), (0x6E80, 0x8000))
 REVISED_GAME_RANGES = ORIGINAL_GAME_RANGES
@@ -89,4 +93,6 @@ def test_sprites_match_the_original(disc_filepaths):
                   REVISED_GAME_RANGES) as run:
         revised = sprites(run)
     for n, (a, b) in enumerate(zip(original, revised)):
+        if n in REMOVED_SPRITES:
+            continue
         assert a == b, f"sprite &{n:02X}"
