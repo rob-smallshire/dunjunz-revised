@@ -795,4 +795,4 @@ oscli                    = &fff7
     equb &00, &00, &00, &2a, &00, &00, &00  ; Frame 6: 7 bytes by 28 rows
 .dasmos_end
 
-save "Dunjunz", dasmos_start, dasmos_end, &2700, &26c0
+save "Dunjunz", dasmos_start, dasmos_end, title_start, dasmos_start

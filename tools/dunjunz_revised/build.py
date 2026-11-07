@@ -257,7 +257,8 @@ def build_revised() -> Path:
             verify_against_reference(REVISED_BUILD_DIRPATH, saved_filenames)
 
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
-    title = DiscFile("Dunjunz", IO_PROCESSOR | 0x26C0, IO_PROCESSOR | 0x2700)
+    title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
+    title = DiscFile("Dunjunz", IO_PROCESSOR | title_labels["dasmos_start"], IO_PROCESSOR | title_labels["title_start"])
     files = [
         (DiscFile("!BOOT", title.load_address, title.exec_address), REVISED_BUILD_DIRPATH / "Dunjunz"),
         (title, REVISED_BUILD_DIRPATH / "Dunjunz"),
