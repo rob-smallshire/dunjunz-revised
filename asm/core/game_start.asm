@@ -40,8 +40,6 @@
     sta saved_wrchv + 1                 ; ...in saved_wrchv, for drawing the view frames
     lda #<(wrch_handler)                ; Point WRCHV at wrch_handler, the game's font...
 .set_wrchv_low
-; Sprite base of each missile, to which its direction is added; also identifies the hero who fired it.
-missile_sprite_base = set_wrchv_low+1
     sta wrchv                           ; ...into WRCHV's low byte...
     lda #>(wrch_handler)                ; ...and wrch_handler's high byte...
     sta wrchv + 1                       ; ...into WRCHV's: text now goes through it
@@ -50,16 +48,12 @@ missile_sprite_base = set_wrchv_low+1
     sta level_number                    ; ...is level_number, 1-25, for the checksum and Chalice
     lda victory_pitch                   ; Copy &8F, which Coder does not set...
 .store_level_bcd
-; INKEY key number of each hero's down key.
-hero_key_down = store_level_bcd+2
     sta level_bcd                       ; ...into level_bcd, which nothing here reads
     lda levels_started                  ; First level of a game?
     cmp #1                              ; ...levels_started 1, the first level of a game?
     beq start_new_game                  ; Yes: reset the heroes and run the hero menu
     jmp level_loop                      ; No: the heroes carry over; straight to the level
 .start_new_game
-; INKEY key number of each hero's fire key.
-hero_key_fire = start_new_game+1
     lda #0                              ; A = 0, for new_game_reset_heroes' first hero
     jmp new_game_reset_heroes           ; ...past the stores that zero the level counts
     equs "eon5"

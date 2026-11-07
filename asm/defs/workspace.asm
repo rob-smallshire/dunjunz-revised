@@ -67,16 +67,25 @@ WORKSPACE = &0d00
     skip 12
 ; Direction of each missile: 1 up, 2 right, 3 down, 4 left; bit 7 set for a missile just fired; 0 for an empty slot.
 .missile_direction
-    skip 24
+    skip 12
+; Sprite base of each missile, to which its direction is added; also identifies the hero who fired it.
+.missile_sprite_base
+    skip 12
 ; INKEY key number of each hero's up key.
 .hero_key_up
-    skip 8
+    skip 4
+; INKEY key number of each hero's down key.
+.hero_key_down
+    skip 4
 ; INKEY key number of each hero's right key.
 .hero_key_right
     skip 4
 ; INKEY key number of each hero's left key.
 .hero_key_left
-    skip 20
+    skip 4
+; INKEY key number of each hero's fire key.
+.hero_key_fire
+    skip 16
 ; Health tens digit, as a digit sprite (&1E-&27); &1D when the hero is dead.
 .hero_health_tens
     skip 5
