@@ -67,42 +67,62 @@ and ANFS loading from a file server (beebium's L3FS preset can serve
 one), MMFS2, and DFS 1.20 without Econet. That last one has to be measured
 from its real private page, which its table entry doesn't give.
 
-## The plan for memory
+## The memory map
 
-| Range | Use in Dunjunz Revised |
+| Range | In play |
 |---|---|
-| &0000-&03FF | MOS and the game's zero page, as in the original |
-| &0400-&0CFF | Game, as in the original, keeping clear of what the MOS uses while sound and OSWRCH run |
+| &0000-&03FF | MOS; the game's zero page is &70-&8F (&60-&6F is reserved for the tests' random number generator) |
+| &0400-&06FF | Scores, the loader, the level loop (stored in GAME, copied by startup) |
+| &0700-&07FF | The per-level workspace (`WORKSPACE`), refreshed by Setup for each level |
+| &0800-&08AF | MOS (sound) |
+| &08B0-&08BF | State kept across games: ten-thousands digits, absent heroes, level counter and digits |
+| &08C0-&08FF | MOS: envelopes 1-4, which the game defines |
+| &0900-&0CFF | Plotter, hero tables, the wall map at &0C00 (character 128's definition too) |
 | &0D00-&0DFF | **Untouched**: the filing system's or the NFS's NMI code |
-| &0E00-&16FF | Game, borrowed with service &0A; stashed in screen memory while a level loads |
-| &1700-&1BFF | **Untouched**: private workspace |
-| &1C00-&2FFF | Game |
-| &3000-&6E7F | Screen (25 rows); holds the stash while a level loads |
-| &6E80-&7FFF | Game |
+| &0E00-&16FF | The status panel, font, start of level, sprites, the Chalice test, the game-over text: borrowed with service &0A |
+| &1700-&1BFF | **Untouched**: private workspace (PAGE at most &1C00) |
+| &1C00-&2FFF | The exit animation, doors and keys, sprites, the frame, the Chalice |
+| &3000-&6E7F | Screen (25 rows) |
+| &6E80-&7FFF | Heroes, missiles, objects, monsters, views, the font handler, the victory sequence |
+
+`uv run dr-sizes` gives each module's place and size; `asm/dunjunz.asm`
+assembles the regions and asserts each fits.
 
 **Decision:** the layout assumes PAGE is at most &1C00, the highest in the
 target set (ANFS 4.18 + DFS 2.26). MMFS2 is supported (&1B00 at most), and
 the original MMFS, at &1D00, is not.
 
-So the revised game loses &0D00-&0DFF and &1700-&1BFF, 1.5 KB, compared
-with the original's &0400-&2FFF. Against it: about 1 KB unused in play (see the
-acornaeology findings, "Space a revised version could recover"), the
-victory sequence loaded only when needed, the decryption and checksum
-code and the reset-between-levels machinery all gone, and more compact
-code.
+### The files
 
-Loading a level, with the game resident:
+- `GAME`, loaded once at &1C00-&7FFF. Its startup runs from screen memory
+  (&6980): it closes any `*EXEC` file, notes the filing system (OSARGS 0,0),
+  claims the absolute workspace (service &0A), copies the parts stored at
+  &3000-&41FF to &0400, &0900 and &0E00, and runs `game_entry` and the hero
+  menu, also from screen memory, so neither stays resident.
+- `Setup`, loaded with every level at &5000 and run there: it unpacks the
+  level, refreshes the workspace from its template and resets the monsters,
+  before the screen is cleared and drawn.
+- `Level1`-`Level25`, unencrypted, loaded at &6B00.
 
-1. Show LEVEL n. Copy the game's &0E00-&16FF to screen memory, below the
-   level number.
-2. Reselect the filing system (service &12, or the OSCLI fallback). It
-   rebuilds its static workspace from its private workspace.
-3. Load the level with OSFILE, at an address with &FFFF in its top 16 bits
-   so that, with a second processor, it lands in the I/O processor.
-4. Claim the static workspace again with service &0A and copy the game's
-   &0E00-&16FF back.
+### Loading a level
 
-The code that runs steps 1-4 must lie outside &0E00-&16FF.
+`load_level` (in &0400-&06FF, never in the borrowed workspace):
+
+1. Blank the display (6845 register 1 = 0) and disable VDU output.
+2. Copy the game's &0E00-&16FF to the stash at &3000.
+3. Reselect the filing system (`*DISC`, `*NET`, or service &12 for any
+   other), which rebuilds its absolute workspace from its private workspace.
+4. Load `Setup` with OSFILE, at an address with &FFFF in its top 16 bits so
+   that, with a second processor, it lands in the I/O processor.
+5. Claim the workspace again with service &0A and copy the game back.
+6. Steps 2-5 again for the level file, then show the play screen.
+
+Game over and victory give WRCHV back to the MOS, reselect the filing
+system and `*RUN DUNJUNZ`.
+
+The 6845 set-ups go through the MOS's WRCHV, saved in `saved_wrchv`:
+`wrch_handler` would print a letter or digit among the parameters (80 is
+"P") as character 128.
 
 ## Closing the boot file
 

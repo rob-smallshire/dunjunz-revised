@@ -19,7 +19,7 @@ Each fix gets an emulator test that shows the bug in the baseline
 | Game over waits for the vsync counter to reach exactly 0, up to about 5 s with the keys ignored | &0EB9 | Confirmed in beebium |
 | A P still held after unpausing pauses again | pause | Confirmed in beebium |
 | Pause is missed while a lower-numbered key is held (OSBYTE &7A) | pause | Test P directly |
-| "YOU ALL" loses its full stop: the message's bytes double as counters | &0FF1 | |
+| "YOU ALL" loses its full stop: the message's bytes double as counters | &0FF1 | **Fixed**: the counters have bytes of their own |
 | The victory bell is set with a stale Y | &10E9, &1124 | |
 | A hero standing on a key swaps keys every other frame (dying heroes too) | &1E84-&1E9C, &1DF8 | |
 | A key dropped at the exit can land in a wall: the fallback cell is not tested | &20F7 | |
@@ -27,7 +27,7 @@ Each fix gets an emulator test that shows the bug in the baseline
 | A monster killed by magic comes back with the hit points it had left | &768A | |
 | Teleport landings are not checked for walls, monsters or heroes | &73EA-&73F9 | |
 | The hero menu's sound ON/OFF shows the last choice made, not the setting in force | menu | Keeping the YES/NO choices between games is worth keeping; only the mismatch is a bug |
-| The ten-thousands score digit is lost at each new level | &040F | Moot once the game is resident, but use one table |
+| The ten-thousands score digit is lost at each new level | &040F | **Fixed**: one table |
 
 ## Rule
 
