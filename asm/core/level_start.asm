@@ -22,22 +22,10 @@
     jsr load_level                      ; Load the level file, the display blanked meanwhile
     jsr setup_level                     ; Unpack it and reset the workspace and monsters (Setup)
 ; Show the play screen: clear the text area, display all 25 character rows, then draw the frames and the views.
-    jsr clear_text_area                 ; Clear the screen, LEVEL and all, for the play screen
-    lda #&17                            ; VDU 23,0,6,25,0,0,0,0,0,0: set 6845 register 6...
-    jsr oswrch                          ; Send VDU 23
-    lda #0                              ; 0: a 6845 register setting follows
-    jsr oswrch                          ; Send the 0
-    lda #6                              ; Register 6: character rows displayed
-    jsr oswrch                          ; Send the register number
-    lda #&19                            ; ...to 25: the views and panel fill rows 0-24
-    jsr oswrch                          ; Send it: show all 25 rows for play
-    lda #0                              ; Six zero bytes complete the VDU 23
-    jsr oswrch                          ; Send the first zero
-    jsr oswrch                          ; Send the second zero
-    jsr oswrch                          ; Send the third zero
-    jsr oswrch                          ; Send the fourth zero
-    jsr oswrch                          ; Send the fifth zero
-    jsr oswrch                          ; Send the sixth zero
+    ldx #whole_screen_vdu - vdu_strings ; The whole screen as the text window, cleared
+    jsr send_vdu                        ; ...for the play screen
+    ldx #play_rows_vdu - vdu_strings    ; Show all 25 rows: 6845 register 6 = 25
+    jsr send_vdu                        ; ...for the views and the panel
     lda #<(view_frame_plots)            ; (plot_x) points at the frames' PLOT commands...
     sta plot_x                          ; ...low byte in plot_x...
     lda #>(view_frame_plots)            ; ...and view_frame_plots' high byte...
@@ -93,35 +81,6 @@
     lda #>(wrch_handler)                ; ...and its high byte...
     sta wrchv + 1                       ; ...so text is drawn in the game's font again
     rts                                 ; Return to start_level: frames and views drawn
-; ***************************************************************************************
-; Clear the screen
-;
-; Clear the screen above the game code. Called twice for each level: by the routine
-; start_level calls first, before the level is loaded, and by start_level itself before
-; the play screen is drawn. Set a text window the full 20 columns wide from row 0 to the
-; bottom row (24 in play), and clear it with VDU 12. The window never reaches below row
-; 24 because MODE 2's rows 25-31, &6E80-&7FFF, hold game code. The window is left set, so
-; later text and clears stay inside it.
-;
-; On Exit:
-;     A: corrupted
-;     X: preserved
-;     Y: preserved
-.clear_text_area
-    lda #&1c                            ; VDU 28: a text window over the whole screen...
-    jsr oswrch                          ; Send VDU 28
-    lda #0                              ; Left column 0
-    jsr oswrch                          ; Send the left column
-.set_text_window_bottom
-    lda #&18                            ; Bottom row 24: the whole of the play screen
-    jsr oswrch                          ; Send the bottom row
-    lda #&13                            ; Right column 19: the full MODE 2 width
-    jsr oswrch                          ; Send the right column
-    lda #0                              ; Top row 0
-    jsr oswrch                          ; Send the top row
-    lda #&0c                            ; ...VDU 12 to clear it
-    jsr oswrch                          ; Send it: the window clears to the background
-    rts                                 ; Return with the window left set
 ; Twenty VDU 25 (PLOT) commands, five bytes each (plot code, then x and y as 16-bit words), that draw the frames round the four views; read by draw_view_frames through (plot_x).
 ; ***************************************************************************************
 ; View frame PLOT commands

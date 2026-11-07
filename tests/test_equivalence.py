@@ -66,7 +66,7 @@ def test_scripts_exercise_the_game(disc_filepaths):
     that equivalence means something."""
     states = record(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),
                     ORIGINAL_GAME_RANGES, Script(seed=1), 100)
-    for name in ("scratch", "monster_x", "screen"):
+    for name in ("scratch", "monster_x+1", "screen"):
         digests = {hashlib.sha1(s[name]).digest() for s in states}
         assert len(digests) > 10, name
 

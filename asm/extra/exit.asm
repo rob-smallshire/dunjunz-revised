@@ -245,27 +245,22 @@
 .door_x
     equb &ff, &ff, &ff, &04, &ff, &ff, &06, &ff, &11, &ff, &ff, &ff, &1a, &03, &03, &0b  ; Not read: unpack_level copies each level's doors here
     equb &ff, &03, &09, &12, &ff        ; ...entries 16-20, not read
-    equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
 ; Map y of each door.
 .door_y
     equb &ff, &ff, &ff, &0d, &ff, &ff, &11, &ff, &16, &ff, &ff, &ff, &1a, &23, &27, &25  ; Not read: unpack_level copies each level's doors here
     equb &ff, &2b, &2e, &2b, &ff        ; ...entries 16-20, not read
-    equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
 ; Sprite of each door.
 .door_sprite
     equb &ff, &1c, &1c, &1d, &1c, &1c, &1d, &1d, &1d, &1d, &1d, &1c, &1c, &1d, &1d, &1c  ; Not read: unpack_level copies each level's door sprites here
     equb &1d, &1d, &1c, &1c, &ff        ; ...entries 16-20, not read
-    equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
 ; Map x of each key lying on the floor (entries 1-20); key n opens door n.
 .key_x
     equb &13, &ff, &ff, &1b, &ff, &ff, &17, &ff, &1c, &ff, &ff, &ff, &02, &15, &04, &09  ; Not read: unpack_level copies each level's keys here
     equb &ff, &04, &19, &17, &ff        ; ...entries 16-20, not read
-    equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
 ; Map y of each key on the floor.
 .key_y
     equb &25, &ff, &ff, &06, &ff, &ff, &09, &ff, &18, &ff, &ff, &ff, &29, &04, &0c, &14  ; Not read: unpack_level copies each level's keys here
     equb &ff, &0f, &03, &04, &ff        ; ...entries 16-20, not read
-    equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
 ; Data of sprite &51: 4 bytes x 12 rows.
 .sprite_exit
     equb &03, &03, &03, &03

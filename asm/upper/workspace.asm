@@ -67,6 +67,3 @@
     equb &00, &5f, &5f, &5f, &29, &63, &5f, &53, &2b, &53, &28, &28, &60, &60, &28, &2a  ; Not read: unpack_level copies each level's objects here
     equb &62, &28, &28, &29, &28, &2b, &2b, &2b, &2b, &29, &28, &28, &29, &28  ; ...entries 16-29, not read
     equb &51                            ; ...the exit's entry
-    equb &00, &00, &00, &00, &00, &00, &00, &00
-    equb &00, &00, &00, &00, &00, &00, &00, &00
-    equb &00, &00                       ; Not referenced

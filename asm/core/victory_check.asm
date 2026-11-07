@@ -48,18 +48,8 @@
 .start_victory
     jsr victory_sequence                ; Sparkles, rising tone, the Chalice dissolves
 ; The game is won. Over the views, print the ending text that level 25's maps hold, wait for a key, and start afresh.
-    lda #&1c                            ; VDU 28,0,24,16,0: a window over the four views...
-    jsr oswrch                          ; Send VDU 28
-    lda #0                              ; Left column 0
-    jsr oswrch                          ; Send the left column
-    lda #&18                            ; Bottom row 24, the last on show
-    jsr oswrch                          ; Send the bottom row
-    lda #&10                            ; Right column 16: the status panel stays
-    jsr oswrch                          ; Send the right column
-    lda #0                              ; Top row 0
-    jsr oswrch                          ; Send the top row
-    lda #&0c                            ; ...VDU 12 to clear it
-    jsr oswrch                          ; Clear the views for the ending text
+    ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
+    jsr send_vdu                        ; ...cleared
 ; Print the ending text: 140 bytes of level 25's wall map, then its object-free map up to a zero.
     ldx #0                              ; The ending text: 140 bytes from room_walls + &3A...
 .print_victory_text

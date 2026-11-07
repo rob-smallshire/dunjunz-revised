@@ -82,8 +82,8 @@ LOW_START = &0400                       ; Loader, scores; the per-level workspac
 LOW_END = &0800
 PAGE9_START = &0900                     ; Plotter, hero tables, the wall map (MOS buffers in BASIC)
 PAGE9_END = &0d00
-STATIC_WORKSPACE = &0e00                ; The filing system's absolute workspace, borrowed
-STATIC_WORKSPACE_PAGES = 9
+STATIC_WORKSPACE = &0f00                ; The filing system's absolute workspace, borrowed (not page &0E: the NFS keeps state there)
+STATIC_WORKSPACE_PAGES = 8
 WS_START = STATIC_WORKSPACE
 WS_END = STATIC_WORKSPACE + STATIC_WORKSPACE_PAGES * 256
 MID_START = &1c00                       ; Above the highest PAGE supported
@@ -113,6 +113,8 @@ INCLUDE "asm/extra/exit.asm"
 INCLUDE "asm/extra/doors_keys_sprites.asm"
 INCLUDE "asm/core/frame.asm"
 INCLUDE "asm/core/chalice.asm"
+INCLUDE "asm/core/victory_check.asm"
+INCLUDE "asm/core/last_skull.asm"
 .mid_end
 ASSERT mid_end <= MID_END
 
@@ -144,7 +146,6 @@ INCLUDE "asm/core/status_panel.asm"
 INCLUDE "asm/core/font.asm"
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
-INCLUDE "asm/core/victory_check.asm"
 INCLUDE "asm/core/game_over_text.asm"
 .ws_end
 ASSERT ws_end <= WS_END

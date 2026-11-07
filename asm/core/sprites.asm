@@ -140,7 +140,6 @@
     equb &03
     equb &01
     equb &01
-    equb &0a, &00, &05, &00, &00, &00, &0a, &00
 ; Data of sprite &74: 4 bytes x 3 rows.
 ; ***************************************************************************************
 ; Panel sprites: the missile and boots icons
@@ -220,15 +219,6 @@
 ; OSWORD 7 (SOUND) parameter block for a hero going down the exit.
 .exit_sound
     equw &12, &03, 250, 1               ; SOUND channel 2 (flush), envelope 3, pitch 250, duration 1
-    equs "50:50:$"
-    equb &0c, &0c, &08, &00, &00, &00, &00, &00
-    equb &00, &00, &00, &00, &0a, &00, &00, &00
-    equs "4<:%"
-    equs "48<"
-    equb &00, &00, &00, &00, &00, &00, &00, &00
-    equs "5?:"
-    equb &18, &3f, &3a, &0c, &0c, &08, &00, &00
-    equb &00, &00, &00, &00, &00, &00, &00, &00
 ; Data of sprite &08: 4 bytes x 12 rows.
 ; ***************************************************************************************
 ; Hero and death sprites
@@ -305,20 +295,6 @@
     equb &15, &2a, &15, &00
     equb &15, &3f, &2a, &00
     equb &2a, &15, &3f, &2a
-; Data of sprite &68: 4 bytes x 12 rows.
-.sprite_skull_4
-    equb &00, &00, &00, &00
-    equb &00, &00, &00, &00
-    equb &00, &00, &00, &00
-    equb &00, &00, &00, &00
-    equb &00, &15, &3f, &00
-    equb &00, &10, &3a, &00
-    equb &00, &10, &3a, &00
-    equb &00, &15, &3f, &15
-    equb &2a, &3f, &35, &2a
-    equb &15, &2a, &2a, &00
-    equb &00, &3f, &3f, &2a
-    equb &3f, &15, &2a, &15
 ; Low bytes of the sprite data addresses, indexed by sprite number (120 entries).
 ; ***************************************************************************************
 ; Sprite tables

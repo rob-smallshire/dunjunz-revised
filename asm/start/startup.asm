@@ -35,15 +35,15 @@
     lda wrchv                           ; Save the MOS's WRCHV in saved_wrchv now...
     sta saved_wrchv                     ; ...low byte...
     lda wrchv + 1                       ; ...and high byte
-    sta saved_wrchv + 1                 ; ...for send_display_vdu, below
+    sta saved_wrchv + 1                 ; ...for send_vdu, below
     pla                                 ; The filing system's number...
     sta filing_system_number            ; ...for reselect_filing_system
     lda #6                              ; VDU 6: enable VDU output again
     jsr oswrch                          ; Send it
     lda #3                              ; VDU 3: no printer
     jsr oswrch                          ; Send it
-    ldx #play_display_vdu - display_vdu ; Show the play screen's 23 rows
-    jsr send_display_vdu                ; ...for the hero menu
+    ldx #play_display_vdu - vdu_strings ; Show the play screen's 23 rows
+    jsr send_vdu                        ; ...for the hero menu
     jmp game_entry                      ; Enter the game
 ; Before the loader is copied into place, startup reaches its routines in their stored
 ; copy in screen memory.

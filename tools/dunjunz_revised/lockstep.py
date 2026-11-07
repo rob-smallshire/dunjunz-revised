@@ -74,7 +74,7 @@ STATE_BLOCKS = (
     ("monster_offset_x+1", 30),      
     ("monster_offset_y+1", 30),      
     ("monster_step+1", 30),          
-    ("object_x", 0x5F),              # objects and the exit
+    ("object_x", 0x5D),              # objects and the exit: x, y and type, 31 entries each
     ("sprite_widths", 0x78),         # changed by the exit animation
     ("sprite_heights", 0x78),
     ("level_number", 1),

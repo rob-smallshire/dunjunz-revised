@@ -14,8 +14,8 @@
 ;     X: corrupted
 ;     Y: corrupted
 .load_level
-    ldx #blank_display_vdu - display_vdu ; Blank the display while the file loads...
-    jsr send_display_vdu                ; ...6845 register 1 = 0, no characters shown
+    ldx #blank_display_vdu - vdu_strings ; Blank the display while the files load...
+    jsr send_vdu                        ; ...6845 register 1 = 0, no characters shown
     lda level_digits                    ; The level number's first digit...
     sta level_name_digits               ; ...after "Level"
     lda level_digits + 1                ; Its second digit, or a space for levels 1-9...
@@ -30,34 +30,30 @@
     ldx #<(level_osfile_block)          ; Load the level file...
     ldy #>(level_osfile_block)          ; ...with level_osfile_block
     jsr load_file                       ; ...through the filing system
-    ldx #play_display_vdu - display_vdu ; Show the play screen's 23 rows again:
-                                        ; fall into send_display_vdu
+    ldx #play_display_vdu - vdu_strings ; Show the play screen's 23 rows again
+                                        ; ...and return: fall into send_vdu
 ; ***************************************************************************************
-; Send a 6845 set-up
+; Send a VDU string
 ;
-; Send display_vdu from offset X to the next zero byte that follows a complete VDU 23.
-; Each set-up is a run of 10-byte VDU 23,0 commands ended by a zero. The bytes go
-; through mos_wrch, so saved_wrchv must be set.
+; Send the string at vdu_strings + X, a count and then that many bytes, through mos_wrch,
+; so that saved_wrchv must be set.
 ;
 ; On Entry:
-;     X: offset of the set-up in display_vdu
+;     X: offset of the string's count in vdu_strings
 ;
 ; On Exit:
 ;     A: corrupted
 ;     X: corrupted
-.send_display_vdu
-    lda display_vdu,x                   ; The next byte...
-    beq display_vdu_sent                ; ...zero where a command would start: done
-    ldy #10                             ; A VDU 23 command is ten bytes
-.send_display_vdu_byte
-    lda display_vdu,x                   ; Send each of its bytes...
-    jsr mos_wrch                        ; ...to the VDU drivers, past wrch_handler
-    inx                                 ; Next byte
-    dey                                 ; One fewer of the ten to send
-    bne send_display_vdu_byte           ; Until the command is sent
-    beq send_display_vdu                ; Always taken: the next command
-.display_vdu_sent
-    rts                                 ; Return with the display set up
+;     Y: 0
+.send_vdu
+    ldy vdu_strings,x                   ; The number of bytes
+.send_vdu_byte
+    inx                                 ; The next byte...
+    lda vdu_strings,x                   ; ...of the string
+    jsr mos_wrch                        ; Send it, past wrch_handler
+    dey                                 ; One fewer to send
+    bne send_vdu_byte                   ; Until all are sent
+    rts                                 ; Return
 ; Print A through the MOS's own WRCHV, as saved in saved_wrchv, not through wrch_handler,
 ; which would print a letter or digit among the parameters of a VDU 23 (80 is "P") as
 ; character 128.
@@ -226,14 +222,22 @@
     equs "Level"                        ; "LevelN" or "LevelNN", CR-terminated
 .level_name_digits
     equs "1", &0d, &0d                  ; The digits, set by load_level
-; 6845 set-ups for VDU 23,0, sent by send_display_vdu: each a run of ten-byte commands
-; ended by a zero.
-.display_vdu
+; Strings for send_vdu: each a count, then the bytes.
+.vdu_strings
 .blank_display_vdu
-    equb &17, &00, &01, &00, &00, &00, &00, &00, &00, &00  ; Register 1 = 0: no characters shown
+    equb 20
+    equb &17, &00, &01, &00, &00, &00, &00, &00, &00, &00  ; 6845 register 1 = 0: no characters shown
     equb &17, &00, &0a, &20, &00, &00, &00, &00, &00, &00  ; Register 10 = &20: no cursor
-    equb 0
 .play_display_vdu
+    equb 20
     equb &17, &00, &01, &50, &00, &00, &00, &00, &00, &00  ; Register 1 = 80 characters shown
     equb &17, &00, &06, &17, &00, &00, &00, &00, &00, &00  ; Register 6 = 23 character rows shown
-    equb 0
+.play_rows_vdu
+    equb 10
+    equb &17, &00, &06, &19, &00, &00, &00, &00, &00, &00  ; Register 6 = 25: the views and panel fill rows 0-24
+.whole_screen_vdu
+    equb 6
+    equb &1c, &00, &18, &13, &00, &0c   ; VDU 28,0,24,19,0: the whole screen as the text window; VDU 12 clears it
+.views_window_vdu
+    equb 6
+    equb &1c, &00, &18, &10, &00, &0c   ; VDU 28,0,24,16,0: the views, short of the panel; VDU 12 clears them
