@@ -1,9 +1,8 @@
 ; Dunjunz Revised: the game
 ;
-; The top level of the game's source. It assembles Dun1, which contains the level loader
-; Coder, from the modules under asm/. The layout below is still the 1987 disc release's,
-; and the build checks that the output is identical to it; the description that follows
-; is of that release.
+; The top level of the game's source: it assembles GAME from the modules under asm/.
+; See docs/memory.md for the memory map and how the game shares memory with the filing
+; system. The description that follows is of the 1987 disc release this is derived from.
 ;
 ; How Dun1 is laid out
 ;
@@ -71,51 +70,110 @@
 
 INCLUDE "asm/defs/constants.asm"
 INCLUDE "asm/defs/addresses.asm"
+
+; ***************************************************************************************
+; Memory regions
+;
+; The game in play: five regions outside the screen. The filing system's absolute
+; workspace (STATIC_WORKSPACE) is the game's while it plays, claimed with service call &0A;
+; page &0D (the filing system's NMI code) and &1700 up to PAGE (private workspace, PAGE at
+; most &1C00) are never touched.
+LOW_START = &0400                       ; Loader, scores; the per-level workspace at WORKSPACE
+LOW_END = &0800
+PAGE9_START = &0900                     ; Plotter, hero tables, the wall map (MOS buffers in BASIC)
+PAGE9_END = &0d00
+STATIC_WORKSPACE = &0e00                ; The filing system's absolute workspace, borrowed
+STATIC_WORKSPACE_PAGES = 9
+WS_START = STATIC_WORKSPACE
+WS_END = STATIC_WORKSPACE + STATIC_WORKSPACE_PAGES * 256
+MID_START = &1c00                       ; Above the highest PAGE supported
+MID_END = &3000
+UP_START = &6e80                        ; Above the 25-row screen
+UP_END = &8000
+
+; GAME is loaded at MID_START and runs from startup, in screen memory. The parts of the
+; game that run below MID_START are stored in screen memory, and startup copies them into
+; place. While a level loads, with the display blanked, the game's contents of the
+; absolute workspace are kept at STASH.
+LOW_STORE = &3000
+PAGE9_STORE = &3400
+WS_STORE = &3800
+STASH = &3000
+STARTUP = &6980                         ; Rows 23-24, which the hero menu leaves alone
+SETUP_ADDRESS = &5000                   ; Setup, loaded with each level, clear of STASH and LEVEL_FILE
+
 INCLUDE "asm/defs/workspace.asm"
+INCLUDE "asm/defs/level_file.asm"
 
-    org &3000
+; ***************************************************************************************
+; &1C00-&2FFF: loaded in place
+    org MID_START
+.game_file_start
+INCLUDE "asm/extra/exit.asm"
+INCLUDE "asm/extra/doors_keys_sprites.asm"
+INCLUDE "asm/core/frame.asm"
+INCLUDE "asm/core/chalice.asm"
+.mid_end
+ASSERT mid_end <= MID_END
 
-; Stored at &3000 in the file, assembled to run at &08c0 (5952 bytes)
-    org &08c0
+; ***************************************************************************************
+; &0400-&07FF: stored at LOW_STORE
+    org LOW_START
+INCLUDE "asm/low/scores.asm"
+INCLUDE "asm/core/loader.asm"
+INCLUDE "asm/core/level_loop.asm"
+.low_end
+ASSERT low_end <= WORKSPACE
+    copyblock LOW_START, low_end, LOW_STORE
+    clear LOW_START, LOW_END
+
+; ***************************************************************************************
+; &0900-&0CFF: stored at PAGE9_STORE
+    org PAGE9_START
 INCLUDE "asm/core/plot.asm"
-INCLUDE "asm/core/game_start.asm"
+INCLUDE "asm/core/room_walls.asm"
+.page9_end
+ASSERT page9_end <= PAGE9_END
+    copyblock PAGE9_START, page9_end, PAGE9_STORE
+    clear PAGE9_START, PAGE9_END
+
+; ***************************************************************************************
+; &0E00-&16FF: stored at WS_STORE
+    org WS_START
 INCLUDE "asm/core/status_panel.asm"
-INCLUDE "asm/core/victory.asm"
 INCLUDE "asm/core/font.asm"
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
-INCLUDE "asm/core/frame.asm"
-    copyblock &08c0, *, &3000           ; Store what was assembled at its run address in the file at &3000
-    clear &08c0, &2000                  ; Free the run addresses for the next block assembled there
-    org &3000 + (* - &08c0)             ; Carry on in the file after the stored copy
+INCLUDE "asm/core/victory_check.asm"
+INCLUDE "asm/core/game_over_text.asm"
+.ws_end
+ASSERT ws_end <= WS_END
+    copyblock WS_START, ws_end, WS_STORE
+    clear WS_START, WS_END
+ASSERT WS_STORE + (WS_END - WS_START) <= STARTUP
 
-    org &51b0
+; ***************************************************************************************
+; Run once from screen memory: startup, game_entry and the hero menu
+    org STARTUP
+INCLUDE "asm/start/startup.asm"
+INCLUDE "asm/start/game_entry.asm"
+INCLUDE "asm/start/menu.asm"
+.startup_end
+ASSERT startup_end <= UP_START
 
-; Stored at &51b0 in the file, assembled to run at &0400 (1024 bytes)
-    org &0400
-INCLUDE "asm/low/keyboard.asm"
-    copyblock add_thousand_points, *, &51b0; Store what was assembled at its run address in the file at &51b0
-    clear add_thousand_points, &0800    ; Free the run addresses for the next block assembled there
-    org &51b0 + (* - add_thousand_points); Carry on in the file after the stored copy
+; ***************************************************************************************
+; Setup: its own file, loaded with each level and run in screen memory
+    org SETUP_ADDRESS
+.setup_start
+INCLUDE "asm/setup/setup.asm"
+.setup_end
+ASSERT setup_end <= LEVEL_FILE
+save "Setup", setup_start, setup_end, setup_level, SETUP_ADDRESS
+    clear setup_start, setup_end
 
-    org &55b0
-
-; Stored at &55b0 in the file, assembled to run at &0400 (1024 bytes)
-    org &0400
-INCLUDE "asm/low/joystick.asm"
-    copyblock add_thousand_points_joystick, *, &55b0; Store what was assembled at its run address in the file at &55b0
-    clear add_thousand_points_joystick, &0800; Free the run addresses for the next block assembled there
-    org &55b0 + (* - add_thousand_points_joystick); Carry on in the file after the stored copy
-
-    org &2000
-
-.dasmos_start
-INCLUDE "asm/extra/exit.asm"
-INCLUDE "asm/extra/doors_keys_sprites.asm"
-    org &4740
-INCLUDE "asm/coder/coder.asm"
-    org &59b0
-INCLUDE "asm/coder/padding.asm"
+; ***************************************************************************************
+; &6E80-&7FFF: loaded in place
+    org UP_START
 INCLUDE "asm/upper/move_heroes.asm"
 INCLUDE "asm/upper/scoring.asm"
 INCLUDE "asm/upper/objects.asm"
@@ -129,12 +187,13 @@ INCLUDE "asm/upper/steps.asm"
 INCLUDE "asm/upper/keys.asm"
 INCLUDE "asm/upper/workspace.asm"
 INCLUDE "asm/upper/wrch.asm"
-.dasmos_end
+INCLUDE "asm/core/victory_sequence.asm"
+.game_file_end
+ASSERT game_file_end <= UP_END
 
 ; Layout constraints the code relies on
 ASSERT LO(room_walls) = 0               ; test_wall, draw_room and update_game point at a room with >room_walls and the room's offset
+ASSERT room_walls = &0c00               ; wrch_handler copies glyphs over character 128's definition through room_walls
 ASSERT LO(object_free_map) = 0          ; test_object_free likewise
-ASSERT exit_shrink_continues = &2000    ; the exit animation runs on from the end of the game core into extra/exit.asm
 
-save "Dun1", dasmos_start, dasmos_end, &2000, &2000
-save "Coder", &5000, &59b0, &5000, &5000
+save "GAME", game_file_start, game_file_end, startup, MID_START

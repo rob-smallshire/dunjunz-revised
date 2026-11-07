@@ -46,3 +46,5 @@ osword                   = &fff1
 osbyte                   = &fff4
 oscli                    = &fff7
 reset_vector             = &fffc  ; 6502 RESET vector, in the MOS ROM.
+osargs                   = &ffda
+osfile                   = &ffdd

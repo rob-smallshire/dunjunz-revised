@@ -1,93 +1,4 @@
 ; ***************************************************************************************
-; Check whether the Chalice has been found
-;
-; End the game in victory when a hero reaches the Chalice. Called by play_level first in
-; every frame, before update_game. On levels other than 25 return at once. On level 25,
-; test each hero's hero_door_x, hero_door_y, the cell move_heroes recorded as the one
-; they last stepped or tried to step into (kept even when a wall stops them, so walking
-; into the Chalice is enough). If it is one of the Chalice's four cells, x &1A-&1B and y
-; 4-5, the game is won: play victory_sequence, set a text window over the views (columns
-; 0-16, rows 0-24, leaving the status panel), clear it, print the ending text, flush the
-; keyboard buffer, wait for a key and call the MOS's reset code through the RESET vector,
-; so this never returns.
-;
-; The ending text is not part of the program: it is the 140 bytes at room_walls + &3A
-; followed by the zero-terminated string at object_free_map + &3A, which on level 25 hold
-; text instead of map data. Both lie clear of &0C00-&0C07, the definition of character
-; 128 that wrch_handler rewrites for every letter or digit it prints. The Chalice's cells
-; are fixed here, not read from the level's objects.
-;
-; On Exit:
-;     A: corrupted
-;     X: corrupted
-;     Y: preserved
-.check_for_victory
-    lda level_number                    ; Which level is this?
-    cmp #last_level                     ; The Chalice lies only on level 25
-    bne no_victory                      ; Another level: no Chalice to find
-    ldx #0                              ; Has a hero reached a Chalice cell, x &1A-&1B, y 4-5?
-.check_door_x
-    lda hero_door_x,x                   ; The cell hero X last stepped or bumped into...
-    cmp #chalice_x                      ; ...in the Chalice's left column?
-    beq check_door_y                    ; Yes: check the row
-    cmp #chalice_x + 1                  ; ...or its right column?
-    beq check_door_y                    ; Yes: check the row
-.next_hero_victory
-    inx                                 ; Not at the Chalice: on to the next hero
-    cpx #4                              ; Past hero 3?
-    bne check_door_x                    ; No: check the next hero
-.no_victory
-    rts                                 ; No hero at the Chalice: on with the frame
-.check_door_y
-    lda hero_door_y,x                   ; ...and that cell's row...
-    cmp #chalice_y                      ; ...in the Chalice's top row?
-    beq start_victory                   ; Yes: the Chalice is found
-    cmp #chalice_y + 1                  ; ...or its bottom row?
-    beq start_victory                   ; Yes: the Chalice is found
-    bne next_hero_victory               ; No: next hero
-.start_victory
-    jsr victory_sequence                ; Sparkles, rising tone, the Chalice dissolves
-; The game is won. Over the views, print the ending text that level 25's maps hold, wait for a key, and reset.
-    lda #&1c                            ; VDU 28,0,24,16,0: a window over the four views...
-    jsr oswrch                          ; Send VDU 28
-    lda #0                              ; Left column 0
-    jsr oswrch                          ; Send the left column
-    lda #&18                            ; Bottom row 24, the last on show
-    jsr oswrch                          ; Send the bottom row
-    lda #&10                            ; Right column 16: the status panel stays
-    jsr oswrch                          ; Send the right column
-    lda #0                              ; Top row 0
-    jsr oswrch                          ; Send the top row
-    lda #&0c                            ; ...VDU 12 to clear it
-    jsr oswrch                          ; Clear the views for the ending text
-; Print the ending text: 140 bytes of level 25's wall map, then its object-free map up to a zero.
-    ldx #0                              ; The ending text: 140 bytes from room_walls + &3A...
-.print_victory_text
-    lda room_walls + 58,x               ; Next byte of level 25's wall map, which is text
-    jsr osasci                          ; Print it in the game's font
-    inx                                 ; On through the 140 bytes
-    cpx #&8c                            ; All 140 printed?
-    bne print_victory_text              ; No: print the next
-    ldx #0                              ; ...then the ending message, at object_free_map + &3A
-.print_ending_message
-    lda object_free_map + 58,x          ; Next character of the ending message
-    jsr osasci                          ; Print it, the zero included
-    inx                                 ; On along the message (X stays non-zero)
-    cmp #0                              ; The zero that ends the message?
-    bne print_ending_message            ; No: print the next
-; Wait for a fresh key press, then reset the machine through the RESET vector.
-    lda #osbyte_flush_buffer_class      ; OSBYTE &0F, X non-zero: flush the input buffer...
-    jsr osbyte                          ; ...so keys pressed in the sequence cannot skip the text  Flush selected class of buffer
-    jsr osrdch                          ; Wait for a key once the ending text has been read
-    lda reset_vector                    ; Aim the JSR below at the MOS's reset code...
-    sta reset_call_address              ; ...the RESET vector's low byte as its operand's...
-    lda reset_vector + 1                ; ...and the vector's high byte...
-    sta reset_call_address + 1          ; ...as its high: no MOS address built in
-.reset_call
-; Operand of the JSR at reset_call, set from the RESET vector.
-reset_call_address = reset_call+1
-    jsr &00                             ; ...and call it: the game ends with a reset
-; ***************************************************************************************
 ; Play the victory sequence
 ;
 ; Sparkles circle the Chalice to a rising, quickening bell tone, and the Chalice
@@ -103,7 +14,7 @@ reset_call_address = reset_call+1
 ; dissolve_chalice, which clears a random byte of the Chalice when its random value is
 ; below &C0. After the 50th wrap (erase_victory_ring), erase the ring, clear whatever is
 ; left of the Chalice's sprite, replot it black, and wait 255 vertical syncs, about five
-; seconds. The Chalice's sprite data stays cleared, as the game resets next.
+; seconds. The Chalice's sprite data stays cleared, as the game starts afresh next.
 ;
 ; OSBYTEs &D4 and &D5 set (old AND Y) EOR X, and Y is never set for them: the bell's
 ; envelope byte takes Y left over from the frame, and the first pitch takes the Y that
@@ -343,38 +254,3 @@ reset_call_address = reset_call+1
     sta sprite_number                   ; ...as the sprite to plot...
     jsr plot_at_cell                    ; ...plotted in every view showing it
     rts                                 ; Return with the Chalice drawn as its data stands
-; ***************************************************************************************
-; The Chalice sprite
-;
-; Sprite &73: 8 bytes by 24 rows, two cells by two, plotted at x &1A, y 4 by
-; plot_chalice. In the victory sequence dissolve_chalice zeros random bytes of it and
-; erase_victory_ring zeros all of it (and the byte after); the game then ends in a reset.
-.sprite_chalice
-    equb &00, &00, &05, &0f, &0f, &0a, &00, &00
-    equb &00, &00, &0f, &07, &0b, &0f, &00, &00
-    equb &00, &05, &0b, &03, &03, &07, &0a, &00
-    equb &00, &0f, &07, &5a, &a5, &0b, &0f, &00
-    equb &00, &0f, &07, &0f, &0f, &0b, &0f, &00
-    equb &05, &0b, &0f, &00, &00, &0f, &07, &0a
-    equb &05, &0b, &0a, &00, &00, &05, &07, &0a
-    equb &0f, &07, &0e, &00, &00, &0d, &0b, &0f
-    equb &0f, &07, &04, &08, &04, &08, &0b, &0f
-    equb &0b, &07, &45, &0c, &0c, &8a, &0b, &07
-    equb &0f, &07, &00, &0c, &0c, &00, &0b, &0f
-    equb &5a, &07, &0c, &4d, &8e, &0c, &0b, &a5
-    equb &5a, &07, &0c, &4d, &8e, &0c, &0b, &a5
-    equb &0f, &07, &00, &0c, &0c, &00, &0b, &0f
-    equb &0b, &07, &45, &0c, &0c, &8a, &0b, &07
-    equb &0f, &07, &04, &08, &04, &08, &0b, &0f
-    equb &0f, &07, &0e, &00, &00, &0d, &0b, &0f
-    equb &05, &0b, &0a, &00, &00, &05, &07, &0a
-    equb &05, &0b, &0f, &00, &00, &0f, &07, &0a
-    equb &00, &0f, &07, &0f, &0f, &0b, &0f, &00
-    equb &00, &0f, &07, &5a, &a5, &0b, &0f, &00
-    equb &00, &05, &0b, &03, &03, &07, &0a, &00
-    equb &00, &00, &0f, &07, &0b, &0f, &00, &00
-    equb &00, &00, &05, &0f, &0f, &0a, &00, &00
-; The WRCHV contents found at start-up, restored while the game uses the MOS's own text output.
-.saved_wrchv
-    equb &a4                            ; WRCHV as saved at start-up (&E0A4 as loaded)
-; The game's font for the letters A-Z: eight bytes per letter, one per pixel row, in MOS character-definition format.

@@ -165,19 +165,6 @@
 ; The word LEVEL
 ;
 ; Sprite &76, the word LEVEL for the level-number display: 12 bytes by 8 rows.
-.sprite_level_word
-    equb &3c, &00, &14, &3c, &28, &28, &14, &14, &3c, &28, &3c, &00
-    equb &3c, &00, &14, &00, &00, &28, &14, &14, &00, &00, &3c, &00
-    equb &3c, &00, &14, &3c, &28, &3c, &3c, &14, &3c, &28, &3c, &00
-    equb &3c, &3c, &14, &00, &00, &3c, &3c, &14, &00, &00, &3c, &3c
-    equb &3c, &3c, &14, &3c, &28, &3c, &3c, &14, &3c, &28, &3c, &3c
-    equb &3c, &3c, &14, &3c, &28, &14, &28, &14, &3c, &28, &3c, &3c
-    equb &3c, &3c, &14, &3c, &28, &14, &28, &14, &3c, &28, &3c, &3c
-    equb &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00
-    equb &08, &00, &04, &00, &00, &00, &08, &04
-    equb &00, &00, &08, &00, &0c, &0c, &04, &0c
-    equb &08, &00, &08, &04, &0c, &08, &0c, &0c
-    equb &1a, &35, &03, &8f, &7d, &9a, &82, &03
 ; OSWORD 8 (ENVELOPE) parameter block for casting magic.
 .magic_envelope
     equb &03                            ; Envelope 3
@@ -368,7 +355,7 @@
     equb <sprite_skull_4, <sprite_shield, <sprite_small_digit_1, <sprite_small_digit_2
     equb <sprite_small_digit_3, <sprite_small_digit_4, <sprite_small_digit_5, <sprite_small_digit_6
     equb <sprite_small_digit_7, <sprite_small_digit_8, <sprite_small_digit_9, <sprite_chalice
-    equb <sprite_missile_icon, <sprite_boots_icon, <sprite_level_word, <sprite_blank
+    equb <sprite_missile_icon, <sprite_boots_icon, <sprite_blank, <sprite_blank
 ; High bytes of the sprite data addresses, indexed by sprite number.
 .sprite_addr_hi
     equb >wall_sprite, >sprite_ranger_up_0, >sprite_ranger_up_1, >sprite_ranger_right_0
@@ -400,7 +387,7 @@
     equb >sprite_skull_4, >sprite_shield, >sprite_small_digit_1, >sprite_small_digit_2
     equb >sprite_small_digit_3, >sprite_small_digit_4, >sprite_small_digit_5, >sprite_small_digit_6
     equb >sprite_small_digit_7, >sprite_small_digit_8, >sprite_small_digit_9, >sprite_chalice
-    equb >sprite_missile_icon, >sprite_boots_icon, >sprite_level_word, >sprite_blank
+    equb >sprite_missile_icon, >sprite_boots_icon, >sprite_blank, >sprite_blank
 ; Sprite widths in screen bytes, indexed by sprite number.
 .sprite_widths
     equb &04, &04, &04, &04, &04, &04, &04, &04

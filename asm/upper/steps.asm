@@ -68,7 +68,6 @@
     eor #1                              ; ...0 to 1 or 1 to 0...
     sta hero_frame,x                    ; ...so their legs move
     dec hero_step,x                     ; One frame fewer to the new cell
-    bne double_offsets                  ; Not there yet (never taken: the step is 1)
     lda hero_direction,x                ; Arrived: move their cell on the way they face: up...
     cmp #1                              ; Direction 1, facing up?
     bne continue_right                  ; No: try right
@@ -89,15 +88,6 @@
     lda #0                              ; Drawn squarely in the new cell:
     sta hero_offset_x,x                 ; ...no horizontal offset
     sta hero_offset_y,x                 ; ...no vertical offset
-.double_offsets
-    clc                                 ; Double the offsets, which are always zero by now
-    lda hero_offset_x,x                 ; Horizontal offset x 2: the offset...
-    adc hero_offset_x,x                 ; ...added to itself...
-    sta hero_offset_x,x                 ; ...stored back, still 0
-    clc                                 ; Ready for the vertical offset
-    lda hero_offset_y,x                 ; Vertical offset x 2: the offset...
-    adc hero_offset_y,x                 ; ...added to itself...
-    sta hero_offset_y,x                 ; ...stored back, still 0
     rts                                 ; Return: the hero is squarely in the new cell
 ; ***************************************************************************************
 ; Start a monster's step between cells

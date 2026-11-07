@@ -7,7 +7,7 @@
 ; that emits no bytes (only skips), so they appear in the build's symbols. Fields of four
 ; or five entries are indexed by hero number.
 
-WORKSPACE = &0d00
+WORKSPACE = &0700
 
     org WORKSPACE
 .workspace

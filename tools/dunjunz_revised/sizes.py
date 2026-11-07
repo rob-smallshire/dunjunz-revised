@@ -3,7 +3,9 @@
     uv run dr-sizes
 
 Assembles a copy of asm/dunjunz.asm with a label before and after each
-INCLUDE, and reads the labels back from beebasm's symbol dump.
+INCLUDE, and reads the labels back from beebasm's symbol dump. The copy's
+top-level ASSERTs are disabled, so a layout that does not fit can still be
+measured.
 """
 
 from __future__ import annotations
@@ -39,6 +41,8 @@ def measure(top_filepath: Path = ASM_DIRPATH / "dunjunz.asm") -> list[Module]:
             n = len(paths)
             paths.append(m[1])
             marked += [f".sizes_start_{n}", line, f".sizes_end_{n}"]
+        elif line.startswith("ASSERT"):
+            marked.append("; " + line)     # measure layouts that do not fit yet
         else:
             marked.append(line)
     with tempfile.TemporaryDirectory() as tmp_dirpath:

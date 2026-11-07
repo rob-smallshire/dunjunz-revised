@@ -77,11 +77,18 @@ oscli                    = &fff7
 ; selected and the BREAK intercept is armed. Coder starts with VDU output disabled, so no
 ; filing system message reaches the screen, and enables it again with VDU 6.
 .leave_title
+    ldx #0                              ; Blank the display: the game loads into screen memory
+.send_blank_vdu
+    lda blank_vdu,x                     ; ...VDU 23,0,1,0: no characters shown
+    jsr oswrch                          ; ...to the VDU drivers
+    inx                                 ; Next byte
+    cpx #10                             ; ...all ten sent?
+    bne send_blank_vdu                  ; No: send the next
     lda #&15                            ; VDU 21: disable VDU output
-    jsr oswrch                          ; ...so loading Coder prints nothing on the game screen
-    ldx #<(coder_command)               ; *CODER: load and run the level loader
-    ldy #>(coder_command)               ; ...(X, Y) = the command line
-    jsr oscli                           ; ...never returns: Coder takes over the machine
+    jsr oswrch                          ; ...so loading the game prints nothing
+    ldx #<(run_game_command)            ; *RUN GAME: load the game and start it
+    ldy #>(run_game_command)            ; ...(X, Y) = the command line
+    jsr oscli                           ; ...never returns: the game takes over the machine
 ; ***************************************************************************************
 ; Unused
 ;
@@ -142,12 +149,6 @@ oscli                    = &fff7
     dex                                 ; Next hero, counting 3 down to 0
     bpl init_hero_tables                ; Until all four heroes are set
 ; Point the BREAK intercept at the game's next-level code, but leave it disabled until Coder is about to run.
-    lda #<(game_next_level_intercept)   ; BREAK intercept address = &15B5 (the game's next-level intercept)...
-    sta os_break_intercept + 1          ; ...as the JMP's address, low byte
-    lda #>(game_next_level_intercept)   ; ...then its page, &15...
-    sta os_break_intercept + 2          ; ...completing the JMP's address
-    lda #0                              ; ...disabled for now: &0287 is not a JMP
-    sta os_break_intercept              ; ...so a BREAK now does not run the game's code
 ; Title: select MODE 2 with every colour black, load the picture, restore the colours, then twinkle stars on it until a key is pressed.
     ldx #<(tv_title_command)            ; *TV 255,1: vertical shift -1 line, interlace off
     ldy #>(tv_title_command)            ; ...(X, Y) = the command line
@@ -183,12 +184,7 @@ oscli                    = &fff7
     ldy #>(tv_game_command)             ; ...(X, Y) = the command line
     jsr oscli                           ; ...taking effect at the MODE change below
     jsr mode2_cursor_off                ; MODE 2, cursor off: clears the title from the screen
-    ldx #<(disc_command)                ; *DISC: select DFS...
-    ldy #>(disc_command)                ; ...(X, Y) = the command line
-    jsr oscli                           ; ...so *CODER is looked for on the disc
-    lda #opcode_jmp                     ; Arm the BREAK intercept: &0287 = JMP, so a BREAK...
-    sta os_break_intercept              ; ...now runs the game's next-level code at &15B5
-    jsr leave_title                     ; Disable output and run Coder (no return)
+    jsr leave_title                     ; Blank the display and run the game (no return)
     equb &ea                            ; Padding
     equb &ea                            ; ...never run: leave_title does not return
     equb &ea                            ; ...never run
@@ -196,10 +192,10 @@ oscli                    = &fff7
 ; The OSCLI command lines, each ended by a carriage return.
 .load_screen_command
     equs "LOAD SCREEN", &0d             ; The title picture, for load_title_screen
-.disc_command
-    equs "DISC", &0d                    ; Select DFS, before *CODER
-.coder_command
-    equs "CODER", &0d                   ; Run the level loader
+.run_game_command
+    equs "RUN GAME", &0d                ; The game
+.blank_vdu
+    equb &17, &00, &01, &00, &00, &00, &00, &00, &00, &00  ; VDU 23,0,1,0: 6845 register 1 = 0
 .tv_game_command
     equs "TV252 1", &0d                 ; Vertical shift -4, interlace off: the game
 .tv_title_command

@@ -59,9 +59,13 @@ REVISED_DISC_TITLE = disc_title(__version__)
 
 # The beebasm sources of the revised game and the files each SAVEs.
 REVISED_SOURCES = {
-    "dunjunz.asm": ("Dun1", "Coder"),
+    "dunjunz.asm": ("GAME", "Setup"),
     "title.asm": ("Dunjunz",),
 }
+
+# Load and exec addresses with &FFFF in the top half load into, and run in, the
+# I/O processor when a second processor is present.
+IO_PROCESSOR = 0xFFFF0000
 REVISED_MUST_MATCH_ORIGINAL = False
 
 # The beebasm sources of the original release and the files each SAVEs.
@@ -239,7 +243,7 @@ def write_revised_levels(output_dirpath: Path) -> list[DiscFile]:
         else:
             encrypted = (REFERENCE_DIRPATH / f"Level{n}").read_bytes()
         (output_dirpath / f"Level{n}").write_bytes(decrypt_level(encrypted))
-        files.append(DiscFile(f"Level{n}", LEVEL_FILE_ADDRESS, LEVEL_FILE_ADDRESS))
+        files.append(DiscFile(f"Level{n}", IO_PROCESSOR | LEVEL_FILE_ADDRESS, IO_PROCESSOR | LEVEL_FILE_ADDRESS))
     return files
 
 
@@ -252,14 +256,17 @@ def build_revised() -> Path:
         if REVISED_MUST_MATCH_ORIGINAL:
             verify_against_reference(REVISED_BUILD_DIRPATH, saved_filenames)
 
-    dunjunz = ORIGINAL_DISC_FILES[0]
-    boot = DiscFile("!BOOT", dunjunz.load_address, dunjunz.exec_address)
-    files = [(boot, REVISED_BUILD_DIRPATH / dunjunz.name)]
-    for f in ORIGINAL_DISC_FILES:
-        if f.name in ("Dunjunz", "Coder", "Dun1"):
-            files.append((f, REVISED_BUILD_DIRPATH / f.name))
-        elif f.name == "Screen":
-            files.append((f, REFERENCE_DIRPATH / f.name))
+    labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
+    title = DiscFile("Dunjunz", IO_PROCESSOR | 0x26C0, IO_PROCESSOR | 0x2700)
+    files = [
+        (DiscFile("!BOOT", title.load_address, title.exec_address), REVISED_BUILD_DIRPATH / "Dunjunz"),
+        (title, REVISED_BUILD_DIRPATH / "Dunjunz"),
+        (DiscFile("Screen", IO_PROCESSOR | 0x3280, IO_PROCESSOR | 0x3280), REFERENCE_DIRPATH / "Screen"),
+        (DiscFile("GAME", IO_PROCESSOR | labels["game_file_start"], IO_PROCESSOR | labels["startup"]),
+         REVISED_BUILD_DIRPATH / "GAME"),
+        (DiscFile("Setup", IO_PROCESSOR | labels["setup_start"], IO_PROCESSOR | labels["setup_level"]),
+         REVISED_BUILD_DIRPATH / "Setup"),
+    ]
     files += [(f, REVISED_BUILD_DIRPATH / f.name) for f in write_revised_levels(REVISED_BUILD_DIRPATH)]
     write_disc(REVISED_DISC_FILEPATH, REVISED_DISC_TITLE, 2, files)
     return REVISED_DISC_FILEPATH

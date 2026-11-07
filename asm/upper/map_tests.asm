@@ -59,7 +59,6 @@
     tay                                 ; ...in Y, indexing the room's eight bytes
     lda (map_ptr),y                     ; The row's walls, one bit per cell...
     and scratch                         ; ...masked to this cell: non-zero if solid
-    sta victory_pitch                   ; ...copied to &8F, which is never read for it...
     tay                                 ; ...and to Y: callers pull X, then test Y
     rts                                 ; Return with Z set if the cell is open
 ; ***************************************************************************************
@@ -112,7 +111,6 @@
     tay                                 ; ...in Y, indexing the room's eight bytes
     lda (map_ptr),y                     ; The row's bits, one per cell...
     and scratch                         ; ...masked to this cell: zero if an object may lie
-    sta victory_pitch                   ; ...copied to &8F, which is never read for it...
     tay                                 ; ...and to Y: callers pull X, then test Y
     rts                                 ; Return with Z set if an object may lie here
 ; ***************************************************************************************
