@@ -1,9 +1,3 @@
-; ***************************************************************************************
-; Unused
-;
-; Zero bytes, which nothing reads.
-    equb &00, &00, &00, &00, &00, &00, &00, &00, &00, &00  ; Zeros
-; Number of the key each hero carries, or 0.
 .hero_key
     equb &00, &00, &00, &00, &00
 ; Set when the hero has just swapped keys, so the key dropped is not picked straight back up.
@@ -512,7 +506,6 @@
     equb &05, &00, &00, &0a, &00, &1a, &30, &05
     equb &00, &0a, &00, &05, &0f, &1a, &30, &25
     equb &0f, &00, &00, &0a, &0a, &30, &30, &0a
-    equb &05, &00, &00, &0a, &00, &0f, &0f, &00  ; Not referenced
 ; Data of sprite &2B: 4 bytes x 12 rows.
 .sprite_teleporter
     equb &3f, &3f, &3f, &3f
@@ -528,7 +521,6 @@
     equb &3e, &3c, &3c, &38
     equb &30, &30, &30, &30
     equb &00, &2c, &00, &00, &00, &2c, &08, &00
-    equb &00, &0c, &08, &00, &04, &0f, &0e, &00  ; Not referenced
 ; Data of sprite &1E: 2 bytes x 10 rows.
 .sprite_digit_0
     equb &04, &08
@@ -663,7 +655,6 @@
     equb &00, &00, &00, &00
     equb &00, &00, &00, &00
     equb &00, &00, &00, &00
-    equb &0f, &1a, &30, &20, &00, &00, &00, &25  ; Not referenced
 ; Data of sprite &16: 4 bytes x 12 rows.
 .sprite_sparkle_0
     equb &00, &00, &00, &00
@@ -735,7 +726,6 @@
     equb &29, &21, &12, &16
     equb &3c, &3c, &3c, &3c
     equb &00, &00, &00, &00, &04, &00, &00, &00
-    equb &20, &00, &00, &00, &fd, &14, &93, &00  ; Not referenced
 ; Data of sprite &11: 4 bytes x 12 rows.
 .sprite_arrow_up
     equb &00, &00, &00, &00
@@ -807,7 +797,6 @@
     equb &00, &3e, &38, &00
     equb &00, &30, &30, &00
     equb &01, &00, &00, &00, &17, &00, &00, &90
-    equb &17, &00, &00, &00, &00, &00, &00, &00  ; Not referenced
 ; Data of sprite 0, the wall block (4 bytes x 12 rows), replaced by each level's own from the level file.
 .wall_sprite
     equb &0f, &0b, &0f, &07

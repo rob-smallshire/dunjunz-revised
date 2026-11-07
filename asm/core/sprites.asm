@@ -59,19 +59,6 @@
     equb &00, &00, &00, &00
     equb &00, &00, &00, &00
 ; ***************************************************************************************
-; Unused
-;
-; Leftover bytes, never read, including fragments of BASIC text ("?&A66=(rx%-lx%)",
-; "sprite%?&A99=by%-ty%+1").
-    equb &80, &00, &00, &32, &00        ; Not referenced
-    equs "eco"
-    equb &00, &8e, &0b, &94, &00, &00   ; Not referenced
-    equs "?&A66=(rx%-lx%)"
-    equb &81                            ; Not referenced
-    equs "2+1:sprite%?&A99=by%-ty%+1"
-    equb &0d, &03, &d4, &1d, &20, &d4, &31, &2c  ; Not referenced
-; Data of sprite &69: 3 bytes x 12 rows.
-; ***************************************************************************************
 ; Panel sprites: the shield and the small digits
 ;
 ; Sprite &69, the shield beside each hero's face in the status panel (3 bytes by 12
@@ -154,7 +141,6 @@
     equb &01
     equb &01
     equb &0a, &00, &05, &00, &00, &00, &0a, &00
-    equb &05, &00, &00, &00, &0a, &00, &05  ; Not referenced
 ; Data of sprite &74: 4 bytes x 3 rows.
 ; ***************************************************************************************
 ; Panel sprites: the missile and boots icons
@@ -192,7 +178,6 @@
     equb &00, &00, &08, &00, &0c, &0c, &04, &0c
     equb &08, &00, &08, &04, &0c, &08, &0c, &0c
     equb &1a, &35, &03, &8f, &7d, &9a, &82, &03
-    equb &00, &00, &00, &6d, &19, &00, &00, &00  ; Not referenced
 ; OSWORD 8 (ENVELOPE) parameter block for casting magic.
 .magic_envelope
     equb &03                            ; Envelope 3
@@ -248,20 +233,15 @@
 ; OSWORD 7 (SOUND) parameter block for a hero going down the exit.
 .exit_sound
     equw &12, &03, 250, 1               ; SOUND channel 2 (flush), envelope 3, pitch 250, duration 1
-    equb &00, &00, &00, &00, &04        ; Not referenced
     equs "50:50:$"
     equb &0c, &0c, &08, &00, &00, &00, &00, &00
     equb &00, &00, &00, &00, &0a, &00, &00, &00
-    equb &00, &14, &34, &38, &03, &03   ; Not referenced
     equs "4<:%"
-    equb &0f, &0f, &0f, &1e, &31, &38, &03  ; Not referenced
     equs "48<"
     equb &00, &00, &00, &00, &00, &00, &00, &00
-    equb &00, &00, &00, &00, &04        ; Not referenced
     equs "5?:"
     equb &18, &3f, &3a, &0c, &0c, &08, &00, &00
     equb &00, &00, &00, &00, &00, &00, &00, &00
-    equb &35, &00                       ; Not referenced
 ; Data of sprite &08: 4 bytes x 12 rows.
 ; ***************************************************************************************
 ; Hero and death sprites

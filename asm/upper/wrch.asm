@@ -95,4 +95,3 @@
     tax                                 ; ...from the stack
     lda plot_x                          ; The character, unchanged, from plot_x...
     jmp mos_oswrch_default              ; ...printed by the MOS 1.20 OSWRCH routine itself
-    equb &00                            ; Not referenced

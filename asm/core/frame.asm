@@ -338,17 +338,6 @@
     sta os_vsync_counter                ; ...about a third of a second before play resumes
 .not_paused
     rts                                 ; Return to play_level: this frame's update is done
-    equb &f9, &60                       ; Not referenced
-; ***************************************************************************************
-; Unused
-;
-; Zero bytes, which nothing reads.
-    equb &00, &00, &00, &00, &00, &00   ; Zeros
-; ***************************************************************************************
-; Unused
-;
-; Four &3C bytes, "<<<<", which nothing reads.
-    equs "<<<<"                         ; Not referenced
 ; ***************************************************************************************
 ; Play a level until it ends
 ;
@@ -512,6 +501,8 @@
     lda #&ff                            ; Start the next turn from facing up
     sta exit_spin                       ; ...-1, so the next frame's +2 gives 1
     dec exit_shrinks_left               ; Fourth turn done?
-    beq restore_exit                    ; Yes: the hero has gone; bring the exit back
+    bne shrink_hero_sprites             ; No: shrink the hero's sprites
+    jmp restore_exit                    ; Yes: the hero has gone; bring the exit back
+.shrink_hero_sprites
     clc                                 ; Shrink sprites base + 1 to + 7: a byte narrower...
     lda hero_sprites,x                  ; ...the hero's sprite base...

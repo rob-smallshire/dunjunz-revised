@@ -72,7 +72,6 @@
     jmp monster_done                    ; Pull the monster number and on to the next
 .emerge_done
     jmp monster_done                    ; Pull the monster number and on to the next
-    equb &00                            ; Not referenced
 ; Hit points a monster starts with on this level: 6 + 2 x the level number (8 on level 1).
 .monster_start_hit_points
     equb &08

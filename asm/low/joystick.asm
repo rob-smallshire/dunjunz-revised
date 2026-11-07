@@ -60,12 +60,6 @@
     tax                                 ; ...in X again, as on entry
 .add_thousand_points_done_joystick
     rts                                 ; Return to draw_score (or remove_absent_heroes)
-; ***************************************************************************************
-; Unused
-;
-; Zero bytes, which nothing reads.
-    equb &00, &00, &00, &00, &00, &00, &00, &00  ; Zeros
-; Data of sprite &15, &1A, &77: 4 bytes x 12 rows.
 .sprite_blank_joystick
     equb &00, &00, &00, &00
     equb &00, &00, &00, &00
@@ -79,7 +73,6 @@
     equb &00, &00, &00, &00
     equb &00, &00, &00, &00
     equb &00, &00, &00, &00
-    equb &00                            ; Not referenced
 ; ***************************************************************************************
 ; Choose the heroes and the sound
 ;
@@ -288,7 +281,6 @@
     jsr print_menu_joystick             ; Reprint the menu with the change
     jmp menu_key_loop_joystick          ; Wait for the next key
     equb &00, &00, &00, &00, &00, &00, &00, &00
-    equb &00, &4f                       ; Not referenced
 ; The hero menu: sixteen strings, each a text column and row followed by the characters and a carriage return. The YES/NO and ON/OFF entries are rewritten as the players toggle them.
 ; ***************************************************************************************
 ; Hero menu text
@@ -331,7 +323,6 @@
     equs "ON ", &0d
     equb &03, &14                       ; Column 3, row 20
     equs "SPACE TO PLAY", &0d
-    equb &00, &0d, &a9, &63             ; Not referenced
 ; ***************************************************************************************
 ; Take the heroes nobody plays out of the level
 ;
@@ -396,63 +387,8 @@
     cpx #4                              ; All four heroes done?
     bne remove_absent_heroes_loop_joystick  ; No: next hero
     rts                                 ; Return to level_loop: the level is ready to play
-; ***************************************************************************************
-; Unused
-;
-; Zero bytes, which nothing reads.
-    equb &00, &00                       ; Zeros
-; Each hero's score ten-thousands digit where add_thousand_points still keeps it, at its cassette address. Every other routine uses hero_score_ten_thousands at &08B0, and Coder reloads this page for every level, so the digit is lost between levels.
 .page6_score_ten_thousands_joystick
     equs "iiii"
-    equb &00, &00, &00, &00             ; Not referenced
-; Leftover contents of the MOS 1.20 line-input buffer (&0700) from the machine the image was saved on.
-; ***************************************************************************************
-; Leftovers in the line-input buffer
-;
-; Not used by the game. &0700 is the MOS 1.20 line-input buffer, and these bytes are what
-; it held when this image was saved: the command *SA. Control 400+3FF, then a fragment of
-; BBC BASIC assembler (label+2:LDA#255:.label JSR&30).
-.line_buffer_leftovers_joystick
-    equs "*SA. Control 400+3FF"
-    equb &0d, &0d, &0d                  ; Not referenced
-    equs "740"
-    equb &0d                            ; Not referenced
-    equb &0d, &54, &50, &0d, &0d, &50, &0d  ; Not referenced
-    equs "Alabel+2:LDA#255:.label JSR&30"
-; ***************************************************************************************
-; Load the game file and run it (not used)
-;
-; Point BYTEV at joystick_bytev (&0780), then build an OSFILE control block at &6B00
-; naming boot_filename with load address &2000, call the filing system's FILEV handler to
-; load the file, and jump to &2000. &0740 is the execution address in the *SAVE command
-; left at &0700, so this is the image's own entry point when it is *RUN, but nothing in
-; this release reaches it.
-.boot_loader_joystick
-    lda #<(joystick_bytev)              ; BYTEV = &0780, joystick_bytev...
-    sta bytev                           ; ...joystick_bytev's low byte into BYTEV
-    lda #>(joystick_bytev)              ; ...its high byte
-    sta bytev + 1                       ; ...so INKEY scans reach the joystick handler
-    ldx #<(boot_osfile_block)           ; X/Y = &6B00, the control block...
-    ldy #>(boot_osfile_block)           ; ...Y = &6B, its page
-    lda #<(boot_filename_joystick)      ; Filename address: boot_filename...
-    sta boot_osfile_block               ; ...into the block's filename pointer, low byte
-    lda #>(boot_filename_joystick)      ; ...boot_filename's high byte
-    sta boot_osfile_block + 1           ; ...into the filename pointer's high byte
-    lda #0                              ; Load address &00002000...
-    sta boot_osfile_block + 2           ; ...load address byte 0 = 0
-    sta boot_osfile_block + 4           ; ...byte 2 = 0
-    sta boot_osfile_block + 5           ; ...byte 3 = 0
-    lda #&20 ; ' '                      ; ...byte 1 = &20
-    sta boot_osfile_block + 3           ; ...so the file loads at &00002000
-    lda filev                           ; Copy FILEV into the JSR below...
-    sta boot_load_call_joystick + 1     ; ...FILEV low byte into the JSR's operand
-    lda filev + 1                       ; ...FILEV high byte
-    sta boot_load_call_joystick + 2     ; ...so the JSR calls the filing system directly
-    lda #&ff                            ; OSFILE &FF: load the file at the block's address
-.boot_load_call_joystick
-    jsr &3000                           ; Call FILEV (operand patched above)
-    jmp &2000                           ; Enter the loaded game at &2000
-    equb &00, &00, &00, &00             ; Not referenced
 ; ***************************************************************************************
 ; BYTEV handler: read a joystick for the Barbarian's keys
 ;
@@ -538,11 +474,3 @@
     rts                                 ; Return X = 0: the key is not pressed
 .joystick_pass_on
     jmp mos_osbyte_default              ; Not INKEY: on to the MOS 1.20 OSBYTE routine
-    equb &00, &00, &00, &00             ; Not referenced
-; Name of the file boot_loader loads, CR-terminated.
-; ***************************************************************************************
-; Name of the file boot_loader loads
-.boot_filename_joystick
-    equs "Dun1"
-    equb &0d, &00, &00, &00, &00, &00, &00, &00
-    equb &00, &00, &00, &00             ; Not referenced

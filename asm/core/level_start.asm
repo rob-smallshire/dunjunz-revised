@@ -385,19 +385,14 @@
 ; JSR OSCLI, and an RTS and "ODER" follow. Then the *DISC and *RUN CODER command lines
 ; read from &15E0 and &15E5, and more unused bytes.
     equb &f7, &ff, &a2, &e5, &a0, &15, &20, &f7
-    equb &ff                            ; Not referenced: stale code
-    equs "`ODER"                        ; Not referenced: RTS, then "ODER"
-    equb &0d, &ad                       ; Not referenced
     equs "DISC"                         ; "DISC": *DISC, for next_level_intercept
     equb &0d                            ; ...the CR ending *DISC
     equs "RUN CODER"                    ; "RUN CODER": *RUN CODER, for next_level_intercept
     equb &0d, &0f, &18                  ; CR ending *RUN CODER; then two bytes not referenced
-    equs "i0 "                          ; Not referenced
     equb &ee, &ff, &a9, &1c, &20, &ee, &ff, &a9
     equb &01, &20, &ee, &ff, &a9, &16, &20, &ee
     equb &ff, &a9, &0e, &20, &ee, &ff, &a9, &11
     equb &20, &ee, &ff, &a9, &11, &20, &ee, &ff
-    equb &a9, &02, &20, &ee, &ff, &60   ; Not referenced
 ; ***************************************************************************************
 ; Clear the screen
 ;
@@ -429,7 +424,6 @@ text_window_bottom = set_text_window_bottom+1
     lda #&0c                            ; ...VDU 12 to clear it
     jsr oswrch                          ; Send it: the window clears to the background
     rts                                 ; Return with the window left set
-    equb &60                            ; Not referenced
 ; Twenty VDU 25 (PLOT) commands, five bytes each (plot code, then x and y as 16-bit words), that draw the frames round the four views; read by draw_view_frames through (plot_x).
 ; ***************************************************************************************
 ; View frame PLOT commands
@@ -460,7 +454,6 @@ text_window_bottom = set_text_window_bottom+1
     equb &01, &08, &02, &00, &00
     equb &01, &00, &00, &84, &01
     equb &05, &28, &02, &66, &02
-    equb &08                            ; Not referenced
 ; The current level, 1-25, in binary. Set to 0 for a new game and counted up as each level starts. Read for the monsters' hit points (8 + 2 per level already played), for the level file's checksum entry (decrypt_level), and by check_for_victory, which looks for the Chalice only on level 25.
 .level_number
     equb &01
@@ -500,17 +493,14 @@ text_window_bottom = set_text_window_bottom+1
     inx                                 ; Next entry along the queue
     bne find_queue_end                  ; Keep looking (at most four entries are in use)
     equb &02, &02, &00, &00, &83, &00, &00, &00
-    equb &00, &00, &00, &31, &00, &8d   ; Not referenced
     equs "LEVEL"
 .level_filename_digits
     equb &31
     equb &0d, &0d, &70, &00, &8d, &35, &f8, &00
-    equb &00, &00, &00                  ; Not referenced
     equs "code"
     equb &00, &54, &12, &03, &17, &74, &00, &8c
     equb &50, &00, &00, &00, &fa, &16, &78, &00
     equb &8c, &50, &20, &00, &00, &02, &00, &79
-    equb &00, &8c                       ; Not referenced
 ; The current level in binary-coded decimal (&01-&25), counted up with decimal arithmetic as each level starts, for printing the level number and for the digits of the level's filename.
 .level_bcd
     equb &01

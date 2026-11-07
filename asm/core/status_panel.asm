@@ -142,7 +142,6 @@
     sta plot_y                          ; ...is the plot row
     jsr plot_sprite                     ; Plot the sprite in the hero's section
     rts                                 ; Return; plot_sprite leaves X and Y 0
-    equb &00, &09, &60                  ; Not referenced
 ; Starting hero_max_missiles for each hero: 3, 2, 1, 2.
 ; ***************************************************************************************
 ; Heroes' starting attributes
@@ -188,8 +187,3 @@ count = game_over_you_all+8
     equs "MOST LEVEL.      ", &0d
     equb &0a                            ; Line feed: a blank line
     equs "FIND THE CHALICE!", &00
-; ***************************************************************************************
-; Unused
-;
-; Leftover bytes: "ND!" and a zero, the end of an earlier message, then "&C2".
-    equb &4e, &44, &21, &00, &26, &43, &32  ; Not referenced

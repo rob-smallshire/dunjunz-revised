@@ -167,4 +167,3 @@
     lda hero_y,x                        ; ...and map y...
     sta cell_y                          ; ...as cell_y
     rts                                 ; Return with the hero's cell in cell_x, cell_y
-    equb &73                            ; Not referenced

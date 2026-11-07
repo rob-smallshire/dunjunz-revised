@@ -143,7 +143,6 @@
     sta hero_frame,x                    ; ...so the hero is seen to throw
     jmp draw_moved_hero                 ; Draw the hero where they stand; no erase needed
 ; Unreachable after the JMP: DEY and BNE find_missile_slot.
-    equb &88, &d0, &b8                  ; Not referenced
 ; Slot taken: try the hero's next one, up to the limit worked out above.
 .next_missile_slot
     iny                                 ; The hero's next slot

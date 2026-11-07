@@ -299,9 +299,3 @@
     equb %00000100
     equb %00011000
     equb %00000000
-; ***************************************************************************************
-; Unused
-;
-; Leftover bytes, never read: a second copy of the digit 9's eight glyph rows, then &74.
-    equs "<BB>"
-    equb &02, &04, &18, &00, &74        ; Not referenced

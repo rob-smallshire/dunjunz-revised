@@ -344,15 +344,6 @@ reset_call_address = reset_call+1
     jsr plot_at_cell                    ; ...plotted in every view showing it
     rts                                 ; Return with the Chalice drawn as its data stands
 ; ***************************************************************************************
-; Unused
-;
-; Leftover bytes, never read: &52 &78 &60 repeat the end of plot_chalice (JSR
-; plot_at_cell's operand, then RTS), and the rest reads as a fragment of BASIC text,
-; "(&1900+F".
-    equs "Rx`(&1900+F"
-    equb &25                            ; Not referenced
-; Data of sprite &73: 8 bytes x 24 rows.
-; ***************************************************************************************
 ; The Chalice sprite
 ;
 ; Sprite &73: 8 bytes by 24 rows, two cells by two, plotted at x &1A, y 4 by
@@ -383,9 +374,7 @@ reset_call_address = reset_call+1
     equb &00, &05, &0b, &03, &03, &07, &0a, &00
     equb &00, &00, &0f, &07, &0b, &0f, &00, &00
     equb &00, &00, &05, &0f, &0f, &0a, &00, &00
-    equb &3d, &26, &00                  ; Not referenced
 ; The WRCHV contents found at start-up, restored while the game uses the MOS's own text output.
 .saved_wrchv
     equb &a4                            ; WRCHV as saved at start-up (&E0A4 as loaded)
-    equb &e0, &00, &73                  ; Not referenced
 ; The game's font for the letters A-Z: eight bytes per letter, one per pixel row, in MOS character-definition format.

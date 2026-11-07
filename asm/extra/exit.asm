@@ -211,7 +211,7 @@
     dec cell_y                          ; Otherwise the cell to the left
     dec cell_x                          ; ...x - 1: unchecked, the last resort
     rts                                 ; Return, Y non-zero
-    equb &01, &3f                       ; Not referenced
+    ALIGN &100                          ; Page-aligned: pointers into it are its high byte and an offset
 ; Map of the cells that cannot hold an object, in the same layout as room_walls, from the level file: a bit is clear where an object lies (and on a few other cells), so the object list need only be searched when a hero steps onto a clear bit.
 .object_free_map
     equb &00, &02, &07, &07, &1f, &3f, &7d, &7f, &00, &30, &78, &fd, &7f, &ff, &80, &00  ; Not read: unpack_level copies each level's object-free map here
@@ -227,7 +227,6 @@
     equb &7e, &7a, &7e, &00, &7e, &3e, &7f, &00, &be, &0e, &0e, &0f, &0e, &0e, &be, &00  ; ...entries 160-175, not read
     equb &01, &01, &0f, &df, &07, &03, &01, &00, &08, &08, &5a, &fe, &fe, &fc, &b8, &00  ; ...entries 176-191, not read
     equb &00, &00, &00, &00, &00, &00, &00, &00, &00  ; ...entries 192-200, not read
-    equb &08, &2a, &00, &00, &00, &00, &00  ; Not referenced
 ; Data of sprite &53, &54, &55, &56, &57, &58, &59, &5A, &5B, &5C, &5D, &5E: 4 bytes x 12 rows.
 .sprite_drainer
     equb &11, &33, &33, &22
@@ -247,31 +246,26 @@
     equb &ff, &ff, &ff, &04, &ff, &ff, &06, &ff, &11, &ff, &ff, &ff, &1a, &03, &03, &0b  ; Not read: unpack_level copies each level's doors here
     equb &ff, &03, &09, &12, &ff        ; ...entries 16-20, not read
     equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
-    equb &ff, &ff, &ff                  ; Not referenced
 ; Map y of each door.
 .door_y
     equb &ff, &ff, &ff, &0d, &ff, &ff, &11, &ff, &16, &ff, &ff, &ff, &1a, &23, &27, &25  ; Not read: unpack_level copies each level's doors here
     equb &ff, &2b, &2e, &2b, &ff        ; ...entries 16-20, not read
     equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
-    equb &ff, &ff, &ff                  ; Not referenced
 ; Sprite of each door.
 .door_sprite
     equb &ff, &1c, &1c, &1d, &1c, &1c, &1d, &1d, &1d, &1d, &1d, &1c, &1c, &1d, &1d, &1c  ; Not read: unpack_level copies each level's door sprites here
     equb &1d, &1d, &1c, &1c, &ff        ; ...entries 16-20, not read
     equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
-    equb &ff, &ff, &ff                  ; Not referenced
 ; Map x of each key lying on the floor (entries 1-20); key n opens door n.
 .key_x
     equb &13, &ff, &ff, &1b, &ff, &ff, &17, &ff, &1c, &ff, &ff, &ff, &02, &15, &04, &09  ; Not read: unpack_level copies each level's keys here
     equb &ff, &04, &19, &17, &ff        ; ...entries 16-20, not read
     equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
-    equb &ff, &ff, &ff                  ; Not referenced
 ; Map y of each key on the floor.
 .key_y
     equb &25, &ff, &ff, &06, &ff, &ff, &09, &ff, &18, &ff, &ff, &ff, &29, &04, &0c, &14  ; Not read: unpack_level copies each level's keys here
     equb &ff, &0f, &03, &04, &ff        ; ...entries 16-20, not read
     equb &ff, &ff, &ff, &ff, &ff, &ff, &ff, &ff
-    equb &ff, &ff, &ff                  ; Not referenced
 ; Data of sprite &51: 4 bytes x 12 rows.
 .sprite_exit
     equb &03, &03, &03, &03

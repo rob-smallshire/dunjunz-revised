@@ -216,4 +216,3 @@
 .monster_step_done
     rts                                 ; Return: offsets grown, or the step ended
     equb &de, &35, &0d, &bd, &35, &0d, &d0, &00
-    equb &60                            ; Not referenced

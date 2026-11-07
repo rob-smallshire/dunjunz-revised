@@ -379,6 +379,7 @@
 ; OSWORD 7 (SOUND) parameter block for eating food, and (with its pitch changed) opening a door.
 .food_sound
     equw &13, &02, 200, 2               ; SOUND channel 3 (flush), envelope 2, pitch 200, duration 2
+    ALIGN &100                          ; Page-aligned: pointers into it are its high byte and an offset
 ; The level's wall map, from the level file: eight bytes per room, one per row of cells, one bit per cell (bit 7 at the left). Rooms are 8x8 cells and run four to a row of the map. The first eight bytes are also the MOS 1.20 definition of character 128, which the WRCHV handler overwrites with each glyph it prints; the level is unpacked only after the level number has been printed.
 .room_walls
     equb &54, &49, &4b, &50, &24, &55, &54, &48, &4f, &5b, &4b, &46, &2c, &44, &5d, &2f  ; Not read: unpack_level copies each level's wall map here

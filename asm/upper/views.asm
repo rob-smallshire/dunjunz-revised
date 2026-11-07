@@ -111,7 +111,6 @@
     sta map_ptr                         ; ...whose walls draw_room reads
     jsr draw_room                       ; Draw its walls and doors
     rts                                 ; Return with the bottom-right view redrawn
-    equb &60                            ; Not referenced
 ; ***************************************************************************************
 ; Draw a room
 ;
