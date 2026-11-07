@@ -65,3 +65,28 @@ def test_scripts_exercise_the_game(disc_filepaths):
     for name in ("scratch", "monster_x", "screen"):
         digests = {hashlib.sha1(s[name]).digest() for s in states}
         assert len(digests) > 10, name
+
+
+def sprites(run):
+    """Each sprite's width, height and data, read through the sprite tables."""
+    labels = run.labels
+    lo = run.peek(labels["sprite_addr_lo"], 120)
+    hi = run.peek(labels["sprite_addr_hi"], 120)
+    widths = run.peek(labels["sprite_widths"], 120)
+    heights = run.peek(labels["sprite_heights"], 120)
+    return [
+        (widths[n], heights[n], run.peek(hi[n] << 8 | lo[n], widths[n] * heights[n]))
+        for n in range(120)
+    ]
+
+
+def test_sprites_match_the_original(disc_filepaths):
+    """Every sprite, drawn or not in the scripted play, is unchanged."""
+    with game_run(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),
+                  ORIGINAL_GAME_RANGES) as run:
+        original = sprites(run)
+    with game_run(REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz"),
+                  REVISED_GAME_RANGES) as run:
+        revised = sprites(run)
+    for n, (a, b) in enumerate(zip(original, revised)):
+        assert a == b, f"sprite &{n:02X}"

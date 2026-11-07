@@ -359,38 +359,68 @@
 ; Four tables of 120 entries, indexed by sprite number: data address low bytes, high
 ; bytes, widths in bytes and heights in rows.
 .sprite_addr_lo
-    equb &00, &30, &60, &90, &c0, &f0, &20, &50
-    equb &c0, &80, &b0, &e0, &10, &40, &70, &a0
-    equb &d0, &00, &30, &60, &90, &cf, &00, &30
-    equb &60, &90, &cf, &00, &c0, &c8, &00, &14
-    equb &28, &3c, &50, &64, &78, &8c, &a0, &b4
-    equb &30, &60, &f0, &c0, &c0, &00, &30, &60
-    equb &90, &c0, &f0, &20, &50, &80, &b0, &e0
-    equb &10, &40, &70, &a0, &d0, &00, &30, &60
-    equb &90, &c0, &f0, &20, &50, &80, &b0, &e0
-    equb &10, &00, &30, &60, &90, &40, &70, &a0
-    equb &d0, &a0, &d0, &d0, &d0, &d0, &d0, &d0
-    equb &d0, &d0, &d0, &d0, &d0, &d0, &d0, &00
-    equb &30, &60, &c0, &90, &f0, &20, &50, &80
-    equb &b0, &00, &24, &29, &2e, &33, &38, &3d
-    equb &42, &47, &4c, &10, &60, &6c, &78, &cf
+    equb <wall_sprite, <sprite_ranger_up_0, <sprite_ranger_up_1, <sprite_ranger_right_0
+    equb <sprite_ranger_right_1, <sprite_ranger_down_0, <sprite_ranger_down_1, <sprite_ranger_left_0
+    equb <sprite_ranger_left_1, <sprite_monster_up_0, <sprite_monster_up_1, <sprite_monster_right_0
+    equb <sprite_monster_right_1, <sprite_monster_down_0, <sprite_monster_down_1, <sprite_monster_left_0
+    equb <sprite_monster_left_1, <sprite_arrow_up, <sprite_arrow_right, <sprite_arrow_down
+    equb <sprite_arrow_left, <sprite_blank, <sprite_sparkle_0, <sprite_sparkle_1
+    equb <sprite_sparkle_2, <sprite_sparkle_3, <sprite_blank, <sprite_key
+    equb <sprite_door_vertical, <sprite_door_horizontal, <sprite_digit_0, <sprite_digit_1
+    equb <sprite_digit_2, <sprite_digit_3, <sprite_digit_4, <sprite_digit_5
+    equb <sprite_digit_6, <sprite_digit_7, <sprite_digit_8, <sprite_digit_9
+    equb <sprite_treasure, <sprite_food, <sprite_cross, <sprite_teleporter
+    equb <sprite_trapdoor, <sprite_magic_user_up_0, <sprite_magic_user_up_1, <sprite_magic_user_right_0
+    equb <sprite_magic_user_right_1, <sprite_magic_user_down_0, <sprite_magic_user_down_1, <sprite_magic_user_left_0
+    equb <sprite_magic_user_left_1, <sprite_barbarian_up_0, <sprite_barbarian_up_1, <sprite_barbarian_right_0
+    equb <sprite_barbarian_right_1, <sprite_barbarian_down_0, <sprite_barbarian_down_1, <sprite_barbarian_left_0
+    equb <sprite_barbarian_left_1, <sprite_fighter_up_0, <sprite_fighter_up_1, <sprite_fighter_right_0
+    equb <sprite_fighter_right_1, <sprite_fighter_down_0, <sprite_fighter_down_1, <sprite_fighter_left_0
+    equb <sprite_fighter_left_1, <sprite_fireball_up, <sprite_fireball_right, <sprite_fireball_down
+    equb <sprite_fireball_left, <sprite_sword_up, <sprite_sword_right, <sprite_sword_down
+    equb <sprite_sword_left, <sprite_axe_up, <sprite_axe_right, <sprite_axe_down
+    equb <sprite_axe_left, <sprite_exit, <sprite_key_icon, <sprite_drainer
+    equb <sprite_drainer, <sprite_drainer, <sprite_drainer, <sprite_drainer
+    equb <sprite_drainer, <sprite_drainer, <sprite_drainer, <sprite_drainer
+    equb <sprite_drainer, <sprite_drainer, <sprite_drainer, <sprite_boots
+    equb <sprite_helmet, <sprite_potion, <sprite_weapons, <sprite_magic_sword
+    equb <sprite_skull_0, <sprite_skull_1, <sprite_skull_2, <sprite_skull_3
+    equb <sprite_skull_4, <sprite_shield, <sprite_small_digit_1, <sprite_small_digit_2
+    equb <sprite_small_digit_3, <sprite_small_digit_4, <sprite_small_digit_5, <sprite_small_digit_6
+    equb <sprite_small_digit_7, <sprite_small_digit_8, <sprite_small_digit_9, <sprite_chalice
+    equb <sprite_missile_icon, <sprite_boots_icon, <sprite_level_word, <sprite_blank
 ; High bytes of the sprite data addresses, indexed by sprite number.
 .sprite_addr_hi
-    equb &2d, &2d, &2d, &2d, &2d, &2d, &2e, &2e
-    equb &19, &2e, &2e, &2e, &2f, &2f, &2f, &2f
-    equb &2f, &2c, &2c, &2c, &2c, &04, &2b, &2b
-    equb &2b, &2b, &04, &29, &2c, &2a, &2a, &2a
-    equb &2a, &2a, &2a, &2a, &2a, &2a, &2a, &2a
-    equb &29, &29, &0a, &29, &2b, &23, &23, &23
-    equb &23, &23, &23, &24, &24, &24, &24, &24
-    equb &25, &25, &25, &25, &25, &26, &26, &26
-    equb &26, &26, &26, &27, &27, &27, &27, &27
-    equb &28, &17, &17, &17, &17, &28, &28, &28
-    equb &28, &22, &22, &21, &21, &21, &21, &21
-    equb &21, &21, &21, &21, &21, &21, &21, &0a
-    equb &0a, &0a, &0a, &0a, &19, &1a, &1a, &1a
-    equb &1a, &18, &18, &18, &18, &18, &18, &18
-    equb &18, &18, &18, &12, &18, &18, &18, &04
+    equb >wall_sprite, >sprite_ranger_up_0, >sprite_ranger_up_1, >sprite_ranger_right_0
+    equb >sprite_ranger_right_1, >sprite_ranger_down_0, >sprite_ranger_down_1, >sprite_ranger_left_0
+    equb >sprite_ranger_left_1, >sprite_monster_up_0, >sprite_monster_up_1, >sprite_monster_right_0
+    equb >sprite_monster_right_1, >sprite_monster_down_0, >sprite_monster_down_1, >sprite_monster_left_0
+    equb >sprite_monster_left_1, >sprite_arrow_up, >sprite_arrow_right, >sprite_arrow_down
+    equb >sprite_arrow_left, >sprite_blank, >sprite_sparkle_0, >sprite_sparkle_1
+    equb >sprite_sparkle_2, >sprite_sparkle_3, >sprite_blank, >sprite_key
+    equb >sprite_door_vertical, >sprite_door_horizontal, >sprite_digit_0, >sprite_digit_1
+    equb >sprite_digit_2, >sprite_digit_3, >sprite_digit_4, >sprite_digit_5
+    equb >sprite_digit_6, >sprite_digit_7, >sprite_digit_8, >sprite_digit_9
+    equb >sprite_treasure, >sprite_food, >sprite_cross, >sprite_teleporter
+    equb >sprite_trapdoor, >sprite_magic_user_up_0, >sprite_magic_user_up_1, >sprite_magic_user_right_0
+    equb >sprite_magic_user_right_1, >sprite_magic_user_down_0, >sprite_magic_user_down_1, >sprite_magic_user_left_0
+    equb >sprite_magic_user_left_1, >sprite_barbarian_up_0, >sprite_barbarian_up_1, >sprite_barbarian_right_0
+    equb >sprite_barbarian_right_1, >sprite_barbarian_down_0, >sprite_barbarian_down_1, >sprite_barbarian_left_0
+    equb >sprite_barbarian_left_1, >sprite_fighter_up_0, >sprite_fighter_up_1, >sprite_fighter_right_0
+    equb >sprite_fighter_right_1, >sprite_fighter_down_0, >sprite_fighter_down_1, >sprite_fighter_left_0
+    equb >sprite_fighter_left_1, >sprite_fireball_up, >sprite_fireball_right, >sprite_fireball_down
+    equb >sprite_fireball_left, >sprite_sword_up, >sprite_sword_right, >sprite_sword_down
+    equb >sprite_sword_left, >sprite_axe_up, >sprite_axe_right, >sprite_axe_down
+    equb >sprite_axe_left, >sprite_exit, >sprite_key_icon, >sprite_drainer
+    equb >sprite_drainer, >sprite_drainer, >sprite_drainer, >sprite_drainer
+    equb >sprite_drainer, >sprite_drainer, >sprite_drainer, >sprite_drainer
+    equb >sprite_drainer, >sprite_drainer, >sprite_drainer, >sprite_boots
+    equb >sprite_helmet, >sprite_potion, >sprite_weapons, >sprite_magic_sword
+    equb >sprite_skull_0, >sprite_skull_1, >sprite_skull_2, >sprite_skull_3
+    equb >sprite_skull_4, >sprite_shield, >sprite_small_digit_1, >sprite_small_digit_2
+    equb >sprite_small_digit_3, >sprite_small_digit_4, >sprite_small_digit_5, >sprite_small_digit_6
+    equb >sprite_small_digit_7, >sprite_small_digit_8, >sprite_small_digit_9, >sprite_chalice
+    equb >sprite_missile_icon, >sprite_boots_icon, >sprite_level_word, >sprite_blank
 ; Sprite widths in screen bytes, indexed by sprite number.
 .sprite_widths
     equb &04, &04, &04, &04, &04, &04, &04, &04
