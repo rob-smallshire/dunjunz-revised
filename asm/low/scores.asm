@@ -26,12 +26,12 @@
     bne add_thousand_points_done        ; No: return; draw_score shows the new digit
     lda #spr_digit_0                    ; Yes: thousands 0...
     sta hero_score_thousands,x          ; ...stored for this hero
-    inc page6_score_ten_thousands,x     ; ...and carry into the small ten-thousands digit
-    lda page6_score_ten_thousands,x     ; ...and check the new digit
+    inc hero_score_ten_thousands,x      ; ...and carry into the small ten-thousands digit
+    lda hero_score_ten_thousands,x      ; ...and check the new digit
     cmp #spr_small_digit_9 + 1          ; Past small 9: a score of 100,000?
     bne draw_ten_thousands              ; No: draw it under the score
     lda #spr_small_digit_9              ; Yes: it sticks at 9
-    sta page6_score_ten_thousands,x     ; ...stored for this hero
+    sta hero_score_ten_thousands,x      ; ...stored for this hero
 .draw_ten_thousands
     sta sprite_number                   ; Plot the ten-thousands digit under the score...
     lda #panel_left                     ; ...at the panel's left column
@@ -137,5 +137,3 @@
     cpx #4                              ; All four heroes done?
     bne remove_absent_heroes_loop       ; No: next hero
     rts                                 ; Return to level_loop: the level is ready to play
-.page6_score_ten_thousands
-    equs "iiii"
