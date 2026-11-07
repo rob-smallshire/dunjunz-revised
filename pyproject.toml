@@ -19,6 +19,9 @@ test = [
     "py65>=1.2",
     "pytest>=8",
     "pytest-timeout>=2",
+    "oaknut-disc>=13.6.1",
+    "oaknut-adfs>=13.6.1",
+    "oaknut-afs>=13.6.1",
 ]
 dev = [
     { include-group = "test" },

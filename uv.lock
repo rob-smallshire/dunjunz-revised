@@ -119,6 +119,9 @@ dependencies = [
 dev = [
     { name = "beebium", extra = ["imaging"] },
     { name = "beebium-server" },
+    { name = "oaknut-adfs" },
+    { name = "oaknut-afs" },
+    { name = "oaknut-disc" },
     { name = "py65" },
     { name = "pytest" },
     { name = "pytest-timeout" },
@@ -126,6 +129,9 @@ dev = [
 test = [
     { name = "beebium", extra = ["imaging"] },
     { name = "beebium-server" },
+    { name = "oaknut-adfs" },
+    { name = "oaknut-afs" },
+    { name = "oaknut-disc" },
     { name = "py65" },
     { name = "pytest" },
     { name = "pytest-timeout" },
@@ -138,6 +144,9 @@ requires-dist = [{ name = "oaknut-dfs", specifier = ">=12.18.2" }]
 dev = [
     { name = "beebium", extras = ["imaging"] },
     { name = "beebium-server" },
+    { name = "oaknut-adfs", specifier = ">=13.6.1" },
+    { name = "oaknut-afs", specifier = ">=13.6.1" },
+    { name = "oaknut-disc", specifier = ">=13.6.1" },
     { name = "py65", specifier = ">=1.2" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-timeout", specifier = ">=2" },
@@ -145,6 +154,9 @@ dev = [
 test = [
     { name = "beebium", extras = ["imaging"] },
     { name = "beebium-server" },
+    { name = "oaknut-adfs", specifier = ">=13.6.1" },
+    { name = "oaknut-afs", specifier = ">=13.6.1" },
+    { name = "oaknut-disc", specifier = ">=13.6.1" },
     { name = "py65", specifier = ">=1.2" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-timeout", specifier = ">=2" },
@@ -241,6 +253,56 @@ wheels = [
 ]
 
 [[package]]
+name = "natsort"
+version = "8.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/a9/a0c57aee75f77794adaf35322f8b6404cbd0f89ad45c87197a937764b7d0/natsort-8.4.0.tar.gz", hash = "sha256:45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581", size = 76575, upload-time = "2023-06-20T04:17:19.925Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl", hash = "sha256:4732914fb471f56b5cce04d7bae6f164a592c7712e1c85f9ef585e197299521c", size = 38268, upload-time = "2023-06-20T04:17:17.522Z" },
+]
+
+[[package]]
+name = "oaknut-adfs"
+version = "13.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "oaknut-basic" },
+    { name = "oaknut-discimage" },
+    { name = "oaknut-file" },
+    { name = "oaknut-filesystem" },
+    { name = "typename" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/aa/66b3d7ca1d9db8bf8d3a8ba5c4ea468424d599c273160f3b0e527f73fa78/oaknut_adfs-13.6.1.tar.gz", hash = "sha256:c51597d039f96ef98d83cd2548964e13d8d47646154e5a3e49b88130e53a5c0e", size = 143819, upload-time = "2026-11-07T14:23:00.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/16/46/3b1602ea765fd913846cfa4fd1ad3372b7e41b11eeeb25b6071709993550/oaknut_adfs-13.6.1-py3-none-any.whl", hash = "sha256:b4ee9ce2bbc9953f7fa413343067658b78983fb14c6875d7a4a395109f5a4b88", size = 87001, upload-time = "2026-11-07T14:22:38.671Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "oaknut-cli" },
+]
+
+[[package]]
+name = "oaknut-afs"
+version = "13.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "oaknut-adfs" },
+    { name = "oaknut-discimage" },
+    { name = "oaknut-file" },
+    { name = "oaknut-filesystem" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8a/51/9012056daae511b3405e966b1c2fae3144b3db3739e09950c660dd117b44/oaknut_afs-13.6.1.tar.gz", hash = "sha256:3b88c025bb640b8ae160748484548da310c28286674128e5247e3700ee0d65f0", size = 209890, upload-time = "2026-11-07T14:23:01.509Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/95/b41936246c1a14813fdfc65352f2d3baa2cb4f9d33403cb3c47d14e2e389/oaknut_afs-13.6.1-py3-none-any.whl", hash = "sha256:873e2976daa6a0fa5bb97b222c6afdec9d187e6808217fb3831b325e6120dba6", size = 160010, upload-time = "2026-11-07T14:22:39.835Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "oaknut-cli" },
+]
+
+[[package]]
 name = "oaknut-basic"
 version = "13.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -295,6 +357,36 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/34/47/f841ebdcb9609cf598fed33a2988d43c4d5b0491187b6f05d3b5f642a8a1/oaknut_dfs-13.6.1.tar.gz", hash = "sha256:84dffe6a703f851aa0cb260813bf5f3ce8745b40f2821ddb87ee3d1dec7855f4", size = 117986, upload-time = "2026-11-07T14:23:04.672Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/df/18/5650bc91c5ad31a1952fb69446b26e3cff38eb94870e9e9179342af47d27/oaknut_dfs-13.6.1-py3-none-any.whl", hash = "sha256:9b7620b455cb16b4b9b9614b893cba3176ab2c3df92d5bb4c183854fe0cc1a8e", size = 59487, upload-time = "2026-11-07T14:22:43.807Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "oaknut-cli" },
+]
+
+[[package]]
+name = "oaknut-disc"
+version = "13.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asyoulikeit" },
+    { name = "click" },
+    { name = "exit-codes" },
+    { name = "natsort" },
+    { name = "oaknut-adfs", extra = ["cli"] },
+    { name = "oaknut-afs", extra = ["cli"] },
+    { name = "oaknut-cli" },
+    { name = "oaknut-dfs", extra = ["cli"] },
+    { name = "oaknut-exception" },
+    { name = "oaknut-file" },
+    { name = "oaknut-filesystem" },
+    { name = "oaknut-hfe", extra = ["cli"] },
+    { name = "oaknut-romfs", extra = ["cli"] },
+    { name = "rich" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/52/9e3301acdd5c7ef60e16a672aed518f52e6f0e651bbc32007b045fb7f990/oaknut_disc-13.6.1.tar.gz", hash = "sha256:34dd84a8264ce3dfee1f4b80e32c125f8f85af391782d68468fb33a6fb95a718", size = 148677, upload-time = "2026-11-07T14:23:05.617Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/3e/a2c62be3f160f513520ad257902983362da07e4fa10683aa8e501e2edf40/oaknut_disc-13.6.1-py3-none-any.whl", hash = "sha256:958a4bb51ecb5c6ed514ccb70564c14f2ba71a19c877b7694131d5a7866bacbc", size = 58446, upload-time = "2026-11-07T14:22:44.775Z" },
 ]
 
 [[package]]
@@ -361,6 +453,46 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c5/a1/a169aac8252c6067f34f857697b2043af4607cff0d762102e81452d02d8f/oaknut_filesystem-13.6.1.tar.gz", hash = "sha256:08938bdda55816e81ab0fa1ebc69375595a85b9ed561738fa0626c1db5c9bf0f", size = 45468, upload-time = "2026-11-07T14:23:13.715Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/14/b4/7b48c16a5e875fcfe66e5b6d1b5ba88b53c7f89de5a028b4807fe8e4cb8e/oaknut_filesystem-13.6.1-py3-none-any.whl", hash = "sha256:6becf110a9622d948a2bb767d9dcd39c10342b772cf6de097e73824a8f2bb724", size = 40119, upload-time = "2026-11-07T14:22:56.08Z" },
+]
+
+[[package]]
+name = "oaknut-hfe"
+version = "13.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "oaknut-exception" },
+    { name = "oaknut-extension" },
+    { name = "oaknut-filesystem" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d6/5b/916f25bc327e3e3dee3257eee14352c05f0808498baa50860ae8da498fda/oaknut_hfe-13.6.1.tar.gz", hash = "sha256:28c274b19999e9ba35407e4cb98b7d7617ad02d6dd9b90ead96d51d9959b8d81", size = 29596, upload-time = "2026-11-07T14:23:14.382Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c6/29/7047984a8b3bae97fdba1914b70e3baf6e475c11bbcb4b512ee36f7ffe8e/oaknut_hfe-13.6.1-py3-none-any.whl", hash = "sha256:af285babc8c29ba13ff5f341680fb4fed61ec4a00d3237cd87621ce36b9eb596", size = 25272, upload-time = "2026-11-07T14:22:56.959Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "oaknut-cli" },
+    { name = "oaknut-file" },
+]
+
+[[package]]
+name = "oaknut-romfs"
+version = "13.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "oaknut-basic" },
+    { name = "oaknut-discimage" },
+    { name = "oaknut-file" },
+    { name = "oaknut-filesystem" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/18/6b/bd75eb8b86b722a0b0883d3e8ebab9a0891d83745ac7ac9b276c169be097/oaknut_romfs-13.6.1.tar.gz", hash = "sha256:06269fa2b98dd51c99dd37206090bcff6f5966bba827b69ec89c5450aa4abaf9", size = 45033, upload-time = "2026-11-07T14:23:15.028Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7d/85/50dbd1100b0943caf13ac5b4534789b5efdab9d2c74fc3306c94daaae0ba/oaknut_romfs-13.6.1-py3-none-any.whl", hash = "sha256:20cf833b2833d1e9cab28cee5ada72da51d514f3bb4a08953e4d5ea5a15b8289", size = 31901, upload-time = "2026-11-07T14:22:58.087Z" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "oaknut-cli" },
 ]
 
 [[package]]
