@@ -42,6 +42,18 @@ filing system, and keeps it resident. The goals:
 7. **Release.** Title screen and boot banner with the version, the disc
    title, and a CI and release workflow like Don't Dither!'s.
 
+## Program structure
+
+Decided 2026-11-07:
+
+- **Front end**: the title screen and the hero menu. The menu moves out of
+  the game to save space.
+- **Resident game**: everything needed in play, loaded once, with levels
+  loaded from the filing system.
+- **Victory overlay**: loaded only when a hero reaches the Chalice.
+- After game over, the front end and the game are loaded again, as the
+  original's reset does. That is acceptable over Econet too.
+
 ## Testing
 
 - `tests/` runs the baseline and the revised game in beebium across the
