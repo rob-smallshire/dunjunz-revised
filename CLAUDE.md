@@ -16,12 +16,27 @@ uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace bo
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
 ```
 
+## Source layout
+
+- `asm/dunjunz.asm` is the game's top level: it INCLUDEs the modules under
+  `asm/` (paths from the project root, where beebasm runs) between the
+  `org`/`copyblock` directives that place them. The modules are grouped by
+  the memory each is assembled into: `defs/` (constants and addresses),
+  `core/` (stored at &3000, runs at &08C0-&1FFF), `low/` (the keyboard and
+  joystick images of &0400-&07FF), `extra/` (&2000-&2FFF), `coder/` (Coder
+  at &5000 and the padding to &6E80) and `upper/` (&6E80-&7FFF). The title
+  and loader are `asm/title.asm`.
+- While `REVISED_MUST_MATCH_ORIGINAL` is set in `build.py`, the revised
+  sources must assemble to the original bytes. A change that is meant to
+  alter the output turns it off, and from then on the tests compare
+  behaviour with the baseline instead.
+
 ## Source of truth
 
 - `asm/original/game.asm` and `title.asm` are the acornaeology reassembly
   of the Model B disc side (`~/Code/acornaeology/dunjunz`, commit
-  `fd674e9`). They must keep reassembling to `reference/disc/` exactly. The
-  revised game is developed from them, and every change is a commit.
+  `fd674e9`), kept unchanged for the baseline disc. They must keep
+  reassembling to `reference/disc/` exactly.
 - The peer agent `dunjunz-disassembly` owns the disassembly. Ask it about
   the original code's behaviour. Report back any finding that belongs in
   its `docs/findings.md`.

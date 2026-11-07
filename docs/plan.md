@@ -20,10 +20,10 @@ filing system, and keeps it resident. The goals:
 1. **Baseline** (done). The acornaeology reassembly of the Model B disc
    side in `asm/original/`, verified byte-for-byte against the 1987 files.
    `build/dunjunz-original.ssd` boots it (DFS 0.90 only).
-2. **Modular source, still identical.** Split `game.asm` into modules
-   under `asm/`. Each module carries its annotations from the disassembly.
-   The build still verifies the output against the original. This is
-   where the revised source begins.
+2. **Modular source, still identical** (done). `asm/dunjunz.asm` and its
+   modules, with the disassembly's annotations and without its stale
+   cross-reference comments. The build verifies the output against the
+   original.
 3. **Portable.** Replace the MOS 1.20 dependencies: our own row table,
    chain WRCHV, VDU 23 for character 128, no &D9CD. Test on DFS 0.90 for
    now.

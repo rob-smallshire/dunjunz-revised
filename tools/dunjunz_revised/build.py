@@ -1,12 +1,20 @@
 """Build Dunjunz Revised.
 
-For now the build has one stage, the baseline: it assembles the reassembled
-1987 disc release in asm/original/ (taken from the acornaeology disassembly),
-checks every file it saves byte-for-byte against the files of the original
-disc in reference/disc/, and writes build/dunjunz-original.ssd, an 80-track
-disc that boots the original game (which needs DFS 0.90). The baseline is the
-fixed point the revised game is measured against: its behaviour, minus the
-bugs, is what the revised game must keep.
+Two stages:
+
+- The baseline. The reassembled 1987 disc release in asm/original/ (taken
+  from the acornaeology disassembly) is assembled, every file it saves is
+  checked byte-for-byte against the original disc's in reference/disc/, and
+  build/dunjunz-original.ssd boots it (it needs DFS 0.90). Its behaviour,
+  minus the bugs, is what the revised game must keep.
+- The revised game: asm/dunjunz.asm and asm/title.asm, written to
+  build/dunjunz-revised.ssd. While REVISED_MUST_MATCH_ORIGINAL is set, the
+  revised sources are still a rearrangement of the original and must
+  assemble to the same bytes.
+
+The revised sources INCLUDE each other by paths from the project root, so
+beebasm runs there, and their SAVEs go into a disc image (-do) rather than
+into the working directory; the files are read back out of it.
 
     uv run dr-build
 """
@@ -20,6 +28,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from dunjunz_revised._version import __version__
+
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
 ASM_DIRPATH = PROJECT_DIRPATH / "asm"
 ORIGINAL_ASM_DIRPATH = ASM_DIRPATH / "original"
@@ -28,7 +38,29 @@ BUILD_DIRPATH = PROJECT_DIRPATH / "build"
 ORIGINAL_BUILD_DIRPATH = BUILD_DIRPATH / "original"
 ORIGINAL_DISC_FILEPATH = BUILD_DIRPATH / "dunjunz-original.ssd"
 
+REVISED_BUILD_DIRPATH = BUILD_DIRPATH / "revised"
+REVISED_DISC_FILEPATH = BUILD_DIRPATH / "dunjunz-revised.ssd"
+
 ORIGINAL_DISC_TITLE = "DUNJUNZ 1987"
+
+
+def disc_title(version: str) -> str:
+    """A DFS title (at most 12 characters) for a version: 2026.1 gives
+    "DUNJUNZ 26.1". The full name is on the title screen and in !BOOT."""
+    year, n = version.split(".")
+    title = f"DUNJUNZ {int(year) % 100:02d}.{n}"
+    assert len(title) <= 12, title
+    return title
+
+
+REVISED_DISC_TITLE = disc_title(__version__)
+
+# The beebasm sources of the revised game and the files each SAVEs.
+REVISED_SOURCES = {
+    "dunjunz.asm": ("Dun1", "Coder"),
+    "title.asm": ("Dunjunz",),
+}
+REVISED_MUST_MATCH_ORIGINAL = True
 
 # The beebasm sources of the original release and the files each SAVEs.
 ORIGINAL_SOURCES = {
@@ -75,6 +107,42 @@ def assemble(source_filepath: Path, output_dirpath: Path) -> None:
     )
     if result.returncode != 0:
         raise RuntimeError(f"beebasm failed on {source_filepath.name}:\n{result.stdout}\n{result.stderr}")
+
+
+def assemble_to_disc(source_filepath: Path, saved_filenames: tuple[str, ...], output_dirpath: Path) -> None:
+    """Assemble a source from the project root, its SAVEs going to a scratch
+    disc image, and copy the saved files out of the image into output_dirpath."""
+    from oaknut.dfs.dfs import DFS
+
+    output_dirpath.mkdir(parents=True, exist_ok=True)
+    scratch_filepath = output_dirpath / f"{source_filepath.stem}.ssd"
+    scratch_filepath.unlink(missing_ok=True)
+    result = subprocess.run(
+        [find_beebasm(), "-i", str(source_filepath.relative_to(PROJECT_DIRPATH)),
+         "-do", str(scratch_filepath.relative_to(PROJECT_DIRPATH)), "-v"],
+        cwd=PROJECT_DIRPATH,
+        capture_output=True,
+        text=True,
+    )
+    (output_dirpath / f"{source_filepath.stem}.lst").write_text(result.stdout)
+    if result.returncode != 0:
+        raise RuntimeError(f"beebasm failed on {source_filepath.name}:\n{result.stderr}")
+    with DFS.from_file(scratch_filepath) as dfs:
+        for saved_filename in saved_filenames:
+            (output_dirpath / saved_filename).write_bytes(bytes(dfs.path(f"$.{saved_filename}").read_bytes()))
+    scratch_filepath.unlink()
+
+
+def verify_against_reference(built_dirpath: Path, filenames) -> None:
+    for filename in filenames:
+        built = (built_dirpath / filename).read_bytes()
+        reference = (REFERENCE_DIRPATH / filename).read_bytes()
+        if built != reference:
+            first = next((i for i, (a, b) in enumerate(zip(built, reference)) if a != b), min(len(built), len(reference)))
+            raise RuntimeError(
+                f"{filename} does not match the original: first difference at offset &{first:04X} "
+                f"({len(built)} bytes built, {len(reference)} original)"
+            )
 
 
 def sha256(data: bytes) -> str:
@@ -132,8 +200,27 @@ def write_disc(
             )
 
 
+def build_revised() -> Path:
+    """Assemble the revised game and write its disc."""
+    if REVISED_BUILD_DIRPATH.exists():
+        shutil.rmtree(REVISED_BUILD_DIRPATH)
+    for source_filename, saved_filenames in REVISED_SOURCES.items():
+        assemble_to_disc(ASM_DIRPATH / source_filename, saved_filenames, REVISED_BUILD_DIRPATH)
+        if REVISED_MUST_MATCH_ORIGINAL:
+            verify_against_reference(REVISED_BUILD_DIRPATH, saved_filenames)
+
+    built = {name for names in REVISED_SOURCES.values() for name in names}
+    dunjunz = ORIGINAL_DISC_FILES[0]
+    boot = DiscFile("!BOOT", dunjunz.load_address, dunjunz.exec_address)
+    files = [(boot, REVISED_BUILD_DIRPATH / dunjunz.name)]
+    for f in ORIGINAL_DISC_FILES:
+        files.append((f, (REVISED_BUILD_DIRPATH if f.name in built else REFERENCE_DIRPATH) / f.name))
+    write_disc(REVISED_DISC_FILEPATH, REVISED_DISC_TITLE, 2, files)
+    return REVISED_DISC_FILEPATH
+
+
 def build() -> list[Path]:
-    return [build_original()]
+    return [build_original(), build_revised()]
 
 
 def main() -> None:
