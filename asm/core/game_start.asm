@@ -25,22 +25,16 @@
     lda #osbyte_bell_envelope           ; OSBYTE &D4: bell envelope...
     ldx #0                              ; ...0, a fixed amplitude
     ldy #0                              ; Y = 0: replace the setting with X
-; Map x of each missile (12 slots, three per hero).
-.missile_x
     jsr osbyte                          ; Set it: BEL plays at a fixed amplitude  osbyte: bell envelope
     lda #osbyte_bell_frequency          ; OSBYTE &D5: bell pitch...
     ldx #&64 ; 'd'                      ; ...&64, SOUND pitch 100
     ldy #0                              ; Y = 0: replace the setting with X
     jsr osbyte                          ; Set it: BEL plays at pitch &64  osbyte: bell frequency
-; Map y of each missile.
-.missile_y
     lda #osbyte_bell_duration           ; OSBYTE &D6: bell duration...
     ldx #1                              ; ...1, in twentieths of a second
     ldy #0                              ; Y = 0: replace the setting with X
     jsr osbyte                          ; Set it: BEL lasts a twentieth of a second  osbyte: bell duration
     lda wrchv                           ; Save the MOS's WRCHV...
-; Direction of each missile: 1 up, 2 right, 3 down, 4 left; bit 7 set for a missile just fired; 0 for an empty slot.
-.missile_direction
     sta saved_wrchv                     ; ...its low byte into saved_wrchv...
     lda wrchv + 1                       ; ...and its high byte...
     sta saved_wrchv + 1                 ; ...in saved_wrchv, for drawing the view frames
@@ -54,20 +48,14 @@ missile_sprite_base = set_wrchv_low+1
 ; Take the level number from Coder, and start a new game on the first level, or go straight to the level on later ones, the heroes having carried over in &08C0-&0CFF.
     lda level_count_copy                ; levels_started, which Coder left in &8E...
     sta level_number                    ; ...is level_number, 1-25, for the checksum and Chalice
-; INKEY key number of each hero's up key.
-.hero_key_up
     lda victory_pitch                   ; Copy &8F, which Coder does not set...
 .store_level_bcd
 ; INKEY key number of each hero's down key.
 hero_key_down = store_level_bcd+2
     sta level_bcd                       ; ...into level_bcd, which nothing here reads
     lda levels_started                  ; First level of a game?
-; INKEY key number of each hero's right key.
-.hero_key_right
     cmp #1                              ; ...levels_started 1, the first level of a game?
     beq start_new_game                  ; Yes: reset the heroes and run the hero menu
-; INKEY key number of each hero's left key.
-.hero_key_left
     jmp level_loop                      ; No: the heroes carry over; straight to the level
 .start_new_game
 ; INKEY key number of each hero's fire key.
@@ -77,18 +65,12 @@ hero_key_fire = start_new_game+1
     equs "eon5"
     equb &0d, &18, &bd, &04, &0d, &69, &03  ; Not referenced
     equb &9d                            ; Not referenced
-; Health tens digit, as a digit sprite (&1E-&27); &1D when the hero is dead.
-.hero_health_tens
     equb &1d
     equb &1d                            ; Hero 1's health tens
     equb &1d                            ; Hero 2's health tens
     equb &1d, &d0                       ; Hero 3's health tens
-; Health units digit, as a digit sprite.
-.hero_health_units
     equs "''''"
     equb &18, &bd, &08, &0d, &6d, &40, &0d  ; Not referenced
-; The room each hero's view shows: a pointer into room_walls, low byte then high byte, for each hero in turn (hero x at view_room + 2x).
-.view_room
     equb &18
     equb &0c                            ; Hero 0's view room, high byte
     equb &68                            ; Hero 1's view room, low byte
@@ -98,24 +80,14 @@ hero_key_fire = start_new_game+1
     equb &30                            ; Hero 3's view room, low byte
     equb &0c, &00, &00, &bd, &04, &0d, &85, &71
     equb &8a                            ; Hero 3's view room, high byte
-; Sprite base of each hero's missiles: arrows, fireballs, axes, swords.
-.hero_missile_sprites
     equb &10
     equs "DLHh"
-; Sprite base of each hero, to which direction and frame are added.
-.hero_sprites
     equb &00
     equs ",4<"
     equb &00, &0d, &d9                  ; Not referenced
-; Non-zero while the hero wears Boots of Speed.
-.hero_has_boots
     equb &00, &00, &00, &00
-; Bit masks for the cells of a room row, left to right: &80, &40 ... &01.
-.bit_masks
     equb &80, &40, &20, &10, &08, &04, &02, &01
     equb &b9, &30, &0d, &9d, &08, &0d, &4c, &d4
-; Pixel row of each hero's section of the status panel.
-.hero_panel_y
     equb &0e, &3c, &6a, &98, &e8, &e0, &04, &d0
     equb &0a, &a2, &00, &ad, &40, &0d, &49, &01
     equb &8d, &40, &0d, &8e, &ff, &0d, &68, &a8
@@ -123,11 +95,7 @@ hero_key_fire = start_new_game+1
     equs "h(`"
     equb &de, &dd, &df, &f0, &f2, &f1, &f3, &f8
     equb &fa, &f9, &fb, &f4, &f6, &f5, &f7, &fc  ; Not referenced
-; Index of the last object to search when looking backwards for a teleporter (&1E, from workspace_template).
-.teleport_last
     equb &1e, &fd
-; Written by draw_victory_ring; not read.
-.victory_sprite_copy
     equb &00, &a9, &00, &8d, &9f, &16, &8d, &ff
     equb &16
 .new_game_reset_heroes

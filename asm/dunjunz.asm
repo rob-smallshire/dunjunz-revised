@@ -71,6 +71,7 @@
 
 INCLUDE "asm/defs/constants.asm"
 INCLUDE "asm/defs/addresses.asm"
+INCLUDE "asm/defs/workspace.asm"
 
     org &3000
 

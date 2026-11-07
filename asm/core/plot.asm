@@ -405,59 +405,27 @@
 .hit_sound
     equw &10, &01, 6, 6                 ; SOUND channel 0 (flush), envelope 1, pitch 6, duration 6
     equb &12, &00, &03, &00, &c8, &00, &0a, &00  ; Not referenced
-; General-purpose scratch byte.
-.scratch
     equb &a9
-; Second scratch byte.
-.scratch2
     equb &30
-; Map x of the cell being drawn, tested or moved to. plot_at_cell replaces it with the pixel offset within the room.
-.cell_x
     equb &8d
-; Map y of the cell being drawn, tested or moved to. plot_at_cell replaces it with the pixel offset within the room.
-.cell_y
     equb &bd
-; Room of the cell being drawn, as an offset into room_walls.
-.cell_room
     equb &08, &a9
-; Map x of the creature being moved, before the move.
-.previous_x
     equb &20
-; Map y of the creature being moved, before the move.
-.previous_y
     equb &8d
-; Pixel offset of the hero being moved, before the move.
-.previous_offset_x
     equb &be
-; Pixel offset of the hero being moved, before the move.
-.previous_offset_y
     equb &08, &a9, &00, &8d, &bc, &08, &ea
-; Map x of each hero.
-.hero_x
     equb &4c, &10, &0d, &0d, &a2
-; Map y of each hero.
-.hero_y
     equb &80, &a0, &0d, &a9
     equb &00                            ; Not read: page &0D is refreshed from workspace_template
-; Direction each hero faces: 1 up, 3 right, 5 down, 7 left; 0 when the hero is not in play.
-.hero_direction
     equb &8d
     equb &84                            ; Hero 1's direction
     equb &0d                            ; Hero 2's direction
     equb &8d, &85                       ; Hero 3's direction
     equb &0d                            ; Not read: page &0D is refreshed from workspace_template
-; Animation frame of each hero (0 or 1), added to its sprite.
-.hero_frame
     equb &ad
     equb &12                            ; Hero 1's frame
     equb &02                            ; Hero 2's frame
     equb &8d, &2f                       ; Hero 3's frame
-; Frames left in each hero's step between cells.
-.hero_step
     equb &0d, &ad, &13, &02, &8d
-; Each hero's horizontal pixel offset while between cells.
-.hero_offset_x
     equb &30, &0d, &a9, &06, &20, &ee
-; Each hero's vertical pixel offset while between cells.
-.hero_offset_y
     equb &ff
