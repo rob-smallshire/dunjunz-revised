@@ -64,7 +64,6 @@
 ;     X: corrupted
 ;     Y: corrupted
 .check_level
-    jsr decrypt_level                   ; Decrypt and check the level Coder loaded at &6B00
     lda #&18                            ; Bottom row 24 for clear_text_area's window...
     sta text_window_bottom              ; ...over the &16 in its VDU 28: the full 25 rows
     rts                                 ; Return to start_level: the level is ready to unpack

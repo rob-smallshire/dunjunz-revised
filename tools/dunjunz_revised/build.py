@@ -62,7 +62,7 @@ REVISED_SOURCES = {
     "dunjunz.asm": ("Dun1", "Coder"),
     "title.asm": ("Dunjunz",),
 }
-REVISED_MUST_MATCH_ORIGINAL = True
+REVISED_MUST_MATCH_ORIGINAL = False
 
 # The beebasm sources of the original release and the files each SAVEs.
 ORIGINAL_SOURCES = {
@@ -217,6 +217,32 @@ def write_disc(
             )
 
 
+LEVEL_FILE_ADDRESS = 0x6B00
+LEVEL_FILE_LENGTH = 0x2B0
+STONES_LEVEL_25_OFFSET = 0x6B00 - 0x6680    # Stones loads at &6680; level 25 is its end
+
+
+def decrypt_level(data: bytes) -> bytes:
+    """A 1987 level file as the game uses it: each byte XORed with the low
+    byte of its address at &6B00."""
+    assert len(data) == LEVEL_FILE_LENGTH
+    return bytes(b ^ ((LEVEL_FILE_ADDRESS + i) & 0xFF) for i, b in enumerate(data))
+
+
+def write_revised_levels(output_dirpath: Path) -> list[DiscFile]:
+    """Levels 1-25, unencrypted, as LevelN files. Level 25 comes from the end of Stones."""
+    files = []
+    for n in range(1, 26):
+        if n == 25:
+            stones = (REFERENCE_DIRPATH / "Stones").read_bytes()
+            encrypted = stones[STONES_LEVEL_25_OFFSET:STONES_LEVEL_25_OFFSET + LEVEL_FILE_LENGTH]
+        else:
+            encrypted = (REFERENCE_DIRPATH / f"Level{n}").read_bytes()
+        (output_dirpath / f"Level{n}").write_bytes(decrypt_level(encrypted))
+        files.append(DiscFile(f"Level{n}", LEVEL_FILE_ADDRESS, LEVEL_FILE_ADDRESS))
+    return files
+
+
 def build_revised() -> Path:
     """Assemble the revised game and write its disc."""
     if REVISED_BUILD_DIRPATH.exists():
@@ -226,12 +252,15 @@ def build_revised() -> Path:
         if REVISED_MUST_MATCH_ORIGINAL:
             verify_against_reference(REVISED_BUILD_DIRPATH, saved_filenames)
 
-    built = {name for names in REVISED_SOURCES.values() for name in names}
     dunjunz = ORIGINAL_DISC_FILES[0]
     boot = DiscFile("!BOOT", dunjunz.load_address, dunjunz.exec_address)
     files = [(boot, REVISED_BUILD_DIRPATH / dunjunz.name)]
     for f in ORIGINAL_DISC_FILES:
-        files.append((f, (REVISED_BUILD_DIRPATH if f.name in built else REFERENCE_DIRPATH) / f.name))
+        if f.name in ("Dunjunz", "Coder", "Dun1"):
+            files.append((f, REVISED_BUILD_DIRPATH / f.name))
+        elif f.name == "Screen":
+            files.append((f, REFERENCE_DIRPATH / f.name))
+    files += [(f, REVISED_BUILD_DIRPATH / f.name) for f in write_revised_levels(REVISED_BUILD_DIRPATH)]
     write_disc(REVISED_DISC_FILEPATH, REVISED_DISC_TITLE, 2, files)
     return REVISED_DISC_FILEPATH
 

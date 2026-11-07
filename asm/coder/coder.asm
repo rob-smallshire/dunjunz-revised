@@ -368,16 +368,9 @@
     sec                                 ; ...minus 1 (carry set for the subtract)...
     sbc #1                              ; ...24 for level 25
     sta level_number                    ; ...in level_number (the core copy overwrites it)
-    cmp #&18                            ; Levels started 25: the last level?
-    bne load_level_file                 ; Not level 25: load its LEVELnn file
-    ldx #<(stones_command)              ; Yes: *LOAD STONES 6680, whose end is level 25...
-    ldy #>(stones_command)              ; ...high byte of the command
-    jsr oscli                           ; ...putting level 25 at &6B00
-    jmp level_loaded                    ; ...and skip the LEVELnn load
-.load_level_file
-    ldx #<(level_command)               ; No: *LOAD LEVELnn 6B00
+    ldx #<(level_command)               ; *LOAD LEVELnn 6B00, levels 1-25 alike
     ldy #>(level_command)               ; ...high byte of the command
-    jsr oscli                           ; ...to &6B00, where check_level decrypts it
+    jsr oscli                           ; ...to &6B00, for unpack_level
 ; Turn the VDU back on and copy the keyboard or joystick image of &0400-&07FF into place.
 .level_loaded
     lda #6                              ; VDU 6: VDU output on again
@@ -488,8 +481,6 @@
 ; Coder's commands
 ;
 ; Three OSCLI command lines, each ended by a CR.
-.stones_command
-    equs "LOAD STONES 6680", &0d        ; *LOAD STONES 6680, for level 25
 .dun1_command
     equs "LOAD DUN1", &0d               ; *LOAD DUN1
 .level_command
