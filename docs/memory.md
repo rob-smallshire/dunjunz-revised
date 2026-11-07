@@ -21,10 +21,12 @@ workspace).
 | ANFS 4.18 + DFS 2.26 | &1C00 | ANFS &1900, DFS &1A00-&1BFF | &0E00-&18FF | NFS NMI handler |
 | NFS 3.65 + DFS 2.26 | &1B00 | DFS &1900-&1AFF | | NFS NMI handler |
 | DFS 2.26 + ADFS 1.30 | &1F00 | DFS &1C00, ADFS &1E00 | | `RTI` |
-| MMFS2 | &1B00 (reported) | | | |
+| MMFS2 alone | &1900 (reported) | | | |
+| MMFS2 + DFS | &1B00 (reported) | | | |
 | MMFS (from its source) | &1D00 (reported) | &1700- | &0E00-&16FF (service 1 claims to &17) | |
 
-MMFS is not yet emulated by beebium; its figures come from `~/Code/MMFS`
+MMFS and MMFS2 are not yet emulated by beebium. The MMFS2 figures are as
+reported. Those for MMFS come from `~/Code/MMFS`
 (`SERVICE01_claim_absworkspace` raises the limit to &17, and
 `SERVICE0A_claim_statworkspace` saves to private workspace) and from
 <https://www.bygonebytes.co.uk/mmfs.html>.
