@@ -21,7 +21,9 @@ into the working directory; the files are read back out of it.
 
 from __future__ import annotations
 
+import ast
 import hashlib
+import re
 import shutil
 import subprocess
 import sys
@@ -89,6 +91,19 @@ ORIGINAL_DISC_FILES = (
 )
 
 
+def parse_labels(text: str) -> dict[str, int]:
+    """Parse beebasm's symbol dump, a list of dict literals such as
+    [{'start':6400L,...}], into one name-to-address mapping."""
+    dump = text[text.index("[{"):text.rindex("}]") + 2]
+    scopes = ast.literal_eval(re.sub(r"(\d+)L\b", r"\1", dump))
+    return {name: address for scope in scopes for name, address in scope.items()}
+
+
+def read_labels(build_dirpath: Path, source_stem: str) -> dict[str, int]:
+    """The labels of a source as last built into build_dirpath."""
+    return parse_labels((build_dirpath / f"{source_stem}.labels").read_text())
+
+
 def find_beebasm() -> str:
     beebasm = shutil.which("beebasm")
     if beebasm is None:
@@ -100,7 +115,8 @@ def assemble(source_filepath: Path, output_dirpath: Path) -> None:
     """Assemble a source with beebasm, its SAVEd files landing in output_dirpath."""
     output_dirpath.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
-        [find_beebasm(), "-i", str(source_filepath), "-v"],
+        [find_beebasm(), "-i", str(source_filepath), "-v",
+         "-d", "-labels", f"{source_filepath.stem}.labels"],
         cwd=output_dirpath,
         capture_output=True,
         text=True,
@@ -119,7 +135,8 @@ def assemble_to_disc(source_filepath: Path, saved_filenames: tuple[str, ...], ou
     scratch_filepath.unlink(missing_ok=True)
     result = subprocess.run(
         [find_beebasm(), "-i", str(source_filepath.relative_to(PROJECT_DIRPATH)),
-         "-do", str(scratch_filepath.relative_to(PROJECT_DIRPATH)), "-v"],
+         "-do", str(scratch_filepath.relative_to(PROJECT_DIRPATH)), "-v",
+         "-d", "-labels", str((output_dirpath / f"{source_filepath.stem}.labels").relative_to(PROJECT_DIRPATH))],
         cwd=PROJECT_DIRPATH,
         capture_output=True,
         text=True,

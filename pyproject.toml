@@ -9,6 +9,7 @@ dependencies = [
 
 [project.scripts]
 dr-build = "dunjunz_revised.build:main"
+dr-sizes = "dunjunz_revised.sizes:main"
 dr-machines = "dunjunz_revised.machines:main"
 
 [dependency-groups]

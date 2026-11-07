@@ -12,6 +12,7 @@ triage: `docs/bugs.md`. Record decisions there as they are made.
 uv run dr-build                                   # assemble, verify the baseline, write build/*.ssd
 uv run pytest                                     # tests (beebium)
 uv run dr-machines                                # PAGE per machine configuration
+uv run dr-sizes                                   # address range and size of each game module
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
 ```
@@ -30,6 +31,19 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   sources must assemble to the original bytes. A change that is meant to
   alter the output turns it off, and from then on the tests compare
   behaviour with the baseline instead.
+
+## Equivalence
+
+`tests/test_equivalence.py` runs the original and the revised game frame by
+frame with the same scripted keys and compares their state and screen
+(`tools/dunjunz_revised/lockstep.py`). The System VIA timer reads that
+supply the game's randomness are patched at run time into calls to a
+generator at &0060-&006F, so the revised game must leave that zero page
+alone. A state block that is rearranged needs its own entry in
+`STATE_BLOCKS`. A deliberate change in behaviour, such as a bug fix, makes
+the comparison fail from the first frame it affects. Such a change is
+tested on its own, and the comparison is then made against the fixed
+behaviour or restricted around it.
 
 ## Source of truth
 
