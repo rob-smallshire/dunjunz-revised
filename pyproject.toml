@@ -1,0 +1,82 @@
+[project]
+name = "dunjunz-revised"
+version = "2026.1"
+description = "Dunjunz Revised -- Julian Avis's 1986 four-player dungeon game for the BBC Micro, fixed and made filing-system agnostic"
+requires-python = ">=3.12"
+dependencies = [
+    "oaknut-dfs>=12.18.2",
+]
+
+[project.scripts]
+dr-build = "dunjunz_revised.build:main"
+dr-machines = "dunjunz_revised.machines:main"
+
+[dependency-groups]
+test = [
+    "beebium[imaging]",
+    "beebium-server",
+    "py65>=1.2",
+    "pytest>=8",
+    "pytest-timeout>=2",
+]
+dev = [
+    { include-group = "test" },
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tools/dunjunz_revised"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 600
+
+# Resolve from public PyPI, whatever the machine's default index, so that
+# uv.lock records public URLs and CI can install from it.
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+
+# Single source of truth for the version, managed by bump-my-version. The
+# version is YEAR.N: every release bumps N (there is no patch part).
+#
+#   uvx bump-my-version bump minor      # 2026.1 -> 2026.2, edits files, commit + tag
+#   uvx bump-my-version bump major      # new year: 2026.5 -> 2027.0; then bump minor
+#
+# Validate first with:
+#   uvx bump-my-version bump --dry-run --verbose minor
+
+[tool.bumpversion]
+current_version = "2026.1"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)"
+serialize = ["{major}.{minor}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = false
+ignore_missing_files = false
+allow_dirty = false
+commit = true
+tag = true
+tag_name = "v{new_version}"
+tag_message = "Release v{new_version}"
+message = "Release v{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+# The version the build puts on the disc title, !BOOT and the title screen.
+[[tool.bumpversion.files]]
+filename = "tools/dunjunz_revised/_version.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "uv.lock"
+regex = true
+search = 'name = "dunjunz-revised"\nversion = "{current_version}"'
+replace = 'name = "dunjunz-revised"\nversion = "{new_version}"'
