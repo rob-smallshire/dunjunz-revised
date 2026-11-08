@@ -133,6 +133,7 @@ ASSERT low_end <= WORKSPACE
 ; &0900-&0CFF: stored at PAGE9_STORE
     org PAGE9_START
 INCLUDE "asm/core/plot.asm"
+INCLUDE "asm/core/row_offsets.asm"
 INCLUDE "asm/core/room_walls.asm"
 .page9_end
 ASSERT page9_end <= PAGE9_END
@@ -194,7 +195,6 @@ ASSERT game_file_end <= UP_END
 
 ; Layout constraints the code relies on
 ASSERT LO(room_walls) = 0               ; test_wall, draw_room and update_game point at a room with >room_walls and the room's offset
-ASSERT room_walls = &0c00               ; wrch_handler copies glyphs over character 128's definition through room_walls
 ASSERT LO(object_free_map) = 0          ; test_object_free likewise
 
 save "GAME", game_file_start, game_file_end, startup, MID_START

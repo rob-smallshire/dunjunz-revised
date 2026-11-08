@@ -66,6 +66,7 @@
     cmp #4                              ; ...fewer than four dead?
     bne next_level                      ; Yes: on to the next level
 ; Every hero is dead: print the game-over message over the views, then wait for a key, or for the time limit, before starting again. The MOS goes on counting the vsync counter down at every vertical sync, so if it has passed 0 by the time the message is printed, the wait for it to reach 0 lasts until it comes round, up to 256 vsyncs (about 5 s), and only then are keys flushed and read.
+.game_over
     ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
     jsr send_vdu                        ; ...cleared
     ldx #0                              ; Print from the message's start

@@ -229,7 +229,8 @@
     equb &17, &00, &01, &00, &00, &00, &00, &00, &00, &00  ; 6845 register 1 = 0: no characters shown
     equb &17, &00, &0a, &20, &00, &00, &00, &00, &00, &00  ; Register 10 = &20: no cursor
 .play_display_vdu
-    equb 20
+    equb 22
+    equb &11, &02                       ; VDU 17,2: text colour 2, for the menu and the messages
     equb &17, &00, &01, &50, &00, &00, &00, &00, &00, &00  ; Register 1 = 80 characters shown
     equb &17, &00, &06, &17, &00, &00, &00, &00, &00, &00  ; Register 6 = 23 character rows shown
 .play_rows_vdu

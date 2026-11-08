@@ -89,9 +89,8 @@
 ;
 ; Set screen_ptr to the screen address of byte column plot_x on pixel row plot_y: &3000 +
 ; 640 x (plot_y DIV 8) + (plot_y MOD 8) + 8 x plot_x. plot_sprite calls it once per
-; sprite, for the top-left byte. The multiplication by 640 is done with a table inside
-; MOS 1.20 (mos_row_offsets, two bytes per character row, high byte first), so this only
-; works with that MOS. The high byte of 8 x plot_x is plot_x DIV 32, taken from plot_x's
+; sprite, for the top-left byte. The multiplication by 640 is done with row_offsets, two
+; bytes per character row, high byte first. The high byte of 8 x plot_x is plot_x DIV 32, taken from plot_x's
 ; top three bits with four ROLs.
 ;
 ; On Entry:
@@ -109,11 +108,11 @@
     lsr a                               ; ...plot_y DIV 4: 2 x the character row, + plot_y bit 2...
     and #&fe                            ; ...bit 0 cleared: the row's pair of table bytes
     tay                                 ; ...as the index into the row table
-    lda mos_row_offsets,y               ; High byte of row x 640, from the MOS table...
+    lda row_offsets,y                   ; High byte of row x 640, from row_offsets...
     clc                                 ; ...(carry clear for the add)
     adc #>(screen_start)                ; ...plus &30: the screen starts at &3000
     sta screen_ptr_hi                   ; ...as the screen address high byte
-    lda mos_row_offsets_lo,y            ; Low byte of row x 640
+    lda row_offsets_lo,y                ; Low byte of row x 640
     sta screen_ptr                      ; ...as the low byte
     lda plot_y                          ; Add the pixel row within the character...
     and #7                              ; ...plot_y MOD 8...

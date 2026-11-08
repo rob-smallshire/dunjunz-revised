@@ -33,7 +33,6 @@ hero_score_ten_thousands = &08b0  ; Each hero's score ten-thousands digit, as a 
 hero_absent              = &08b4  ; Non-zero for each hero switched off on the menu.
 levels_started           = &08bc  ; Number of levels started, kept by Coder in page &08, which survives the reset between levels.
 level_digits             = &08bd  ; The level number as ASCII digits for the level's filename: one digit and a space, or two digits.
-mos_row_offsets          = &c375  ; MOS 1.20's table of the offsets of the screen's character rows, high byte then low byte.
 system_via_t1c_l         = &fe44
 oswrch                   = &ffee
 osbyte                   = &fff4
@@ -348,11 +347,11 @@ oscli                    = &fff7
     lsr a                               ; ...(character row x 2)...
     and #&fe                            ; ...even, to index the table's byte pairs
     tay                                 ; ...as Y, indexing the row offset table
-    lda mos_row_offsets,y               ; High byte of row x 640, from the MOS table...
+    lda title_row_offsets,y             ; High byte of row x 640, from title_row_offsets...
     clc                                 ; ...plus &3000, the screen start
     adc #>(screen_start)                ; ...the screen starts at &3000
     sta screen_ptr_hi                   ; ...as the high byte
-    lda mos_row_offsets + 1,y           ; Low byte of row x 640
+    lda title_row_offsets + 1,y         ; Low byte of row x 640
     sta screen_ptr                      ; ...as the low byte
     lda plot_y                          ; Plus the pixel row within the character row
     and #7                              ; ...plot_y MOD 8...
@@ -795,4 +794,11 @@ oscli                    = &fff7
     equb &00, &00, &00, &2a, &00, &00, &00  ; Frame 6: 7 bytes by 28 rows
 .dasmos_end
 
-save "Dunjunz", dasmos_start, dasmos_end, title_start, dasmos_start
+; Each character row's offset from the start of the screen, row x 640, high byte then low
+; byte (the 1987 release read MOS 1.20's own table at &C375).
+.title_row_offsets
+FOR row, 0, 31
+    equb HI(row * 640), LO(row * 640)
+NEXT
+.title_end
+save "Dunjunz", dasmos_start, title_end, title_start, dasmos_start
