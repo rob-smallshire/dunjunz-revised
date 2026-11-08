@@ -138,12 +138,12 @@ play, so the baseline disc `*RUN`s a copy of `Dunjunz` as `!BOOT`
 Booted with SHIFT+BREAK, DFS 2.26 and DNFS 1.20 `*RUN` the option-2
 `!BOOT` with interrupts disabled (P = &35 and &25 at the title's entry);
 DFS 0.90 does not (&23). A `*RUN` typed at the keyboard enters with them
-enabled under all three (measured by the disassembly). The title never
-enables them, and `*RUN GAME` from it keeps the flags, so the game started
-with them disabled. MOS 1.20's OSRDCH doesn't
-enable them, and a fresh key press is found only through the System VIA's
-keyboard interrupt, so the hero menu never saw one. `startup` begins with
-`cli`. The tests that hold SPACE from boot didn't show this, so
+enabled under all three (measured by the disassembly). The 1987 Model B
+disc has boot option 0, so it never took this path. `*RUN GAME` from the
+title keeps the flags. MOS 1.20's OSRDCH doesn't enable interrupts, and a
+fresh key press is found only through the System VIA's keyboard interrupt,
+so the hero menu never saw one. The title's entry and `startup` both begin
+with `cli`. The tests that hold SPACE from boot didn't show this, so
 `tests/test_menu.py` taps each key and releases it, as a player does.
 
 ## Constraints on moving code

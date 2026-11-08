@@ -113,11 +113,15 @@ osasci                   = &ffe3
 ; cursor off), and leave_title blanks the display, disables VDU output and runs *RUN
 ; GAME, which never returns.
 ;
+; Booted with SHIFT+BREAK, DFS 2.26 and DNFS 1.20 *RUN !BOOT, this program, with
+; interrupts disabled, so they are enabled first. The game's startup does the same.
+;
 ; On Exit:
 ;     A: corrupted
 ;     X: corrupted
 ;     Y: corrupted
 .title_start
+    cli                                 ; Enable interrupts, whatever *RUN left
     lda #osbyte_read_tube_presence      ; A second processor fitted? OSBYTE &EA...
     ldx #0                              ; ...X = 0, Y = &FF: read it
     ldy #&ff                            ; ...unchanged
