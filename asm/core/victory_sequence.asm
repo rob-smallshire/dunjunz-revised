@@ -219,12 +219,12 @@
     lda #spr_blank                      ; Erase the ring
     sta victory_sprite                  ; ...by making the blank the ring's sprite...
     jsr draw_victory_ring               ; ...and drawing the ring with it
-    ldx #&c1                            ; Clear what is left of the Chalice...
+    ldx #&c0                            ; Clear what is left of the Chalice, its &C0 bytes...
     lda #0                              ; ...to zeros, black pixels
 .clear_chalice_sprite
     sta sprite_chalice - 1,x            ; Clear a byte of the Chalice's sprite data
     dex                                 ; Next byte down
-    bne clear_chalice_sprite            ; &C1 bytes: the &C0 and the unused byte after
+    bne clear_chalice_sprite            ; Until all     bne clear_chalice_sprite            ; &C1 bytes: the &C0 and the unused byte afterC0 are clear
     jsr plot_chalice                    ; ...and replot it, now black: the Chalice is gone
     lda #&ff                            ; Pause 255 vertical syncs (about five seconds)
     sta os_vsync_counter                ; ...which the MOS counts down at each vsync

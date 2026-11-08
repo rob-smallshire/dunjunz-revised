@@ -26,21 +26,22 @@ filing system, and keeps it resident. The goals:
    modules, with the disassembly's annotations and without its stale
    cross-reference comments. The build verifies the output against the
    original.
-3. **Portable.** Replace the MOS 1.20 dependencies: our own row table,
-   chain WRCHV, VDU 23 for character 128, no &D9CD. Test on DFS 0.90 for
-   now.
-4. **Resident, with levels from the filing system.** Rearrange memory as
-   in `memory.md`. Leave page &0D alone. Store the levels unencrypted.
-   Load the victory sequence when it's needed. Load levels through
-   OSFILE with the borrow-and-reselect protocol. Measure the space as we
-   go (`unused_space` equivalents for our own listing). Run the
-   test matrix in `machines.py`.
+3. **Portable** (done). Our own screen row table, WRCHV chained through
+   `saved_wrchv`, VDU 23 for character 128, and no jumps into MOS 1.20.
+4. **Resident, with levels from the filing system** (done). Memory as in
+   `memory.md`: pages &0D and &0E and &1700-&1BFF left to the filing
+   system, &0F00-&16FF borrowed with service call &0A. Levels unencrypted,
+   loaded with OSFILE, with Setup (the level set-up code) beside them.
+   Tested under nine disc and network filing system configurations, and
+   over Econet from a Level 3 File Server (`tests/test_filing_systems.py`,
+   `tests/test_network.py`). The victory sequence stays resident: it fits,
+   and loading it mid-game would need screen memory that is on show.
 5. **Fixes.** One at a time from `bugs.md`, each with a test against the
    baseline.
 6. **Joysticks.** An ADVAL driver, chosen per hero on the hero menu, with
    SPItFIRE detected for heroes 3 and 4.
-7. **Release.** Title screen and boot banner with the version, the disc
-   title, and a CI and release workflow like Don't Dither!'s.
+7. **Release.** The version is on the title screen and in the disc title
+   (done). Still to do: a CI and release workflow like Don't Dither!'s.
 
 ## Program structure
 

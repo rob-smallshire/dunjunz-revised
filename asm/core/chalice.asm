@@ -3,7 +3,7 @@
 ;
 ; Sprite &73: 8 bytes by 24 rows, two cells by two, plotted at x &1A, y 4 by
 ; plot_chalice. In the victory sequence dissolve_chalice zeros random bytes of it and
-; erase_victory_ring zeros all of it (and the byte after); the game then starts afresh.
+; erase_victory_ring zeros all of it; the game then starts afresh.
 .sprite_chalice
     equb &00, &00, &05, &0f, &0f, &0a, &00, &00
     equb &00, &00, &0f, &07, &0b, &0f, &00, &00
@@ -29,7 +29,4 @@
     equb &00, &05, &0b, &03, &03, &07, &0a, &00
     equb &00, &00, &0f, &07, &0b, &0f, &00, &00
     equb &00, &00, &05, &0f, &0f, &0a, &00, &00
-; The WRCHV contents found at start-up, restored while the game uses the MOS's own text output.
-.saved_wrchv
-    equb &a4                            ; WRCHV as saved at start-up (&E0A4 as loaded)
 ; The game's font for the letters A-Z: eight bytes per letter, one per pixel row, in MOS character-definition format.

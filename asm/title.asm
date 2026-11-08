@@ -1,3 +1,8 @@
+; Dunjunz Revised: the title
+;
+; DUNJUNZ, run by !BOOT (a copy of it) and by the game after game over or victory: it
+; shows the title picture until a key is pressed, then runs GAME.
+
 ; Constants
 title_plot_reversed          = &7b  ; Zero page flag for title_plot_star: non-zero plots each row right to left
 star_x                       = &80  ; Zero page: each star's byte column (three stars)
@@ -5,9 +10,7 @@ star_y                       = &83  ; Zero page: each star's pixel row
 star_frame                   = &86  ; Zero page: each star's animation frame, 0-6
 star_frame_step              = &89  ; Zero page: each star's frame step, +1 or -1
 star_place                   = &8c  ; Zero page: each star's place in star_places_x
-game_next_level_intercept    = &15b5  ; The game's BREAK intercept that runs Coder for the next level
 spr_no_small_digit           = &69  ; The game's sprite &69, drawn where a hero has no ten-thousands digit
-opcode_jmp                   = &4c  ; The JMP opcode, which arms the MOS BREAK intercept
 screen_start                 = &3000  ; The start of MODE 2 screen memory
 osbyte_escape_break_effect   = &c8
 osbyte_set_cursor_editing    = &04
@@ -28,10 +31,9 @@ sprite_data_ptr_hi       = &79  ; Address of the next frame byte to plot, high b
 sprite_number            = &7a  ; Star frame to plot, 0-6.
 os_zp_fa                 = &fa  ; MOS zero-page workspace, mixed into the choice of a star's place.
 os_irq_a                 = &fc  ; The MOS's copy of A at the last interrupt, mixed into the choice of a star's place.
-os_break_intercept       = &0287  ; MOS BREAK intercept: a JMP here is called during a reset. Dunjunz points it at the game's next-level intercept and arms it before running Coder.
 hero_score_ten_thousands = &08b0  ; Each hero's score ten-thousands digit, as a small digit sprite; &69 for none.
 hero_absent              = &08b4  ; Non-zero for each hero switched off on the menu.
-levels_started           = &08bc  ; Number of levels started, kept by Coder in page &08, which survives the reset between levels.
+levels_started           = &08bc  ; Number of levels started, counted by the game's next_leveln levels.
 level_digits             = &08bd  ; The level number as ASCII digits for the level's filename: one digit and a space, or two digits.
 system_via_t1c_l         = &fe44
 oswrch                   = &ffee
@@ -45,11 +47,7 @@ oscli                    = &fff7
 ; ***************************************************************************************
 ; Load the title screen while output is off
 ;
-; *DUNJUNZ is the Model B side's loader and title screen. It is run at title_start
-; (&2700), whose banner describes the whole run: set up page &08 for Coder and the game,
-; show the title picture with its twinkling stars until a key is pressed, then select the
-; game's display and run Coder, which never returns. This first routine is one of its
-; steps. Load the title picture, SCREEN, straight into MODE 2 screen memory at &3280 with
+; One step of title_start, which describes the whole run. Load the title picture, SCREEN, straight into MODE 2 screen memory at &3280 with
 ; VDU output disabled, then enable output again. Called once, by title_start, after it
 ; has selected MODE 2 and made all sixteen colours black, so the picture arrives unseen
 ; and appears all at once when title_start restores the colours. VDU 21 keeps any filing
@@ -69,12 +67,11 @@ oscli                    = &fff7
     jsr oswrch                          ; ...so the VDU calls that follow take effect
     rts                                 ; Return with the picture in place, still unseen
 ; ***************************************************************************************
-; Disable VDU output and run Coder
+; Blank the display and run the game
 ;
-; The hand-over to Coder: VDU 21, then *CODER, which loads the level loader at &5000 and
-; runs it; it does not return. Called last by title_start, once the game's display is
-; selected and the BREAK intercept is armed. Coder starts with VDU output disabled, so no
-; filing system message reaches the screen, and enables it again with VDU 6.
+; The hand-over to GAME: blank the display (GAME loads into screen memory), disable VDU
+; output, so that no filing system message reaches the screen, and *RUN GAME, which does
+; not return. The game's startup enables output again.
 .leave_title
     ldx #0                              ; Blank the display: the game loads into screen memory
 .send_blank_vdu
@@ -98,27 +95,18 @@ oscli                    = &fff7
     equb &08, &2a, &15, &3c, &3d, &00, &33, &3c
     equb &39, &00                       ; Not used
 ; ***************************************************************************************
-; Set up, show the title and run Coder
+; Set up, show the title and run the game
 ;
-; The entry point of *DUNJUNZ (load &26C0, run at &2700), the loader and title screen. It
-; is run when the disc is turned over to this side (the other side's BOOT asks for that
-; and SPACE), and again after every game over, by the game's restart intercept (*DISC,
-; *DUNJUNZ) during the reset that ends the game. The run is a straight line in four
-; phases, marked by block comments below. Set-up: disable ESCAPE and make the cursor keys
-; return codes. Page &08, which the reset between levels leaves alone: levels_started = 0
-; and level_digits = "0 ", which Coder advances to 1 and "1 " before loading Level1; for
-; each hero, hero_score_ten_thousands = &69 (no digit) and hero_absent = 0 (playing), so
-; every game starts with all four heroes switched on in the menu. The BREAK intercept's
-; address is set to &15B5 and left disabled. Title: select MODE 2 (*TV 255,1) with all
-; sixteen colours black, load SCREEN unseen, restore the colours, and twinkle_stars until
-; a key other than SHIFT or CTRL is pressed. Hand-over: select the game's display (*TV
-; 252,1, MODE 2, cursor off), *DISC, arm the BREAK intercept as JMP &15B5, and
-; leave_title disables VDU output and runs *CODER, which never returns. Coder starts with
-; ESCAPE disabled, VDU output disabled, the page &08 values above and the intercept
-; armed. Coder cancels the intercept among its first instructions, so it is armed only
-; while *CODER loads. A BREAK in that time jumps to &15B5, which holds the game's
-; next_level_intercept only if the game has already been played since power-on, as after
-; a game over.
+; The entry point of DUNJUNZ. The run is a straight line in phases, marked by block
+; comments below. Set-up: disable ESCAPE and make the cursor keys return codes. Page &08:
+; levels_started = 0 and level_digits = "0 ", which the game's next_level advances to 1
+; and "1 " before loading Level1; for each hero, hero_score_ten_thousands = &69 (no digit)
+; and hero_absent = 0 (playing), so every game starts with all four heroes switched on in
+; the menu. Title: select MODE 2 (*TV 255,1) with all sixteen colours black, load SCREEN
+; unseen, restore the colours, print the version, and twinkle_stars until a key other
+; than SHIFT or CTRL is pressed. Hand-over: select the game's display (*TV 252,1, MODE 2,
+; cursor off), and leave_title blanks the display, disables VDU output and runs *RUN
+; GAME, which never returns.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -132,9 +120,9 @@ oscli                    = &fff7
     lda #osbyte_set_cursor_editing      ; OSBYTE 4, 1: no cursor editing...
     ldx #1                              ; ...X = 1: the arrow keys and COPY give codes
     jsr osbyte                          ; ...instead of moving an editing cursor  Set cursor editing keys
-; Page &08 values for Coder and the game: the level counter and filename digits Coder advances, and each hero's score digit and menu switch.
-    lda #0                              ; Levels started = 0, for Coder
-    sta levels_started                  ; ...in page &08, which survives a reset
+; Page &08 values for the game: the level counter and filename digits next_level advances, and each hero's score digit and menu switch.
+    lda #0                              ; Levels started = 0...
+    sta levels_started                  ; ...in page &08, for the game
     lda #'0'                            ; Level digits = "0 "...
     sta level_digits                    ; ...first digit '0'...
     lda #' '                            ; ...second digit a space
@@ -147,7 +135,6 @@ oscli                    = &fff7
     sta hero_absent,x                   ; ...at &08B4 (the menu tables)
     dex                                 ; Next hero, counting 3 down to 0
     bpl init_hero_tables                ; Until all four heroes are set
-; Point the BREAK intercept at the game's next-level code, but leave it disabled until Coder is about to run.
 ; Title: select MODE 2 with every colour black, load the picture, restore the colours, then twinkle stars on it until a key is pressed.
     ldx #<(tv_title_command)            ; *TV 255,1: vertical shift -1 line, interlace off
     ldy #>(tv_title_command)            ; ...(X, Y) = the command line
@@ -185,7 +172,7 @@ oscli                    = &fff7
     lda #osbyte_flush_buffer            ; OSBYTE &15: flush the buffer X
     jsr osbyte                          ; ...X is whatever OSCLI left: buffer unknown  Flush specific buffer X
     jsr twinkle_stars                   ; Twinkle stars until a key is pressed
-; Hand-over: a key was pressed, so select the game's display and DFS, arm the BREAK intercept and run Coder.
+; Hand-over: a key was pressed, so select the game's display and run the gamer.
     ldx #<(tv_game_command)             ; *TV 252,1: vertical shift -4 lines, interlace off
     ldy #>(tv_game_command)             ; ...(X, Y) = the command line
     jsr oscli                           ; ...taking effect at the MODE change below

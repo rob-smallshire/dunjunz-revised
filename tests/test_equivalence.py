@@ -20,7 +20,7 @@ from dunjunz_revised.build import (
 )
 from dunjunz_revised.lockstep import Script, game_run
 
-FRAMES = 400
+FRAMES = 1500
 
 # Sprites the revised game no longer has: &76, the word LEVEL, which only the
 # cassette game's level-number screen drew.
@@ -31,18 +31,33 @@ ORIGINAL_GAME_RANGES = ((0x0400, 0x3000), (0x6E80, 0x8000))
 REVISED_GAME_RANGES = ORIGINAL_GAME_RANGES
 
 
+def game_over_address(labels):
+    """Where the game-over path starts: the revised game labels it; the original's
+    is the VDU 28 sequence and a loop's set-up (34 bytes) before restore_message_spaces."""
+    if "game_over" in labels:
+        return labels["game_over"]
+    return labels["restore_message_spaces"] - 34
+
+
 def record(disc_filepath, labels, game_ranges, script, frames):
+    """The state at the start of each frame, up to frames frames or game over."""
     states = []
     with game_run(disc_filepath, labels, game_ranges) as run:
         states.append(run.state())
         for frame in range(frames):
-            run.next_frame(script.keys_for(frame))
+            if not run.next_frame(script.keys_for(frame), game_over_address(labels)):
+                states.append({"game over": frame.to_bytes(2, "little")})
+                break
             states.append(run.state())
     return states
 
 
 def first_difference(original, revised):
+    if len(original) != len(revised):
+        return f"{len(original)} states originally, {len(revised)} revised"
     for frame, (a, b) in enumerate(zip(original, revised)):
+        if a.keys() != b.keys():
+            return f"frame {frame}: {'game over' if 'game over' in b else 'play'} revised, the other originally"
         for name in a:
             if a[name] != b[name]:
                 offset = next(i for i, (x, y) in enumerate(zip(a[name], b[name])) if x != y)

@@ -167,11 +167,19 @@ class GameRun:
             keyboard.matrix_down(*inkey_to_matrix(inkey))
         self.held = set(keys)
 
-    def next_frame(self, keys: set[int]) -> None:
-        """Hold keys and run to the start of the next frame."""
+    def next_frame(self, keys: set[int], game_over_address: int | None = None) -> bool:
+        """Hold keys and run to the start of the next frame, or to
+        game_over_address if given and reached first: return whether the game
+        is still being played."""
         self.set_keys(keys)
-        self.bbc.debugger.run_to(self.labels[UPDATE_GAME], skip_current=True, timeout=60)
+        stop = self.bbc.debugger.add_breakpoint(game_over_address) if game_over_address is not None else None
+        try:
+            self.bbc.debugger.run_to(self.labels[UPDATE_GAME], skip_current=True, timeout=60)
+        finally:
+            if stop is not None:
+                stop.remove()
         self.frame += 1
+        return self.bbc.cpu.pc == self.labels[UPDATE_GAME]
 
     def address(self, name: str) -> int:
         """The address of a label, a fixed address, or "label+N"."""

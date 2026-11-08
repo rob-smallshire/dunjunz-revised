@@ -189,6 +189,11 @@
 ; ***************************************************************************************
 ; The loader's data
 ;
+; The MOS's WRCHV, saved by startup: the MOS's own WRCH routine, which mos_wrch and
+; wrch_handler pass characters to. (In the 1987 release its high byte was an unlabelled
+; byte after the Chalice sprite, which the end of the victory sequence cleared.)
+.saved_wrchv
+    equw 0
 ; The filing system's number, set by startup from OSARGS 0,0.
 .filing_system_number
     equb 0
