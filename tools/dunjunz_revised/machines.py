@@ -27,6 +27,8 @@ class Machine:
     roms: tuple[tuple[int, str], ...]     # (slot, bundled ROM image)
     econet: bool = False
     extensions: tuple[str, ...] = field(default=())
+    bundled_preset: str | None = None     # use one of beebium's presets, as it is
+    variant: str = "model-b"
 
     def preset(self) -> dict:
         preset = {
@@ -75,13 +77,22 @@ MACHINES = {
             "dfs226_copro", "Model B, 1770, DFS 2.26, 65C02 second processor", "acorn-1770",
             ((14, "acorn-dfs_2_26.rom"),), extensions=("acorn-65c02-coprocessor",),
         ),
+        Machine("bplus", "Model B+ 64K, DFS 2.26", None, (), bundled_preset="model-b-plus",
+                variant="model-b-plus"),
+        Machine("bplus128", "Model B+ 128K, DFS 2.26", None, (), bundled_preset="model-b-plus-128k",
+                variant="model-b-plus-128k"),
     )
 }
 
 
 @contextlib.contextmanager
 def preset_filepath(machine: Machine) -> Iterator[Path]:
-    """A temporary preset file for a machine."""
+    """A temporary preset file for a machine, or the beebium preset it names."""
+    if machine.bundled_preset is not None:
+        from beebium.client.installation import ServerInstallation
+
+        yield ServerInstallation.default().preset_dirpath / f"{machine.bundled_preset}.beebium-preset"
+        return
     with tempfile.TemporaryDirectory() as tmp_dirpath:
         filepath = Path(tmp_dirpath) / f"{machine.key}.beebium-preset"
         with zipfile.ZipFile(filepath, "w") as z:
@@ -94,7 +105,7 @@ def launched(machine: Machine, speed_multiplier: float = 0.0):
     """A running beebium for a machine, at unlimited speed by default."""
     from beebium.client import Beebium
 
-    with preset_filepath(machine) as filepath, Beebium.launch(variant="model-b", preset=filepath) as bbc:
+    with preset_filepath(machine) as filepath, Beebium.launch(variant=machine.variant, preset=filepath) as bbc:
         bbc.system.set_speed_multiplier(speed_multiplier)
         yield bbc
 

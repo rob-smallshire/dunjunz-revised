@@ -17,6 +17,7 @@ from dunjunz_revised.machines import MACHINES, launched
 MACHINE_KEYS = [
     "dfs090", "dfs098", "dnfs120", "dnfs302", "dfs226",
     "dnfs120_econet", "dfs226_anfs418", "dfs226_nfs365", "dfs226_copro",
+    "bplus", "bplus128",
 ]
 MAP_BYTES = 0xC9
 LEVEL_WALLS_OFFSET = 0xE0       # level_walls in the level file
