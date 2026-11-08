@@ -58,3 +58,16 @@ def test_levels_load(disc_filepaths, machine_key):
         expected = level2[LEVEL_WALLS_OFFSET:LEVEL_WALLS_OFFSET + MAP_BYTES]
         # The first eight bytes double as character 128's definition, which text overwrites.
         assert walls[8:] == expected[8:]
+
+
+def test_refuses_a_page_too_high(disc_filepaths):
+    """With DFS and ADFS, PAGE is &1F00: the title says the game cannot run, and
+    returns, rather than let the game overwrite private workspace."""
+    with launched(MACHINES["dfs226_adfs130"]) as bbc:
+        bbc.run_for_emulated_seconds(3)
+        bbc.disc.drive0.insert(REVISED_DISC_FILEPATH, write_protect=True)
+        bbc.keyboard.type("*RUN DUNJUNZ\r")
+        bbc.run_for_emulated_seconds(4)
+        text = bbc.video.screen_text().text.replace("\n", "")
+        assert "needs PAGE at &1C00 or below" in text
+        assert text.rstrip().endswith(">")

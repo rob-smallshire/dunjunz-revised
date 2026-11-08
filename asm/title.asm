@@ -16,6 +16,8 @@ osbyte_escape_break_effect   = &c8
 osbyte_set_cursor_editing    = &04
 osbyte_flush_buffer          = &15
 osbyte_scan_keyboard_from_16 = &7a
+osbyte_read_oshwm            = &83
+highest_page                 = &1c00  ; The game keeps &1C00 up: the filing systems' private workspace must end below it
 
 ; Memory locations
 plot_x                   = &70  ; Star position: screen byte column.
@@ -39,6 +41,7 @@ system_via_t1c_l         = &fe44
 oswrch                   = &ffee
 osbyte                   = &fff4
 oscli                    = &fff7
+osasci                   = &ffe3
 
 
     org &26c0
@@ -113,6 +116,23 @@ oscli                    = &fff7
 ;     X: corrupted
 ;     Y: corrupted
 .title_start
+    lda #osbyte_read_oshwm              ; OSBYTE &83: where user memory starts (PAGE)...
+    jsr osbyte                          ; ...X low byte, Y high byte
+    cpy #>(highest_page)                ; Above the highest the game allows?
+    bcc page_ok                         ; Below its page: fine
+    bne page_too_high                   ; Above its page: too high
+    cpx #<(highest_page)                ; In its page: above it?
+    beq page_ok                         ; Exactly it: fine
+.page_too_high
+    ldx #0                              ; Say why the game cannot run...
+.print_page_message
+    lda page_message,x                  ; ...the next character...
+    jsr osasci                          ; ...printed
+    inx                                 ; Next character
+    cmp #0                              ; ...up to the zero
+    bne print_page_message              ; Not yet: the next
+    rts                                 ; ...and return to whatever ran DUNJUNZ
+.page_ok
     lda #osbyte_escape_break_effect     ; OSBYTE &C8: ESCAPE disabled...
     ldx #1                              ; ...X = 1: ESCAPE disabled, BREAK as normal...
     ldy #0                              ; ...Y = 0: X replaces the old setting
@@ -792,6 +812,9 @@ oscli                    = &fff7
 ; byte (the 1987 release read MOS 1.20's own table at &C375).
 ; The version, on the bottom text row, which the picture leaves free. VERSION comes from
 ; the build (tools/dunjunz_revised/_version.py).
+; The message for a machine whose filing systems take memory above &1C00.
+.page_message
+    equs "Dunjunz Revised needs PAGE at &1C00 or below.", &0d, 0
 .version_text
     equb 31, 3, 31                      ; VDU 31,3,31: column 3 of the bottom row
     equs "REVISED ", VERSION            ; "Dunjunz" is in the picture
