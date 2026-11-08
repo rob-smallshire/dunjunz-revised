@@ -227,19 +227,17 @@ def game_run(
     """Boot a disc, start a game with every hero, and stop at the first frame."""
     with launched(machine) as bbc:
         bbc.boot_disc(disc_filepath)
-        update_game = labels[UPDATE_GAME]
-        bp = bbc.debugger.add_breakpoint(update_game)
+        # Hold SPACE from the title to the first frame: it leaves the title, and
+        # its auto-repeat answers the hero menu (which flushes the keyboard
+        # buffer first). run_to stops exactly at the first update_game, so every
+        # run starts at the same frame.
+        bbc.keyboard.matrix_down(*SPACE)
         try:
-            for _ in range(int(boot_seconds / 0.5)):
-                bbc.run_for_emulated_seconds(0.5)
-                if bbc.cpu.pc == update_game:
-                    break
-                bbc.debugger.run()
-                hold_key(bbc, *SPACE)
-            else:
-                raise RuntimeError(f"never reached play; PC &{bbc.cpu.pc:04X}")
+            bbc.debugger.run_to(labels[UPDATE_GAME], timeout=boot_seconds)
         finally:
-            bp.remove()
+            bbc.keyboard.matrix_up(*SPACE)
+        if bbc.cpu.pc != labels[UPDATE_GAME]:
+            raise RuntimeError(f"never reached play; PC &{bbc.cpu.pc:04X}")
         run = GameRun(bbc, labels, game_ranges)
         patched = run.pin_randomness()
         if patched != VIA_TIMER_READS:
