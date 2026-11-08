@@ -418,7 +418,7 @@
     jsr find_creature                   ; Z clear, X = the monster, if one is in the cell
     beq check_missile_object            ; None: an object or a hero?
     lda monster_sprite,x                ; One there: is it still alive?
-    cmp #spr_sparkle_0                  ; Sparkles on: dying; the blank (just killed) is live
+    cmp #spr_blank                      ; The blank (just killed) or the sparkles: dying
     bcs check_missile_object            ; Dying: the missile flies through it
     pla                                 ; Alive: hit it, with the slot off the stack...
     tay                                 ; ...in Y, for monster_hit
