@@ -27,7 +27,8 @@
 ;     Y: corrupted
 .victory_sequence
     lda #osbyte_bell_envelope           ; OSBYTE &D4: the bell's envelope byte...
-    ldx #8                              ; ...EOR 8; Y, not set, is the AND mask
+    ldx #8                              ; ...8...
+    ldy #0                              ; ...Y = 0: replace the setting with X
     jsr osbyte                          ; Set the bell's envelope for the victory tone  osbyte: bell envelope
 ; Set up the sequence: no pixel offsets, the first sparkle, pitch 0 rising by 1, a wait of &E6, 50 sweeps.
     lda #0                              ; Plot the ring and Chalice square on their cells:
@@ -62,6 +63,7 @@
 .sound_victory_bell
     ldx victory_pitch                   ; OSBYTE &D5: the bell's pitch...
     lda #osbyte_bell_frequency          ; ...set it from victory_pitch
+    ldy #0                              ; ...Y = 0: replace the setting with X
     jsr osbyte                          ; Set it: the bell now sounds at that pitch  osbyte: bell frequency
     lda #7                              ; ...and sound the bell
     jsr oswrch                          ; Send BEL: the bell sounds at the new pitch
