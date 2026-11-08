@@ -30,7 +30,9 @@
     sta hero_magic_delay,x              ; ...so the next press is seen at once
     lda hero_magic_key,x                ; This hero's magic key, an INKEY number...
     jsr test_key                        ; ...scanned: Z set if held
-    bne no_magic                        ; Not held: read the movement and fire keys
+    beq cast_magic                      ; Held: cast
+    jmp read_hero_keys                  ; Not held: read the movement and fire keys
+.cast_magic
 ; Cast the magic: play its sound, take the caster's health, then kill every live monster in the room the caster's view shows, a point each.
     txa                                 ; Held: cast. Keep the hero number...
     pha                                 ; ...on the stack: X carries the OSWORD blocks
@@ -87,6 +89,8 @@
     bcs next_monster_magic              ; Already dying: not counted again
     lda #spr_blank                      ; Alive: the first death frame, &15...
     sta monster_sprite,x                ; ...and update_monsters plays out its death
+    lda monster_start_hit_points        ; Its hit points back to the level's full strength...
+    sta monster_hit_points,x            ; ...as a missile kill gives it, for when it returns
     inc magic_kill_count                ; ...a kill to score
 .next_monster_magic
     dex                                 ; Next monster down
@@ -106,8 +110,6 @@
     tay                                 ; ...back in Y
     dey                                 ; One kill fewer to score
     jmp score_magic_kills               ; Score the next
-.no_magic
-    jmp read_hero_keys                  ; No cast: read the movement and fire keys
 .magic_cast
     jmp draw_moved_hero                 ; Cast: no move this frame; redraw the caster
 ; ***************************************************************************************
