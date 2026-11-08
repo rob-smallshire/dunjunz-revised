@@ -12,10 +12,8 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
    may emerge onto each other, which keeps the start of a level as it was.
    Trapdoors are also now drawn first in each frame. See `bugs.md`.
 
-2. **Each hero who leaves by the exit leaks a return address**, adding a
-   frame per hero to the level's end.
-   *Recommendation:* drop the return address when the descent starts.
-   The only visible effect is that the level ends a few frames sooner.
+2. ~~Each hero who leaves by the exit leaks a return address.~~ Fixed
+   (2026-11-08): the descent is entered with JMP. See `bugs.md`.
 
 3. ~~A hero standing on a key swaps keys every other frame.~~ Fixed
    (2026-11-08): one swap on arrival, which the 1987 instructions describe

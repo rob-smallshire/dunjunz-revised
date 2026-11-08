@@ -50,8 +50,8 @@
 ; become X, exit_spin starts at -1 (the first frame's +2 gives the up-facing sprite) and
 ; exit_shrinks_left at 4; play_level's redraw_exit runs the spin from the next frame.
 ;
-; It ends by jumping to play_level rather than returning, so its return address (into
-; check_exit at &1F8E) stays on the stack until the level ends; see play_level.
+; check_exit jumps here, and it ends by jumping to play_level, so nothing is left on the
+; stack. (The 1987 release entered it with JSR, leaking a return address; see play_level.)
 ;
 ; On Entry:
 ;     X: hero number (0-3)
@@ -116,7 +116,7 @@
     sta exit_spin                       ; ...-1, so the first frame's +2 gives 1
     lda #4                              ; ...for four turns, shrinking after the first three
     sta exit_shrinks_left               ; ...in exit_shrinks_left, counting turns 4 to 1
-    jmp play_level                      ; Back to play_level, leaving the JSR's return address
+    jmp play_level                      ; Back to play_level for the next frame
 ; ***************************************************************************************
 ; Drop the key a hero carries
 ;

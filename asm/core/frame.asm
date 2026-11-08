@@ -402,11 +402,11 @@
 ;    all, restore_exit puts the exit back and clears exit_busy, so another hero can use
 ;    it.
 ;
-; How the level ends: hero_enters_exit is entered with JSR but leaves with a JMP to
-; play_level, so each descent leaves a return address (into check_exit at &1F8E) on the
-; stack. The RTS at the level's end therefore returns into check_exit once for each hero
-; who left by the exit; each such return runs one more full frame before the next RTS,
-; and only the last returns to new_game.
+; How the level ends: the RTS returns to level_loop. In the 1987 release hero_enters_exit
+; was entered with JSR but left with a JMP to play_level, so each descent left a return
+; address on the stack, and the RTS at the level's end returned into check_exit once for
+; each hero who had left by the exit, each time running one more full frame. It is now
+; entered with JMP.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -441,7 +441,7 @@
     bmi play_level_done                 ; None (&FF): nothing to restore
     jsr restore_hero_sprites            ; Give them back their full-size sprites
 .play_level_done
-    rts                                 ; Return, perhaps into this loop at &1F8E
+    rts                                 ; Return to level_loop: the level is over
 ; Look for a hero on the exit. The first found leaves their key beside it, leaves play and the map, and starts down; the exit is hidden off the map until they have gone.
 .check_exit
     ldx #0                              ; Is a hero on the exit? From hero 0
@@ -480,8 +480,7 @@
     lda #off_map                        ; ...then put the exit off the map...
     sta exit_x                          ; ...x &FF...
     sta exit_y                          ; ...and y &FF, so no other hero can enter it
-    jsr hero_enters_exit                ; Start the exit animation (which jumps back to play_level)
-    jmp check_exit_busy                 ; Reached by the RTS at the end of the level: one more frame
+    jmp hero_enters_exit                ; Start the exit animation, which jumps back to play_level
 .next_hero_exit
     inx                                 ; Next hero, 0 to 3
     cpx #4                              ; All four heroes checked?

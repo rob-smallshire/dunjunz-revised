@@ -330,3 +330,25 @@ def test_a_key_with_nowhere_to_go_is_lost_not_put_in_a_wall(disc_filepaths):
     assert landed == cells[3]                       # in the wall to the left
     _, open_cells, landed = drop_key_at_exit(revised(), keys_beside=4)
     assert landed == (OFF_MAP, OFF_MAP)
+
+
+def stack_pointers_after_an_exit(build, frames=6):
+    """Put the Ranger on the exit and record the stack pointer at the start of
+    each frame, before and after they go down it."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        run.poke(run.address("hero_x"), run.peek(run.address("exit_x"), 1))
+        run.poke(run.address("hero_y"), run.peek(run.address("exit_y"), 1))
+        pointers = [run.bbc.cpu.sp]
+        for _ in range(frames):
+            run.next_frame(set())
+            pointers.append(run.bbc.cpu.sp)
+        assert run.peek(run.address("exit_busy"), 1)[0]     # going down
+        return pointers
+
+
+def test_leaving_by_the_exit_leaves_nothing_on_the_stack(disc_filepaths):
+    pointers = stack_pointers_after_an_exit(revised())
+    assert len(set(pointers)) == 1
+    pointers = stack_pointers_after_an_exit(original())
+    assert pointers[-1] == pointers[0] - 2                  # a return address left behind
