@@ -83,7 +83,13 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
   in &0E00-&16FF, so the borrowing is harmless; page &0D and the MOS 3.20
   details need checking.
 - **MMFS2:** untested. Beebium can't emulate it.
+- **A second processor raises the I/O processor's OSHWM** from &1900 to
+  &1F00 with DFS 2.26 in beebium, though DFS's private workspace stays at
+  &1700. What claims &1900-&1EFF? The game runs in the I/O processor
+  regardless, and loads levels there, so the title skips its PAGE check
+  when a Tube is present, and the game also overwrites the Tube host code
+  in &0400-&07FF, as the 1987 release did. A BREAK restores it.
 - **Integra-B and other PAGE-raising set-ups:** the game needs PAGE at
   most &1C00. The loader could check OSHWM (OSBYTE &83) and say so,
-  rather than fail obscurely. *Recommendation:* add that check to the
-  title.
+  rather than fail obscurely. Done: the title refuses to run
+  with PAGE above &1C00 (not checked when a Tube is present).

@@ -17,6 +17,7 @@ osbyte_set_cursor_editing    = &04
 osbyte_flush_buffer          = &15
 osbyte_scan_keyboard_from_16 = &7a
 osbyte_read_oshwm            = &83
+osbyte_read_tube_presence    = &ea
 highest_page                 = &1c00  ; The game keeps &1C00 up: the filing systems' private workspace must end below it
 
 ; Memory locations
@@ -116,6 +117,12 @@ osasci                   = &ffe3
 ;     X: corrupted
 ;     Y: corrupted
 .title_start
+    lda #osbyte_read_tube_presence      ; A second processor fitted? OSBYTE &EA...
+    ldx #0                              ; ...X = 0, Y = &FF: read it
+    ldy #&ff                            ; ...unchanged
+    jsr osbyte                          ; X = &FF if there is one
+    inx                                 ; X = 0 now if there is
+    beq page_ok                         ; Yes: the I/O processor's OSHWM does not apply
     lda #osbyte_read_oshwm              ; OSBYTE &83: where user memory starts (PAGE)...
     jsr osbyte                          ; ...X low byte, Y high byte
     cpy #>(highest_page)                ; Above the highest the game allows?

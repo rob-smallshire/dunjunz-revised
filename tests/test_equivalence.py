@@ -53,8 +53,6 @@ def record(disc_filepath, labels, game_ranges, script, frames):
 
 
 def first_difference(original, revised):
-    if len(original) != len(revised):
-        return f"{len(original)} states originally, {len(revised)} revised"
     for frame, (a, b) in enumerate(zip(original, revised)):
         if a.keys() != b.keys():
             return f"frame {frame}: {'game over' if 'game over' in b else 'play'} revised, the other originally"
@@ -63,6 +61,8 @@ def first_difference(original, revised):
                 offset = next(i for i, (x, y) in enumerate(zip(a[name], b[name])) if x != y)
                 return (f"frame {frame}: {name}+&{offset:X} is &{b[name][offset]:02X}, "
                         f"originally &{a[name][offset]:02X}")
+    if len(original) != len(revised):
+        return f"{len(original)} states originally, {len(revised)} revised"
     return None
 
 
