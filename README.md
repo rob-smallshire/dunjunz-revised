@@ -51,3 +51,20 @@ uv run pytest          # tests, in the beebium emulator
 Boot `dunjunz-revised.ssd` with SHIFT-BREAK, or copy its files to any
 filing system (a network file server included) and `*RUN DUNJUNZ`. The game
 needs a BBC Micro with PAGE at &1C00 or below.
+
+## Playing it
+
+Up to four players share the keyboard, one hero each. On the hero menu,
+1-4 switch a hero in or out, 5 and 6 turn the sound on and off, and SPACE
+starts the game.
+
+| Hero | Up | Down | Left | Right | Fire | Magic |
+|---|---|---|---|---|---|---|
+| Ranger | CAPS LOCK | SHIFT LOCK | SHIFT | Z | TAB | CTRL |
+| Magic-User | → | ↑ | DELETE | COPY | ↓ | RETURN |
+| Barbarian | K | , | . | / | SPACE | |
+| Fighter | G | B | U | I | O | |
+
+The Magic-User's arrow keys don't move the way they are labelled: → moves
+up and ↑ moves down. Only the Ranger and the Magic-User can cast magic.
+P pauses and resumes the game.
