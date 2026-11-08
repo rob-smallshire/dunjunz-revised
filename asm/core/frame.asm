@@ -321,19 +321,25 @@
     jsr draw_objects                    ; Draw the objects over the floor
     jsr move_missiles                   ; Move the missiles a cell each
     jsr update_monsters                 ; Move the monsters
-; The pause key, last in each frame's update. OSBYTE &7A reports a single key, so P is seen only when the scan finds it rather than another key held with it. Play resumes as soon as P is pressed again; if it is still held at the next frame's check, the game pauses again.
-    lda #osbyte_scan_keyboard_from_16   ; OSBYTE &7A: which key is held, if any?
-    jsr osbyte                          ; Scan keyboard from key 16
-    cpx #&37 ; '7'                      ; P (internal key &37)?
+; The pause key, last in each frame's update: P, read with test_key, which sees it
+; whatever other keys are held (OSBYTE &7A, which the 1987 release used, reports only the
+; lowest-numbered key held, so a movement key could hide P). Pause until P is pressed
+; again, then wait for it to be released, so that a P still held does not pause again.
+    lda #inkey_key_p                    ; P held?
+    jsr test_key                        ; ...Z set if so
     bne not_paused                      ; No: on with play
 .wait_pause_release
-    jsr osbyte                          ; Paused: wait for P to be released...  Scan keyboard from key 16
-    cpx #&37 ; '7'                      ; ...is P still the key held?
+    lda #inkey_key_p                    ; Paused: wait for P to be released...
+    jsr test_key                        ; ...is it still held?
     beq wait_pause_release              ; Yes: keep waiting
 .wait_pause_press
-    jsr osbyte                          ; ...then pressed again  Scan keyboard from key 16
-    cpx #&37 ; '7'                      ; ...is P held again yet?
+    lda #inkey_key_p                    ; ...then pressed again
+    jsr test_key                        ; ...is it held yet?
     bne wait_pause_press                ; No: stay paused
+.wait_resume_release
+    lda #inkey_key_p                    ; ...and released
+    jsr test_key                        ; ...is it still held?
+    beq wait_resume_release             ; Yes: keep waiting
     lda #&10                            ; Next frame in 17 vsyncs, not the usual 3...
     sta os_vsync_counter                ; ...about a third of a second before play resumes
 .not_paused

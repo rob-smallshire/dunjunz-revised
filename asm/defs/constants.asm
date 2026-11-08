@@ -99,3 +99,4 @@ service_select_filing_system         = &12  ; Service call &12: initialise filin
 filing_system_disc                   = &04  ; OSARGS 0,0's number for a disc filing system (DFS, MMFS)
 filing_system_net                    = &05  ; OSARGS 0,0's number for the network filing system
 osfile_load                          = &ff  ; OSFILE &FF: load a file
+inkey_key_p                          = &c8  ; P, INKEY -56
