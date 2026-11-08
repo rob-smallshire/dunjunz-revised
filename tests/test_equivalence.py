@@ -68,7 +68,7 @@ def first_difference(original, revised):
 
 @pytest.mark.parametrize("seed", [1, 2])
 def test_revised_plays_as_the_original(disc_filepaths, seed):
-    script = Script(seed=seed)
+    script = Script(seed=seed, magic=0)
     original = record(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),
                       ORIGINAL_GAME_RANGES, script, FRAMES)
     revised = record(REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz"),
@@ -80,7 +80,7 @@ def test_scripts_exercise_the_game(disc_filepaths):
     """The scripted play changes the heroes, the monsters and the screen, so
     that equivalence means something."""
     states = record(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),
-                    ORIGINAL_GAME_RANGES, Script(seed=1), 100)
+                    ORIGINAL_GAME_RANGES, Script(seed=1, magic=0), 100)
     for name in ("scratch", "monster_x+1", "screen"):
         digests = {hashlib.sha1(s[name]).digest() for s in states}
         assert len(digests) > 10, name

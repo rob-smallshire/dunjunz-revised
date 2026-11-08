@@ -37,7 +37,7 @@ def record(disc_filepath, labels, game_ranges, next_level_label, script):
 
 
 def test_second_level_matches_the_original(disc_filepaths):
-    script = Script(seed=3)
+    script = Script(seed=3, magic=0)
     original = record(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),
                       ORIGINAL_GAME_RANGES, "to_next_level", script)
     revised = record(REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz"),

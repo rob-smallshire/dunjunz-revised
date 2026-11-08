@@ -109,10 +109,13 @@ def inkey_to_matrix(inkey: int) -> tuple[int, int]:
 @dataclass(frozen=True)
 class Script:
     """Which keys each hero holds in each frame: a seeded random walk with
-    occasional firing and, rarely, magic."""
+    occasional firing and, rarely, magic. Comparisons with the original use no
+    magic, since casting it plays differently now (the other heroes go on
+    moving while it recharges)."""
 
     seed: int = 1
     hold_frames: int = 6
+    magic: float = 0.02         # chance per frame that a hero with magic casts it
 
     def keys_for(self, frame: int) -> set[int]:
         rng = random.Random(self.seed * 1_000_003 + frame // self.hold_frames)
@@ -123,7 +126,7 @@ class Script:
                 keys.add(hero_keys[choice])
             if rng.random() < 0.3:
                 keys.add(hero_keys[4])
-            if len(hero_keys) > 5 and rng.random() < 0.02:
+            if len(hero_keys) > 5 and rng.random() < self.magic:
                 keys.add(hero_keys[5])
         return keys
 
