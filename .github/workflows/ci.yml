@@ -29,7 +29,7 @@ jobs:
       # beebasm is not packaged; build it from source once and cache it.
       - name: Cache beebasm
         id: beebasm-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/beebasm/bin
           key: beebasm-${{ env.BEEBASM_VERSION }}-${{ runner.os }}
