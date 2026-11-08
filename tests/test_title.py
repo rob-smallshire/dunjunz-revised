@@ -15,7 +15,13 @@ drawn in on the bottom row (title_picture.py).
 from __future__ import annotations
 
 from dunjunz_revised._version import __version__
-from dunjunz_revised.build import ORIGINAL_BUILD_DIRPATH, REFERENCE_DIRPATH, REVISED_BUILD_DIRPATH, read_labels
+from dunjunz_revised.build import (
+    ORIGINAL_BUILD_DIRPATH,
+    REFERENCE_DIRPATH,
+    REVISED_BUILD_DIRPATH,
+    TITLE_SCREEN_PNG_FILEPATH,
+    read_labels,
+)
 from dunjunz_revised.title_picture import (
     GLYPHS,
     PICTURE_ADDRESS,
@@ -26,6 +32,7 @@ from dunjunz_revised.title_picture import (
     VERSION_TOP_LINE,
     YELLOW,
     get_pixel,
+    title_png,
     version_line,
 )
 
@@ -92,3 +99,7 @@ def test_the_picture_shows_the_version_in_red(disc_filepaths):
 
 def test_every_digit_has_a_glyph():
     assert set("0123456789.") <= set(GLYPHS)
+
+
+def test_the_readme_picture_is_the_revised_title_screen(disc_filepaths):
+    assert TITLE_SCREEN_PNG_FILEPATH.read_bytes() == title_png((REVISED_BUILD_DIRPATH / "Screen").read_bytes())

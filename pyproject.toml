@@ -68,6 +68,9 @@ tag = true
 tag_name = "v{new_version}"
 tag_message = "Release v{new_version}"
 message = "Release v{new_version}"
+# Rebuild before committing, so that the README's picture of the title
+# screen (docs/title-screen.png) shows the new version.
+pre_commit_hooks = ["uv run dr-build", "git add docs/title-screen.png"]
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"

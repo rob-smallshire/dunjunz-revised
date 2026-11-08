@@ -89,8 +89,9 @@ from its real private page, which its table entry doesn't give.
 assembles the regions and asserts each fits.
 
 **Decision:** the layout assumes PAGE is at most &1C00, the highest in the
-target set (ANFS 4.18 + DFS 2.26). MMFS2 is supported (&1B00 at most), and
-the original MMFS, at &1D00, is not.
+target set (ANFS 4.18 + DFS 2.26). MMFS2's reported PAGE (&1B00 at most)
+fits, but it is not claimed as supported until it can be tested. The
+original MMFS, at &1D00, does not fit.
 
 ### The files
 

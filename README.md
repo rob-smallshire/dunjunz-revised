@@ -1,5 +1,7 @@
 # Dunjunz Revised
 
+![The Dunjunz Revised title screen](docs/title-screen.png)
+
 **Dunjunz Revised 2026.1**: a revised version of *Dunjunz*, the
 four-player dungeon game by Julian Avis, published by Bug-Byte for the BBC
 Micro in 1986 (cassette) and 1987 (disc).
@@ -7,7 +9,7 @@ Micro in 1986 (cassette) and 1987 (disc).
 The game is unchanged in spirit. The revision fixes bugs, keeps the game
 resident instead of resetting the machine between levels, and loads
 through whatever filing system is in use (DFS 0.90 to 2.2x, NFS and ANFS
-over Econet, MMFS2), from a single disc. See [docs/plan.md](docs/plan.md).
+over Econet), from a single disc. See [docs/plan.md](docs/plan.md).
 
 ## Provenance
 

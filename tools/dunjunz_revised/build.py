@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dunjunz_revised._version import __version__
-from dunjunz_revised.title_picture import PICTURE_ADDRESS, revised_picture
+from dunjunz_revised.title_picture import PICTURE_ADDRESS, revised_picture, title_png
 
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
 ASM_DIRPATH = PROJECT_DIRPATH / "asm"
@@ -43,6 +43,9 @@ ORIGINAL_DISC_FILEPATH = BUILD_DIRPATH / "dunjunz-original.ssd"
 
 REVISED_BUILD_DIRPATH = BUILD_DIRPATH / "revised"
 REVISED_DISC_FILEPATH = BUILD_DIRPATH / "dunjunz-revised.ssd"
+# The README's picture of the revised title screen, kept in step with the
+# version by the build (and so by bump-my-version, which runs it).
+TITLE_SCREEN_PNG_FILEPATH = PROJECT_DIRPATH / "docs" / "title-screen.png"
 
 ORIGINAL_DISC_TITLE = "DUNJUNZ 1987"
 
@@ -258,8 +261,11 @@ def build_revised() -> Path:
         if REVISED_MUST_MATCH_ORIGINAL:
             verify_against_reference(REVISED_BUILD_DIRPATH, saved_filenames)
 
-    (REVISED_BUILD_DIRPATH / "Screen").write_bytes(
-        revised_picture((REFERENCE_DIRPATH / "Screen").read_bytes(), __version__))
+    picture = revised_picture((REFERENCE_DIRPATH / "Screen").read_bytes(), __version__)
+    (REVISED_BUILD_DIRPATH / "Screen").write_bytes(picture)
+    picture_png = title_png(picture)
+    if not TITLE_SCREEN_PNG_FILEPATH.exists() or TITLE_SCREEN_PNG_FILEPATH.read_bytes() != picture_png:
+        TITLE_SCREEN_PNG_FILEPATH.write_bytes(picture_png)
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
     title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
     title = DiscFile("Dunjunz", IO_PROCESSOR | title_labels["dasmos_start"], IO_PROCESSOR | title_labels["title_start"])

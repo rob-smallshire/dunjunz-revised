@@ -8,14 +8,20 @@ The 1987 picture is changed at build time, not on the BBC:
   font in the style of the picture's own lettering (its 1, e, i, s and v
   are copied from it). The 1987 file stops short of the bottom row, so the
   revised one is longer, running to the end of screen memory.
+
+title_png renders the picture as the README shows it (without the stars,
+which the title program twinkles on it at run time).
 """
 
 from __future__ import annotations
+
+from dunjunz_revised.png import mode2_pixels, png
 
 SCREEN_START = 0x3000
 SCREEN_END = 0x8000
 PICTURE_ADDRESS = 0x3280        # where Screen loads
 SCREEN_WIDTH = 160              # MODE 2 pixels
+SCREEN_HEIGHT = 256
 BYTES_PER_CHARACTER_ROW = 640
 
 RED, YELLOW = 1, 3
@@ -117,3 +123,15 @@ def revised_picture(original: bytes, version: str) -> bytes:
     assert left >= 0 and left + text_width(text) <= SCREEN_WIDTH, text
     draw_text(screen, text, left, VERSION_TOP_LINE, RED)
     return bytes(screen[start:])
+
+
+def title_png(picture: bytes) -> bytes:
+    """A PNG of a picture loaded at PICTURE_ADDRESS (the screen above it
+    black), each MODE 2 pixel 4 by 2 so that it has the BBC's proportions."""
+    screen = bytearray(SCREEN_END - SCREEN_START)
+    start = PICTURE_ADDRESS - SCREEN_START
+    screen[start:start + len(picture)] = picture
+    rows = [[colour for x in range(0, SCREEN_WIDTH, 2)
+             for colour in mode2_pixels(screen[screen_offset(x, line)])]
+            for line in range(SCREEN_HEIGHT)]
+    return png(rows, 4, 2)

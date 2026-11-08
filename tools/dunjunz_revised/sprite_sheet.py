@@ -19,8 +19,6 @@ from __future__ import annotations
 import argparse
 import base64
 import html
-import struct
-import zlib
 from pathlib import Path
 
 from dunjunz_revised.build import (
@@ -32,15 +30,11 @@ from dunjunz_revised.build import (
     read_labels,
 )
 from dunjunz_revised.lockstep import game_run
+from dunjunz_revised.png import mode2_pixels, png
 
 SPRITE_COUNT = 120
 GAME_RANGES = ((0x0400, 0x3000), (0x6E80, 0x8000))
 
-# MODE 2's default palette, colours 0-7; 8-15 flash between colour n-8 and 15-n.
-PALETTE = [
-    (0, 0, 0), (255, 0, 0), (0, 255, 0), (255, 255, 0),
-    (0, 0, 255), (255, 0, 255), (0, 255, 255), (255, 255, 255),
-]
 PIXEL_WIDTH = 8          # a MODE 2 pixel drawn 8 by 4: twice as wide as tall
 PIXEL_HEIGHT = 4
 
@@ -60,13 +54,6 @@ def read_sprites(run) -> list[tuple[int, int, int, bytes]]:
     return sprites
 
 
-def mode2_pixels(byte: int) -> tuple[int, int]:
-    """The logical colours of a MODE 2 byte's left and right pixels."""
-    def colour(bits):
-        return sum(((byte >> bit) & 1) << place for place, bit in enumerate(bits))
-    return colour((1, 3, 5, 7)), colour((0, 2, 4, 6))   # bit 7 (left) and 6 (right) are colour bit 3
-
-
 def sprite_colours(width: int, height: int, data: bytes) -> list[list[int]]:
     rows = []
     for row in range(height):
@@ -75,26 +62,6 @@ def sprite_colours(width: int, height: int, data: bytes) -> list[list[int]]:
             pixels.extend(mode2_pixels(byte))
         rows.append(pixels)
     return rows
-
-
-def png(rows: list[list[int]]) -> bytes:
-    """A PNG of logical colours, each pixel PIXEL_WIDTH by PIXEL_HEIGHT."""
-    height = len(rows) * PIXEL_HEIGHT
-    width = (len(rows[0]) if rows else 0) * PIXEL_WIDTH
-    raw = bytearray()
-    for row in rows:
-        line = bytearray([0])
-        for colour in row:
-            line.extend(bytes(PALETTE[colour & 7]) * PIXEL_WIDTH)
-        raw.extend(line * PIXEL_HEIGHT)
-
-    def chunk(kind, body):
-        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body))
-
-    return (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", struct.pack(">IIBBBBB", max(width, 1), max(height, 1), 8, 2, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(bytes(raw) if raw else b"\0\0\0\0"))
-            + chunk(b"IEND", b""))
 
 
 def sprite_names(labels: dict[str, int]) -> dict[int, str]:
@@ -112,7 +79,7 @@ def render(title: str, sprites, names) -> str:
     for n, (address, width, height, data) in enumerate(sprites):
         rows = sprite_colours(width, height, data)
         flashing = any(colour >= 8 for row in rows for colour in row)
-        image = base64.b64encode(png(rows)).decode() if width and height else ""
+        image = base64.b64encode(png(rows, PIXEL_WIDTH, PIXEL_HEIGHT)).decode() if width and height else ""
         name = names.get(address, "")
         cells.append(
             f'<figure><div class="img">'
