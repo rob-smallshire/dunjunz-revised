@@ -52,43 +52,33 @@ def record(disc_filepath, labels, game_ranges, script, frames):
     return states
 
 
-# Where each hero's map x and y lie in the "scratch" state block (both builds).
-HERO_X_OFFSET = 0x10
-HERO_Y_OFFSET = 0x15
 HEROES = 4
 
 
-def swap_back_frame(original):
-    """The first frame at which the original swaps a hero's key back while they
-    stand on the cell of their last swap (the bug the revised game fixes), or None.
-    The comparison must stop before it."""
-    swap_cells = [None] * HEROES
+def key_swap_frame(original):
+    """The first state in which the original has swapped one key for another
+    under a hero, or None. From the next frame the revised game differs: it
+    leaves the dropped key undrawn while the hero is on it, and never swaps it
+    back (the key swap fix; see test_fixes.py)."""
     for frame in range(1, len(original)):
         before, after = original[frame - 1], original[frame]
         if "hero_key" not in after:
             break
         for hero in range(HEROES):
-            cell = (after["scratch"][HERO_X_OFFSET + hero], after["scratch"][HERO_Y_OFFSET + hero])
             held, now = before["hero_key"][hero], after["hero_key"][hero]
-            if now != held:
-                if held and now and swap_cells[hero] == cell:
-                    return frame
-                # A swap, or a pickup with no key held, remembers the cell; a key
-                # used on a door or dropped at death (now 0) is not a swap.
-                swap_cells[hero] = cell if now else None
-            elif swap_cells[hero] != cell:
-                swap_cells[hero] = None
+            if held and now and held != now:
+                return frame
     return None
 
 
 def compared(original, revised, minimum_states):
-    """Both recordings cut short before the original's first key swap back,
-    checking that enough is left to compare."""
-    cut = swap_back_frame(original)
-    if cut is None:
+    """Both recordings, up to and including the original's first key-for-key
+    swap, checking that enough is left to compare."""
+    swap = key_swap_frame(original)
+    if swap is None:
         return original, revised
-    assert cut >= minimum_states, f"only {cut} states before the original swaps a key back"
-    return original[:cut], revised[:cut]
+    assert swap + 1 >= minimum_states, f"only {swap + 1} states before the original's first key swap"
+    return original[:swap + 1], revised[:swap + 1]
 
 
 def first_difference(original, revised):

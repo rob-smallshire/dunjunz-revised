@@ -19,6 +19,10 @@ CTRL = 0xFE            # the Ranger's magic key
 CURSOR_DOWN = 0xD6     # the Magic-User's fire key, internal key &29, below P's &37
 P = 0xC8
 OFF_MAP = 0xFF        # a key x or y off the map
+SPR_KEY = 0x1B
+RANGER_STANDING = 0x02  # the Ranger's sprite while standing at the start of level 1
+PLOT_X = 0x70           # plot_x, then plot_y
+SPRITE_NUMBER = 0x7A
 
 
 def original():
@@ -132,18 +136,29 @@ def test_menu_shows_the_sound_off(disc_filepaths):
         assert entry == b"OFF"
 
 
+def ranger_on_a_key(run):
+    """Give the Ranger key 19 and put key 20 under them, the only key on their
+    cell (level 1 has key 4 under the Ranger's start). Return their cell."""
+    x = run.peek(run.address("hero_x"), 1)
+    y = run.peek(run.address("hero_y"), 1)
+    for key in range(1, 20):
+        if (run.peek(run.address(f"key_x+{key}"), 1), run.peek(run.address(f"key_y+{key}"), 1)) == (x, y):
+            run.poke(run.address(f"key_x+{key}"), bytes([OFF_MAP]))
+            run.poke(run.address(f"key_y+{key}"), bytes([OFF_MAP]))
+    run.poke(run.address("hero_key"), bytes([19]))
+    run.poke(run.address("key_x+19"), bytes([OFF_MAP]))
+    run.poke(run.address("key_y+19"), bytes([OFF_MAP]))
+    run.poke(run.address("key_x+20"), x)
+    run.poke(run.address("key_y+20"), y)
+    return x, y
+
+
 def keys_carried_on_a_key(build, frames=12):
-    """Give the Ranger key 19, put key 20 (the first searched) under them, stand still, and list the
+    """Put the Ranger, carrying a key, on another; stand still, and list the
     key they carry at each frame. Also say whether key 19 ends up on their cell."""
     disc_filepath, labels, ranges = build
     with game_run(disc_filepath, labels, ranges) as run:
-        x = run.peek(run.address("hero_x"), 1)
-        y = run.peek(run.address("hero_y"), 1)
-        run.poke(run.address("hero_key"), bytes([19]))
-        run.poke(run.address("key_x+19"), bytes([OFF_MAP]))
-        run.poke(run.address("key_y+19"), bytes([OFF_MAP]))
-        run.poke(run.address("key_x+20"), x)
-        run.poke(run.address("key_y+20"), y)
+        x, y = ranger_on_a_key(run)
         carried = []
         for _ in range(frames):
             run.next_frame(set())
@@ -158,3 +173,30 @@ def test_standing_on_a_key_swaps_once(disc_filepaths):
     assert key_19_here
     carried, _ = keys_carried_on_a_key(original())
     assert carried.count(19) > 1 and carried.count(20) > 1    # back and forth
+
+
+def test_a_dropped_key_is_not_drawn_over_the_hero(disc_filepaths):
+    """After the swap, the key left under the Ranger is not plotted where the
+    Ranger is drawn, so the hero does not flicker with it."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        ranger_on_a_key(run)
+        for _ in range(3):
+            run.next_frame(set())
+        debugger = run.bbc.debugger
+        breakpoints = [debugger.add_breakpoint(labels["plot_sprite"]), debugger.add_breakpoint(labels[UPDATE_GAME])]
+        plots, frames = [], 0
+        try:
+            while frames < 4:
+                debugger.run_and_wait_for_stop(timeout=60)
+                if run.bbc.cpu.pc == labels[UPDATE_GAME]:
+                    frames += 1
+                else:
+                    sprite, x, y = run.peek(SPRITE_NUMBER, 1)[0], *run.peek(PLOT_X, 2)
+                    plots.append((sprite, x, y))
+        finally:
+            for bp in breakpoints:
+                bp.remove()
+        ranger = {(x, y) for sprite, x, y in plots if sprite == RANGER_STANDING}
+        assert ranger
+        assert not [p for p in plots if p[0] == SPR_KEY and p[1:] in ranger]

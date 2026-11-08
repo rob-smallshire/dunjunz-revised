@@ -4,7 +4,7 @@ The original resets the machine and reloads the whole game for every level;
 the revised game stays resident and must reset everything that matters
 itself. Both builds play part of level 1 with the same keys, leave it as if
 a hero had survived, and must match at the start of level 2 and while it is
-played, up to the original's first key swap back (see test_equivalence).
+played, up to the original's first key-for-key swap (see test_equivalence).
 """
 
 from __future__ import annotations

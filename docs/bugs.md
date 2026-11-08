@@ -24,7 +24,7 @@ settled with the project's owner first.
 | Pause is missed while a lower-numbered key is held (OSBYTE &7A) | pause | **Fixed** with `test_key`; `test_pause_is_seen_while_a_lower_numbered_key_is_held` |
 | "YOU ALL" loses its full stop: the message's bytes double as counters | &0FF1 | **Fixed**: the counters have bytes of their own |
 | The victory bell is set with a stale Y | &10E9, &1124 | **Fixed** (untested: needs the victory sequence) |
-| A hero standing on a key swaps keys every other frame (dying heroes too) | &1E84-&1E9C, &1DF8 | **Fixed**: one swap on arrival, as the instructions describe; `hero_key_dropped` holds the key dropped until the hero is off it; `test_standing_on_a_key_swaps_once`. The comparisons stop at the original's first swap back |
+| A hero standing on a key swaps keys every other frame (dying heroes too) | &1E84-&1E9C, &1DF8 | **Fixed**: one swap on arrival, as the instructions describe; `hero_key_dropped` holds the key dropped until the hero is off it, and draw_keys leaves that key undrawn meanwhile, or it would flicker over the hero; `test_standing_on_a_key_swaps_once`, `test_a_dropped_key_is_not_drawn_over_the_hero`. The comparisons stop at the original's first key-for-key swap |
 | A key dropped at the exit can land in a wall: the fallback cell is not tested | &20F7 | |
 | A monster killed this frame can be hit again by another missile, scoring twice | &7147 | **Fixed** (untested) |
 | A monster killed by magic comes back with the hit points it had left | &768A | **Fixed** (untested) |

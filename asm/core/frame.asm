@@ -20,6 +20,8 @@
 ;    in play, or still dying, who stands on a key picks it up and leaves the key they
 ;    carried, if any, in its place. hero_key_dropped remembers the key left there, and
 ;    the hero picks up no key until they are off it, so a swap happens once, on arrival.
+;    draw_keys leaves that key undrawn meanwhile, or it would be drawn over the hero on
+;    every frame. A hero out of play with no key forgets it.
 ;    In the 1987 release it was a flag that held off only the next frame, so a hero who
 ;    stayed on the cell swapped back and forth every other frame.
 ; 4. draw_objects: the objects are replotted, repairing any cell a moving sprite has
@@ -183,6 +185,13 @@
     sta sprite_number                   ; ...as the sprite to plot
     ldx #max_key                        ; ...counting keys down from 20; entry 0 is never drawn
 .draw_each_key
+    txa                                 ; Is this key under the hero who dropped it?
+    ldy #3                              ; ...each hero, 3 to 0...
+.check_key_under_hero
+    cmp hero_key_dropped,y              ; ...dropped this key and is still on it?
+    beq draw_next_key                   ; Yes: leave it undrawn, so the hero shows
+    dey                                 ; Next hero down
+    bpl check_key_under_hero            ; More heroes: check the next
     lda key_x,x                         ; The key's x...
     sta cell_x                          ; ...is the column to plot at...
     lda key_y,x                         ; ...and y (off the map if it is carried)...
@@ -192,6 +201,7 @@
     jsr plot_at_cell                    ; Plot it in every view showing its cell
     pla                                 ; Recover the key number...
     tax                                 ; ...into X, counting down the keys
+.draw_next_key
     dex                                 ; Next key down
     bne draw_each_key                   ; More keys: draw the next
     ldx #0                              ; For each hero, from hero 0...
@@ -200,7 +210,9 @@
     bne check_key_swap                  ; Yes: look for a key to pick up
     lda hero_key,x                      ; Out of play: dead, dying or gone. Holding a key?
     bne check_death_finished            ; Yes: see whether the death has played out
-    jmp next_hero_keys                  ; No key: nothing to do for this hero
+    lda #0                              ; No key: forget any key dropped in a swap...
+    sta hero_key_dropped,x              ; ...so draw_keys shows it again
+    jmp next_hero_keys                  ; Nothing more to do for this hero
 .check_death_finished
     lda hero_frame,x                    ; Has the death animation reached its end?
     cmp #8                              ; ...frame 8 is the last of the death
