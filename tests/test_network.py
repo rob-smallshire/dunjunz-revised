@@ -81,6 +81,12 @@ def run_to(bbc, address, seconds, press_space=False):
         bp.remove()
 
 
+def screens(bbc, server):
+    """The client's PC and screen, and the server's screen, for a failure."""
+    return (f"PC &{bbc.cpu.pc:04X}\nclient screen:\n{bbc.video.screen_text().text}"
+            f"\nserver screen:\n{server.video.screen_text().text}")
+
+
 @pytest.mark.parametrize("client_key", list(CLIENTS))
 def test_levels_load_over_econet(file_server_preset_filepath, client_key):
     from beebium.client import Beebium
@@ -99,9 +105,9 @@ def test_levels_load_over_econet(file_server_preset_filepath, client_key):
                 bbc.keyboard.type(command + "\r")
                 bbc.run_for_emulated_seconds(4)
             assert run_to(bbc, labels["update_game"], 120, press_space=True), \
-                f"level 1 not reached; PC &{bbc.cpu.pc:04X}"
+                f"level 1 not reached; {screens(bbc, server)}"
             bbc.cpu.pc = labels["next_level"]
-            assert run_to(bbc, labels["update_game"], 60), f"level 2 not reached; PC &{bbc.cpu.pc:04X}"
+            assert run_to(bbc, labels["update_game"], 60), f"level 2 not reached; {screens(bbc, server)}"
             assert bbc.memory.address.peek[0x08BC] == 2
             walls = bytes(bbc.memory.address.peek[labels["room_walls"]:labels["room_walls"] + MAP_BYTES])
             level2 = (REVISED_BUILD_DIRPATH / "Level2").read_bytes()
