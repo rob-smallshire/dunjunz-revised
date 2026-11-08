@@ -1,12 +1,41 @@
 ; ***************************************************************************************
-; Draw the trapdoors and move the monsters
+; Draw the trapdoors
 ;
-; Move every monster on by one frame of its life, and redraw the trapdoors they come out
-; of. update_game calls it once a frame, after draw_objects and move_missiles, so a
-; monster killed by a missile or magic this frame starts its death here.
+; Redraw the eight trapdoors, because erasing a creature or missile that crossed one has
+; blanked its cell. update_game calls it first in each frame, so every hero, missile and
+; monster is drawn over them. The 1987 release drew them at the start of update_monsters,
+; after the heroes and missiles, so a hero or missile on a trapdoor flickered with it.
 ;
-; The eight trapdoors are drawn first, because erasing a creature or missile that crossed
-; one has blanked its cell. Then each monster, 30 down to 1, is erased where it was drawn
+; On Exit:
+;     A: corrupted
+;     X: 0
+;     Y: corrupted
+.draw_trapdoors
+    ldx #8                              ; Redraw trapdoors 8 to 1 (sprite &2C)...
+    lda #0                              ; Trapdoors sit squarely in their cells:
+    sta plot_offset_x                   ; ...no horizontal offset...
+    sta plot_offset_y                   ; ...and no vertical offset
+    lda #spr_trapdoor                   ; The trapdoor sprite...
+    sta sprite_number                   ; ...the same for all eight
+.draw_trapdoor
+    lda trapdoor_x - 1,x                ; This trapdoor's map x...
+    sta cell_x                          ; ...as the cell to plot
+    lda trapdoor_y - 1,x                ; ...and its map y
+    sta cell_y                          ; ...as cell_y
+    txa                                 ; Keep the trapdoor number...
+    pha                                 ; ...on the stack: plot_at_cell changes X
+    jsr plot_at_cell                    ; Draw it in every view showing its cell
+    pla                                 ; Recover the trapdoor number...
+    tax                                 ; ...back in X
+    dex                                 ; Next trapdoor down
+    bne draw_trapdoor                   ; Until trapdoor 1 is drawn
+    rts                                 ; Return with every trapdoor drawn
+; ***************************************************************************************
+; Move the monsters
+;
+; Move every monster on by one frame of its life. update_game calls it once a frame,
+; after draw_objects and move_missiles, so a monster killed by a missile or magic this
+; frame starts its death here. Each monster, 30 down to 1, is erased where it was drawn
 ; last frame and moved on according to its state.
 ;
 ; Moving: a monster mid-step slides a quarter cell further (continue_monster_step). One
@@ -27,40 +56,22 @@
 ; Each frame here advances it through the sparkles &16-&19, drawn where it died.
 ;
 ; Reappearing: after the last sparkle monster_reappears puts it on the next trapdoor in
-; turn, facing up, to be drawn next frame.
+; turn, facing up, to be drawn next frame. A trapdoor a hero in play stands on stays
+; shut: the monster tries the next trapdoor on the next frame.
 ;
 ; reset_monsters starts every monster at the blank with x &FF, so at the start of a level
 ; all 30 sparkle off the map together and emerge on the same frame, shared out round the
 ; eight trapdoors in turn. Only the target cell is ever tested for a creature: during a
 ; slide the monster is still recorded in the cell it is leaving, and the arrival is not
 ; checked again, so two monsters, or a monster and a hero, can end a step in the same
-; cell. The creature test made as a monster reappears looks at the wrong cell (see
-; monster_reappears).
+; cell. Monsters may emerge onto each other, as all 30 do at the start of a level.
 ;
 ; On Exit:
 ;     A: corrupted
 ;     X: corrupted
 ;     Y: corrupted
 .update_monsters
-    ldx #8                              ; Redraw trapdoors 8 to 1 (sprite &2C)...
-    lda #0                              ; Trapdoors sit squarely in their cells:
-    sta plot_offset_x                   ; ...no horizontal offset...
-    sta plot_offset_y                   ; ...and no vertical offset
-    lda #spr_trapdoor                   ; The trapdoor sprite...
-    sta sprite_number                   ; ...the same for all eight
-.draw_trapdoor
-    lda trapdoor_x - 1,x                ; This trapdoor's map x...
-    sta cell_x                          ; ...as the cell to plot
-    lda trapdoor_y - 1,x                ; ...and its map y
-    sta cell_y                          ; ...as cell_y
-    txa                                 ; Keep the trapdoor number...
-    pha                                 ; ...on the stack: plot_at_cell changes X
-    jsr plot_at_cell                    ; Draw it in every view showing its cell
-    pla                                 ; Recover the trapdoor number...
-    tax                                 ; ...back in X
-    dex                                 ; Next trapdoor down
-    bne draw_trapdoor                   ; Until trapdoor 1 is drawn
-    ldx #max_monster                    ; Then each monster, 30 to 1...
+    ldx #max_monster                    ; Each monster, 30 to 1...
 ; Each monster in turn, 30 down to 1. It is first rubbed out where it was drawn last frame, its cell and offsets plotted with the blank sprite, and its cell is kept in previous_x and previous_y. Then its state decides what happens: a dying monster (sprite &15 and up) shows its next sparkle, one part way through a step slides on, and any other tries a new step. The monster number stays on the stack until monster_done.
 .next_monster_update
     txa                                 ; Keep the monster number...

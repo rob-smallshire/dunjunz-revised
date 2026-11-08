@@ -37,7 +37,15 @@
     tax                                 ; ...the hero number again
     lda #1                              ; A = 1, Z clear: the key is up
     rts                                 ; Return with Z clear: the key is up
-; The monster comes back facing up on the next trapdoor in turn, with the hit points the kill gave it back. It is not drawn until next frame. The creature test that follows reads cell_x and cell_y, which still hold the dying monster's position within its view, as the erase's plot_at_cell left them, not the trapdoor's cell. So a creature already on the trapdoor does not stop the monster emerging; one that happens to stand at the unrelated cell the leftovers name parks the monster at &FF,&FF, still alive, where nothing returns it to a trapdoor (and a hero there is hurt).
+; The monster comes back facing up on the next trapdoor in turn, with the hit points the
+; kill gave it back. It is not drawn until next frame. A trapdoor that a hero in play
+; stands on stays shut: the monster waits, off the map at its last sparkle, and tries the
+; next trapdoor on the next frame. Monsters may emerge onto each other.
+;
+; In the 1987 release the creature test here read cell_x and cell_y as plot_at_cell had
+; left them, not the trapdoor's cell, so it missed a creature on the trapdoor, hurt a hero
+; at the unrelated cell it named, and parked the monster at &FF,&FF for good if anything
+; was there.
 .monster_reappears
     inc next_trapdoor                   ; Each reappearance uses the next trapdoor in turn
     lda next_trapdoor                   ; Which trapdoor now?
@@ -47,6 +55,8 @@
     sta next_trapdoor                   ; ...for this monster and the next
 .emerge_at_trapdoor
     ldy next_trapdoor                   ; Y = the trapdoor to emerge from
+    jsr hero_on_trapdoor                ; Carry set if a hero in play stands on it
+    bcs trapdoor_shut                   ; Yes: the trapdoor stays shut
     lda trapdoor_x,y                    ; Put the monster on it, facing up, with no step
     sta monster_x,x                     ; ...the trapdoor's x as the monster's
     lda trapdoor_y,y                    ; The trapdoor's y...
@@ -57,21 +67,17 @@
     sta monster_step,x                  ; ...step count 0
     sta monster_offset_x,x              ; ...no horizontal offset
     sta monster_offset_y,x              ; ...no vertical offset
-    txa                                 ; Test for a creature at cell_x, cell_y...
-    pha                                 ; ...stacking the number for monster_done
-    stx scratch                         ; Non-zero scratch: skip this monster, check heroes
-    jsr find_creature                   ; cell_x/y: plot_at_cell's leftovers, not the trapdoor
-    cmp #0                              ; A = 0 if nothing is at that cell
-    beq emerge_done                     ; Nothing there: the monster stays on the trapdoor
-    pla                                 ; Something there: park it off the map, still alive
-    pha                                 ; ...keeping it stacked for monster_done
-    tax                                 ; ...its number in X, which find_creature changed
-    lda #off_map                        ; Off the map...
-    sta monster_x,x                     ; ...as its x
-    sta monster_y,x                     ; ...and its y: no trapdoor will take it back
-    jmp monster_done                    ; Pull the monster number and on to the next
+    bcc emerge_done                     ; Always: carry is still clear
+.trapdoor_shut
+    lda #spr_sparkle_3                  ; Back to the last sparkle, so the next frame...
+    sta monster_sprite,x                ; ...tries again, at the next trapdoor
+    lda #off_map                        ; Off the map meanwhile, so it is neither drawn...
+    sta monster_x,x                     ; ...nor found by find_creature: its x...
+    sta monster_y,x                     ; ...and its y
 .emerge_done
-    jmp monster_done                    ; Pull the monster number and on to the next
+    txa                                 ; Stack the monster number...
+    pha                                 ; ...for monster_done to pull
+    jmp monster_done                    ; On to the next monster
 ; Hit points a monster starts with on this level: 6 + 2 x the level number (8 on level 1).
 .monster_start_hit_points
     equb &08

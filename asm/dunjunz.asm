@@ -124,6 +124,7 @@ ASSERT mid_end <= MID_END
 INCLUDE "asm/low/scores.asm"
 INCLUDE "asm/core/loader.asm"
 INCLUDE "asm/core/level_loop.asm"
+INCLUDE "asm/low/hero_on_trapdoor.asm"
 .low_end
 ASSERT low_end <= WORKSPACE
     copyblock LOW_START, low_end, LOW_STORE

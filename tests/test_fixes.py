@@ -200,3 +200,67 @@ def test_a_dropped_key_is_not_drawn_over_the_hero(disc_filepaths):
         ranger = {(x, y) for sprite, x, y in plots if sprite == RANGER_STANDING}
         assert ranger
         assert not [p for p in plots if p[0] == SPR_KEY and p[1:] in ranger]
+
+
+def plots_per_frame(run, frames):
+    """Each frame's sprite plots, as (sprite, plot_x, plot_y) in order."""
+    labels = run.labels
+    debugger = run.bbc.debugger
+    breakpoints = [debugger.add_breakpoint(labels["plot_sprite"]), debugger.add_breakpoint(labels[UPDATE_GAME])]
+    result = [[]]                       # from the current frame's start
+    try:
+        while True:
+            debugger.run_and_wait_for_stop(timeout=60)
+            if run.bbc.cpu.pc == labels[UPDATE_GAME]:
+                if len(result) == frames:
+                    return result
+                result.append([])
+            else:
+                result[-1].append((run.peek(SPRITE_NUMBER, 1)[0], *run.peek(PLOT_X, 2)))
+    finally:
+        for bp in breakpoints:
+            bp.remove()
+
+
+def put_trapdoors_under_the_ranger(run):
+    x = run.peek(run.address("hero_x"), 1)
+    y = run.peek(run.address("hero_y"), 1)
+    saved = run.peek(run.address("trapdoor_x"), 8), run.peek(run.address("trapdoor_y"), 8)
+    run.poke(run.address("trapdoor_x"), x * 8)
+    run.poke(run.address("trapdoor_y"), y * 8)
+    return saved
+
+
+def test_a_hero_on_a_trapdoor_is_drawn_over_it(disc_filepaths):
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        put_trapdoors_under_the_ranger(run)
+        for _ in range(3):
+            run.next_frame(set())
+        for frame in plots_per_frame(run, 4):
+            ranger = {(x, y) for sprite, x, y in frame if sprite == RANGER_STANDING}
+            assert ranger
+            last = {}
+            for sprite, x, y in frame:
+                last[(x, y)] = sprite
+            assert all(last[place] == RANGER_STANDING for place in ranger)
+
+
+def test_a_trapdoor_a_hero_stands_on_stays_shut(disc_filepaths):
+    """With every trapdoor under the Ranger, none of the 30 monsters waiting to
+    emerge at the start does, and the Ranger is not hurt; once the trapdoors
+    are back, they emerge."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        health = run.peek(run.address("hero_health_tens"), 1), run.peek(run.address("hero_health_units"), 1)
+        saved_x, saved_y = put_trapdoors_under_the_ranger(run)
+        for _ in range(10):
+            run.next_frame(set())
+        assert set(run.peek(run.address("monster_x+1"), 30)) == {OFF_MAP}
+        assert (run.peek(run.address("hero_health_tens"), 1), run.peek(run.address("hero_health_units"), 1)) == health
+        run.poke(run.address("trapdoor_x"), saved_x)
+        run.poke(run.address("trapdoor_y"), saved_y)
+        for _ in range(10):
+            run.next_frame(set())
+        emerged = run.peek(run.address("monster_x+1"), 30)
+        assert OFF_MAP not in emerged

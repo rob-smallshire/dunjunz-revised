@@ -7,15 +7,10 @@ Answers go into `bugs.md` or `plan.md` as they are made.
 
 These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
 
-1. **A monster emerging from a trapdoor tests a stale cell.**
-   `monster_reappears` passes `find_creature` whatever `cell_x`/`cell_y`
-   held. Pointing it at the trapdoor's cell isn't enough: when the trapdoor
-   is occupied, the "park" branch puts the monster at &FF,&FF for good, and
-   `find_creature` also hurts a hero standing there.
-   *Recommendation:* test the trapdoor's own cell. If anything is there,
-   leave the monster dead (blank sprite, off the map), so it tries again
-   on a later frame at the next trapdoor. Don't hurt a hero who is merely
-   standing on a trapdoor.
+1. ~~A monster emerging from a trapdoor tests a stale cell.~~ Fixed
+   (2026-11-08): a trapdoor a hero in play stands on stays shut; monsters
+   may emerge onto each other, which keeps the start of a level as it was.
+   Trapdoors are also now drawn first in each frame. See `bugs.md`.
 
 2. **Each hero who leaves by the exit leaks a return address**, adding a
    frame per hero to the level's end.

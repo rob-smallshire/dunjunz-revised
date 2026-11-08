@@ -38,7 +38,8 @@ SCREEN = (0x3000, 0x6E80)
 
 # (label, length): blocks of game state compared between builds.
 STATE_BLOCKS = (
-    ("scratch", 0x100),              # the per-level workspace: heroes, missiles, keys, views
+    ("scratch+1", 0xFF),             # the per-level workspace: heroes, missiles, keys, views
+                                     # (not scratch itself, a temporary the 1987 monster_reappears set)
     ("hero_max_missiles", 4),        # hero attributes and counters
     ("hero_magic_delay", 2),
     ("magic_kill_count", 2),

@@ -16,7 +16,7 @@ settled with the project's owner first.
 
 | Behaviour | Where | Note |
 |---|---|---|
-| A monster emerging from a trapdoor tests a stale cell (`cell_x`/`cell_y`) for occupants, so it lands on creatures, hurts a hero standing elsewhere, or is parked off the map for good | `monster_reappears` &7CB3 | Confirmed in beebium |
+| A monster emerging from a trapdoor tests a stale cell (`cell_x`/`cell_y`) for occupants, so it lands on creatures, hurts a hero standing elsewhere, or is parked off the map for good | `monster_reappears` &7CB3 | Confirmed in beebium. **Fixed**: a trapdoor a hero in play stands on stays shut, and the monster tries the next one on the next frame; no hero is hurt; monsters may still emerge onto each other, so all 30 still emerge at the start; `test_a_trapdoor_a_hero_stands_on_stays_shut` |
 | Casting magic returns from `move_heroes`, so heroes after the caster don't move for three frames | &761E | **Fixed**; `test_magic_does_not_stop_the_other_heroes` |
 | Each hero who leaves by the exit leaves a return address on the stack, adding a frame to the level's end | `check_exit` | A stack leak |
 | Game over waits for the vsync counter to reach exactly 0, up to about 5 s with the keys ignored | &0EB9 | **Fixed**; `test_game_over_wait_is_short` |
@@ -25,6 +25,7 @@ settled with the project's owner first.
 | "YOU ALL" loses its full stop: the message's bytes double as counters | &0FF1 | **Fixed**: the counters have bytes of their own |
 | The victory bell is set with a stale Y | &10E9, &1124 | **Fixed** (untested: needs the victory sequence) |
 | A hero standing on a key swaps keys every other frame (dying heroes too) | &1E84-&1E9C, &1DF8 | **Fixed**: one swap on arrival, as the instructions describe; `hero_key_dropped` holds the key dropped until the hero is off it, and draw_keys leaves that key undrawn meanwhile, or it would flicker over the hero; `test_standing_on_a_key_swaps_once`, `test_a_dropped_key_is_not_drawn_over_the_hero`. The comparisons stop at the original's first key-for-key swap |
+| Trapdoors are redrawn after the heroes and missiles, so a hero or missile on one flickers with it | `update_monsters` &79C1 | **Fixed**: `draw_trapdoors` runs first in each frame; `test_a_hero_on_a_trapdoor_is_drawn_over_it`. The screen comparisons leave out the trapdoors' cells |
 | A key dropped at the exit can land in a wall: the fallback cell is not tested | &20F7 | |
 | A monster killed this frame can be hit again by another missile, scoring twice | &7147 | **Fixed** (untested) |
 | A monster killed by magic comes back with the hit points it had left | &768A | **Fixed** (untested) |

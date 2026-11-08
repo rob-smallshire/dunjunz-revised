@@ -5,17 +5,18 @@
 ; check_for_victory; play_level deals with the exit when this returns. The work, in
 ; order:
 ;
-; 1. move_heroes: each hero in play walks, fires or casts magic, is redrawn, and picks up
+; 1. draw_trapdoors: the eight trapdoors are redrawn, under everything drawn after.
+; 2. move_heroes: each hero in play walks, fires or casts magic, is redrawn, and picks up
 ;    any object in their cell. It records in hero_door_x/y the cell each hero stepped or
 ;    tried to step into.
-; 2. Doors (check_doors): for each hero in turn, doors 20 to 1 are compared with that
+; 3. Doors (check_doors): for each hero in turn, doors 20 to 1 are compared with that
 ;    cell. If one is there and the hero carries its key (key n opens door n; hero_key 0
 ;    means none, and there is no door 0), the door opens: the hero scores 7 points, the
 ;    door sound plays (food_sound at a lower pitch), the door is erased from every view,
 ;    its wall bit in room_walls is cleared, its entry in door_x/door_y is moved off the
 ;    map, and the key is used up and its panel icon erased. At most one door opens per
 ;    hero per frame. Every hero is tested, in play or not.
-; 3. Keys (draw_keys): every key on the floor is redrawn, then each hero is checked. A
+; 4. Keys (draw_keys): every key on the floor is redrawn, then each hero is checked. A
 ;    dead hero whose death animation has finished drops their key where they fell. A hero
 ;    in play, or still dying, who stands on a key picks it up and leaves the key they
 ;    carried, if any, in its place. hero_key_dropped remembers the key left there, and
@@ -24,11 +25,11 @@
 ;    every frame. A hero out of play with no key forgets it.
 ;    In the 1987 release it was a flag that held off only the next frame, so a hero who
 ;    stayed on the cell swapped back and forth every other frame.
-; 4. draw_objects: the objects are replotted, repairing any cell a moving sprite has
+; 5. draw_objects: the objects are replotted, repairing any cell a moving sprite has
 ;    crossed.
-; 5. move_missiles: each missile in flight moves one cell and hits what it meets.
-; 6. update_monsters: the trapdoors are redrawn and the monsters move.
-; 7. The pause key: if it is held, the game freezes here until it is pressed again.
+; 6. move_missiles: each missile in flight moves one cell and hits what it meets.
+; 7. update_monsters: the monsters move.
+; 8. The pause key: if it is held, the game freezes here until it is pressed again.
 ;    OSBYTE &7A reports only the lowest-numbered key held, so a held movement key can
 ;    hide it.
 ;
@@ -37,6 +38,7 @@
 ;     X: corrupted
 ;     Y: corrupted
 .update_game
+    jsr draw_trapdoors                  ; Redraw the trapdoors first, under everything else
     jsr move_heroes                     ; Move the heroes: steps, shots, magic, pick-ups
 ; Doors: for each hero, find a door at the cell they last stepped or tried to step into, and open it if they carry its key.
     ldx #0                              ; For each hero, 0-3...
