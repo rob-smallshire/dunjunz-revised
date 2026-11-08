@@ -11,7 +11,8 @@ star_frame                   = &86  ; Zero page: each star's animation frame, 0-
 star_frame_step              = &89  ; Zero page: each star's frame step, +1 or -1
 star_place                   = &8c  ; Zero page: each star's place in star_places_x
 spr_no_small_digit           = &69  ; The game's sprite &69, drawn where a hero has no ten-thousands digit
-screen_start                 = &3000  ; The start of MODE 2 screen memory
+screen_start                 = &3000
+STAR_FRAME_BYTES             = 7 * 28  ; One star frame: 7 bytes by 28 pixel rows  ; The start of MODE 2 screen memory
 osbyte_escape_break_effect   = &c8
 osbyte_set_cursor_editing    = &04
 osbyte_flush_buffer          = &15
@@ -406,19 +407,18 @@ osasci                   = &ffe3
 ; Leftover bytes.
     equb &0d, &18, &a5, &74, &69, &78, &85, &74
     equb &a5, &75, &69, &02, &85, &75, &68  ; Not used
-; Low bytes of the seven star frames' addresses (&2A00 + &C4 x frame), indexed by frame 0-6 and read by title_plot_star.
+; Low and high bytes of the seven star frames' addresses (star_frame_data + &C4 x frame),
+; indexed by frame 0-6 and read by title_plot_star. In the 1987 release these were
+; literal bytes for &2A00 onwards, followed by leftover bytes; they are computed here, so
+; that the frames can move.
 .star_frames_lo
-    equb &00, &c4, &88, &4c, &10, &d4, &98  ; Frames 0-6, low bytes
-    equb &15, &4a, &29, &fe, &a8, &b9, &75, &c3, &18  ; Not used
-; High bytes of the seven star frames' addresses, indexed by frame 0-6 and read by title_plot_star.
+FOR frame, 0, 6
+    equb LO(star_frame_data + frame * STAR_FRAME_BYTES)  ; Frame's address, low byte
+NEXT
 .star_frames_hi
-    equb &2a, &2a, &2b, &2c, &2d, &2d, &2e  ; Frames 0-6, high bytes
-    equb &22, &74, &a5, &71, &29, &07, &65, &74
-    equb &85, &2a, &2a, &2b, &2c, &2d, &2d, &2e
-    equb &22, &2a, &2a, &18, &65, &75, &85, &75
-    equb &a5, &70, &0a, &0a, &0a, &18, &65, &74
-    equb &85, &74, &90, &02, &e6, &75, &a0, &00
-    equb &00                            ; Not used
+FOR frame, 0, 6
+    equb HI(star_frame_data + frame * STAR_FRAME_BYTES)  ; Frame's address, high byte
+NEXT
 ; ***************************************************************************************
 ; Twinkle stars on the title screen until a key is pressed
 ;
@@ -831,4 +831,5 @@ FOR row, 0, 31
     equb HI(row * 640), LO(row * 640)
 NEXT
 .title_end
+ASSERT title_end <= screen_start      ; MODE 2 clears the screen: nothing the title uses may lie in it
 save "Dunjunz", dasmos_start, title_end, title_start, dasmos_start
