@@ -335,9 +335,10 @@
 ; first sparkle, so a monster killed earlier in the frame (sprite blank until
 ; update_monsters runs) can be hit again. An energy drainer is worn down a stage, and
 ; removed after its last; the firer scores a point and the missile is turned round in the
-; drainer's cell, so it can fly back into its firer. Any hero in the cell, the firer
-; included and whether in play or not (a skull stops it), spends the missile, and
-; lose_health_point takes missile_damage points, one at a time, from a hero in play.
+; drainer's cell, so it can fly back into its firer. Any hero in play in the cell, the
+; firer included, spends the missile, and lose_health_point takes missile_damage points,
+; one at a time; a hero out of play (a skull) lets it through, where the 1987 code
+; stopped it.
 ; Otherwise the missile is drawn in its new cell as missile_sprite_base + direction, the
 ; weapon pointing the way it flies. A spent missile is not drawn, and its direction 0
 ; frees the slot for its hero's next shot. Missiles pass through one another and through
@@ -497,7 +498,8 @@
 .no_drainer
     pla                                 ; No drainer in the cell: drop the saved slot...
     tax                                 ; ...back into X
-; The first hero in the cell, in play or not, stops the missile.
+; The first hero in play in the cell stops the missile. One out of play (a skull, a hero dying or
+; returning) lets it through: the 1987 code stopped it there too.
 .check_missile_hero
     txa                                 ; Is a hero in the new cell? Any hero, even the firer
     pha                                 ; Keep the missile slot while X runs over heroes
@@ -506,6 +508,8 @@
     pla                                 ; Fetch the missile slot...
     tay                                 ; ...into Y, to read its damage if this hero is hit...
     pha                                 ; ...leaving it on the stack
+    lda hero_direction,x                ; In play? Direction 0 is a skull, sparkles or no hero...
+    beq next_hero_hit                   ; ...which the missile flies through (the 1987 code stopped)
     lda hero_x,x                        ; This hero's x...
     cmp cell_x                          ; ...the missile's cell?
     bne next_hero_hit                   ; No: the next hero

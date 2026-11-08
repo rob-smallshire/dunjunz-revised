@@ -352,3 +352,143 @@ def test_leaving_by_the_exit_leaves_nothing_on_the_stack(disc_filepaths):
     assert len(set(pointers)) == 1
     pointers = stack_pointers_after_an_exit(original())
     assert pointers[-1] == pointers[0] - 2                  # a return address left behind
+
+
+SPR_BLANK = 0x15
+SPR_DIGIT_0 = 0x1E
+SPR_CROSS = 0x2A
+SPR_POTION = 0x61
+STEP_OUT_OF_PLAY = 0x63
+RANGER, FIGHTER = 0, 3
+DIRECTIONS = {1: ABOVE, 2: RIGHT, 3: BELOW, 4: LEFT}
+
+
+def byte(run, name):
+    return run.peek(run.address(name), 1)[0]
+
+
+def set_byte(run, name, value):
+    run.poke(run.address(name), bytes([value]))
+
+
+def take_out_of_play(run, hero):
+    """Leave hero as a skull where they stand, as remove_absent_heroes does."""
+    set_byte(run, f"hero_direction+{hero}", 0)
+    set_byte(run, f"hero_step+{hero}", STEP_OUT_OF_PLAY)
+    set_byte(run, f"hero_frame+{hero}", 8)
+
+
+def missile_at_a_skull(build):
+    """The Fighter lies as a skull where they start, and a missile in slot 0
+    flies into their cell from an open cell beside it (the cell it starts in
+    is not tested, so it may hold a hero). Return its direction
+    after the frame (0 if it stopped), where it is, and the skull's cell."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        x, y = byte(run, f"hero_x+{FIGHTER}"), byte(run, f"hero_y+{FIGHTER}")
+        direction, (dx, dy) = next((d, step) for d, step in DIRECTIONS.items()
+                                   if not is_wall(run, x - step[0], y - step[1]))
+        take_out_of_play(run, FIGHTER)
+        set_byte(run, "missile_x", x - dx)
+        set_byte(run, "missile_y", y - dy)
+        set_byte(run, "missile_direction", direction)
+        run.next_frame(set())
+        return byte(run, "missile_direction"), (byte(run, "missile_x"), byte(run, "missile_y")), (x, y)
+
+
+def test_a_missile_flies_through_a_skull(disc_filepaths):
+    direction, at, skull = missile_at_a_skull(revised())
+    assert direction and at == skull
+    direction, at, skull = missile_at_a_skull(original())
+    assert direction == 0
+
+
+def ranger_on_a_cross(run, object_type=SPR_CROSS):
+    """Put the Ranger on level 1's first Cross of Resurrection, made object_type."""
+    types = run.peek(run.address("object_type"), 31)
+    cross = types.index(SPR_CROSS)
+    set_byte(run, f"object_type+{cross}", object_type)
+    set_byte(run, "hero_x", byte(run, f"object_x+{cross}"))
+    set_byte(run, "hero_y", byte(run, f"object_y+{cross}"))
+    return cross
+
+
+def score(run, hero):
+    return [byte(run, f"hero_score_{digit}+{hero}") - SPR_DIGIT_0
+            for digit in ("thousands", "hundreds", "tens", "units")]
+
+
+def test_a_cross_with_nobody_to_bring_back_stays(disc_filepaths):
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        cross = ranger_on_a_cross(run)
+        for _ in range(3):
+            run.next_frame(set())
+        assert byte(run, f"object_x+{cross}") != OFF_MAP
+        assert score(run, RANGER) == [0, 0, 0, 0]
+        take_out_of_play(run, FIGHTER)                      # the Fighter falls...
+        set_byte(run, "returning_hero_queue", FIGHTER + 1)  # ...and waits for a Cross
+        run.next_frame(set())
+        assert byte(run, f"object_x+{cross}") == OFF_MAP
+        assert score(run, RANGER) == [0, 0, 1, 0]
+        assert byte(run, f"hero_offset_x+{FIGHTER}") == 0xFF    # coming back
+    disc_filepath, labels, ranges = original()
+    with game_run(disc_filepath, labels, ranges) as run:
+        cross = ranger_on_a_cross(run)
+        run.next_frame(set())
+        assert byte(run, f"object_x+{cross}") == OFF_MAP     # wasted
+        assert score(run, RANGER) == [0, 0, 1, 0]
+
+
+def health_from_a_potion(build):
+    """The Ranger, with a score of 0000, drinks a potion."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        ranger_on_a_cross(run, SPR_POTION)
+        run.next_frame(set())
+        return byte(run, "hero_health_tens") - SPR_DIGIT_0, byte(run, "hero_health_units") - SPR_DIGIT_0
+
+
+def test_a_potion_never_leaves_00_health(disc_filepaths):
+    assert health_from_a_potion(revised()) == (1, 1)
+    assert health_from_a_potion(original()) == (0, 0)
+
+
+def cast_with_health_too_low(build):
+    """The Ranger, on 3 health, casts magic (cost 6) with a live monster in
+    their room. Return the monster's sprite and the Ranger's score after."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        for _ in range(15):                                 # the monsters emerge
+            run.next_frame(set())
+        sprites = run.peek(run.address("monster_sprite+1"), 30)
+        monster = 1 + next(n for n, sprite in enumerate(sprites) if sprite < SPR_BLANK)
+        set_byte(run, f"monster_x+{monster}", byte(run, "hero_x"))
+        set_byte(run, f"monster_y+{monster}", byte(run, "hero_y"))
+        set_byte(run, "hero_health_tens", SPR_DIGIT_0)
+        set_byte(run, "hero_health_units", SPR_DIGIT_0 + 3)
+        before = score(run, RANGER)
+        run.next_frame({CTRL})
+        assert byte(run, "hero_direction") == 0             # the cost killed the Ranger
+        return byte(run, f"monster_sprite+{monster}"), before, score(run, RANGER)
+
+
+def test_a_caster_killed_by_the_cost_casts_nothing(disc_filepaths):
+    sprite, before, after = cast_with_health_too_low(revised())
+    assert sprite < SPR_BLANK and after == before
+    sprite, before, after = cast_with_health_too_low(original())
+    assert sprite >= SPR_BLANK and after != before         # dying
+
+
+def score_on_the_next_level(build, next_level_label):
+    """The Ranger scores 0005 on level 1 and survives it."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        set_byte(run, "hero_score_units", SPR_DIGIT_0 + 5)
+        run.end_level(next_level_label)
+        return score(run, RANGER)
+
+
+def test_a_survivor_keeps_their_score_at_the_next_level(disc_filepaths):
+    assert score_on_the_next_level(revised(), "next_level") == [0, 0, 0, 5]
+    assert score_on_the_next_level(original(), "to_next_level") == [0, 0, 0, 6]

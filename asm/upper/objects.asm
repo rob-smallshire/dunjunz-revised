@@ -65,9 +65,9 @@
 ; a lone teleporter leads to itself. The teleport sound plays and show_hero_room redraws
 ; the view. The teleporter stays.
 ;
-; &2A Cross of Resurrection: 10 points and the pickup sound; removed, and the first hero
-; in returning_hero_queue starts to materialise where they fell. With nobody waiting it
-; is wasted.
+; &2A Cross of Resurrection: the first hero in returning_hero_queue starts to materialise
+; where they fell, and the Cross scores 10 points, plays the pickup sound and is removed.
+; With nobody waiting it stays where it is (the 1987 code took it anyway, wasted).
 ;
 ; &51 the exit: passed over (update_game's check_hero_on_exit deals with it) and the
 ; search goes on.
@@ -75,7 +75,7 @@
 ; &5F and up, magic items: removed, the pickup sound and 10 points, then &5F Boots of
 ; Speed (bolt icon, a whole cell per step), &60 helmet (one less health lost per monster
 ; blow, to at least 3, and the armour rating redrawn), &61 potion (health set to the
-; score's units digit twice over, e.g. 77), &62 pile of weapons (one more missile in
+; score's units digit twice over, e.g. 77, and 11 for a 0, where the 1987 code gave 00), &62 pile of weapons (one more missile in
 ; flight, to at most 3, and its icon) and anything else, &63, the magic sword (one more
 ; missile damage, to at most 9, redrawn).
 ;
@@ -218,19 +218,11 @@
 .check_cross
     cmp #spr_cross                      ; Cross of Resurrection?
     bne check_magic_item                ; No: try the exit, drainers and magic items
-; Cross of Resurrection: remove it and score 10 whether or not anyone is waiting to return, play the pickup sound, then look at the front of returning_hero_queue.
-    lda #off_map                        ; Cross: take it off the level...
-    sta object_x,y                      ; ...off the map in x...
-    sta object_y,y                      ; ...and y, even if nobody comes back
-    jsr add_ten_points                  ; The Cross is worth 10 points
-    txa                                 ; Keep the hero...
-    pha                                 ; ...across the sound and the queue
-    jsr play_pickup_sound               ; Play the pickup sound
-    lda returning_hero_queue            ; First queue entry used (a hero or a &64 marker)?
-    bne take_returning_hero             ; Yes: bring back the first hero waiting
-    pla                                 ; No: wasted. Recover the hero...
-    tax                                 ; ...into X...
-    rts                                 ; ...and return, the Cross spent on nobody
+; Cross of Resurrection: look in returning_hero_queue for a hero waiting to return. With nobody waiting the Cross stays where it is, for later; the 1987 code took it and scored 10 even then, so it was wasted. With a hero waiting, they start to come back, and the Cross is removed, scores 10 and plays the pickup sound.
+    txa                                 ; Cross: keep the hero...
+    pha                                 ; ...on the stack...
+    tya                                 ; ...and the object...
+    pha                                 ; ...across the queue
 ; Bring back the first hero waiting in returning_hero_queue. Each pass takes the front entry and shifts the four entries up one; &64 markers, which stand for heroes left out on the menu, are put back at the end and the next entry taken. A hero found is started materialising (the death animation run backwards, by animate_absent_hero) in the cell where they fell.
 .take_returning_hero
     ldy #0                              ; Take the first entry off the queue, appending 0...
@@ -250,7 +242,7 @@
     bne shift_returning_queue           ; ...(always taken: Y is &64)
 .check_queue_empty
     cpx #&ff                            ; &FF: the front entry was 0, nobody left waiting?
-    beq cross_done                      ; Yes: nobody returns
+    beq cross_unused                    ; Yes: nobody returns, and the Cross stays
     lda #0                              ; Start hero X materialising: out of play...
     sta hero_direction,x                ; ...direction 0: not in play while the sprites run
     lda #8                              ; ...from the skull back...
@@ -259,8 +251,25 @@
     sta hero_offset_x,x                 ; ...frame step -1
     lda #1                              ; ...the first step next frame
     sta hero_offset_y,x                 ; ...the frame counter
-.cross_done
-    pla                                 ; Recover the hero who picked up the Cross...
+; A hero is coming back: the Cross is used up.
+    pla                                 ; Recover the Cross's object number...
+    tay                                 ; ...into Y
+    lda #off_map                        ; Take the Cross off the level...
+    sta object_x,y                      ; ...off the map in x...
+    sta object_y,y                      ; ...and y, so it is neither drawn nor found again
+    pla                                 ; Recover the hero who picked it up...
+    tax                                 ; ...into X
+    jsr add_ten_points                  ; The Cross is worth 10 points
+    txa                                 ; Keep the hero...
+    pha                                 ; ...across the sound
+    jsr play_pickup_sound               ; Play the pickup sound
+    pla                                 ; Recover the hero...
+    tax                                 ; ...into X, for move_heroes
+    rts                                 ; Return to move_heroes
+; Nobody to bring back: the Cross stays where it lies.
+.cross_unused
+    pla                                 ; Drop the object number...
+    pla                                 ; ...and recover the hero who found the Cross...
     tax                                 ; ...into X, for move_heroes
     rts                                 ; Return to move_heroes
 ; Shared tail for treasure and food: take object Y off the map.
@@ -369,14 +378,16 @@
 .check_potion
     cmp #spr_potion                     ; Potion of healing?
     bne check_weapons                   ; No: try the weapons
-; Potion of healing: health is set from the score's units digit d, read before the 10 points were added, as tens d and units d + 1, then lose_health_point takes a point and draws it: health dd, from 00 to 99.
-    lda scratch2                        ; Potion: health = the score's last digit twice...
-    sta hero_health_tens,x              ; ...as the tens (so a score ending in 0 gives 00)
-    inc scratch2                        ; ...and the units one higher...
-    lda scratch2                        ; ...the sprite after it...
-    sta hero_health_units,x             ; ...as the health's units
-    jsr lose_health_point               ; ...less a point, which also draws the health
-    rts                                 ; Return to move_heroes with the new health drawn
+; Potion of healing: health is set from the score's units digit d, read before the 10 points were added, as dd, from 11 to 99. A 0 counts as 1: the 1987 code gave health 00, a point from death.
+    ldy scratch2                        ; Potion: the score's last digit, as a sprite...
+    cpy #spr_digit_0                    ; ...a 0?
+    bne potion_health                   ; No: health is that digit twice
+    iny                                 ; Yes: a 1 instead, so health 11, not 00
+.potion_health
+    tya                                 ; The digit...
+    sta hero_health_tens,x              ; ...as the health's tens...
+    sta hero_health_units,x             ; ...and its units
+    jmp draw_health                     ; Draw the new health; back to move_heroes
 .check_weapons
     cmp #spr_weapons                    ; Pile of weapons?
     bne magic_sword                     ; No: anything else is taken as a magic sword

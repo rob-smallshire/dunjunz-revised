@@ -5,8 +5,10 @@ with the same scripted keys and pinned randomness (see lockstep.py); the
 game state and the screen must match at the start of every frame, with two
 exceptions for fixes that change what is drawn:
 
-- the comparison stops after the original's first swap of one key for
-  another, after which the revised game draws and swaps keys differently;
+- the comparison stops at the first fixed case the original meets
+  (FIXED_CASES): a swap of one key for another, after which the revised game
+  draws and swaps keys differently; a missile stopping at a skull; a Cross
+  taken with nobody to bring back; a potion leaving 00 health;
 - the trapdoors' cells are left out of the screen comparison, because the
   revised game redraws trapdoors at the start of a frame, not part way
   through, so a trapdoor something has just left is still blank at the
@@ -61,32 +63,89 @@ def record(disc_filepath, labels, game_ranges, script, frames):
 
 
 HEROES = 4
+MISSILES = 12
+OBJECTS = 31
+
+# Offsets in the "scratch+1" state block, the same in both builds.
+HERO_X, HERO_Y, HERO_DIRECTION = 0x0F, 0x14, 0x19
+MISSILE_X, MISSILE_Y, MISSILE_DIRECTION = 0x3F, 0x4B, 0x57
+HERO_HEALTH_TENS, HERO_HEALTH_UNITS = 0x8F, 0x94
+# Offsets in the "object_x" state block: x, y, then type.
+OBJECT_X, OBJECT_Y, OBJECT_TYPE = 0, OBJECTS, 2 * OBJECTS
+OFF_MAP = 0xFF
+SPR_DIGIT_0, SPR_CROSS, SPR_POTION = 0x1E, 0x2A, 0x61
 
 
-def key_swap_frame(original):
-    """The first state in which the original has swapped one key for another
-    under a hero, or None. From the next frame the revised game differs: it
-    leaves the dropped key undrawn while the hero is on it, and never swaps it
-    back (the key swap fix; see test_fixes.py)."""
+def states_to_key_swap(before, after):
+    """The original swaps one key for another under a hero. The revised game
+    differs from the next frame: it leaves the dropped key undrawn while the
+    hero is on it, and never swaps it back (test_fixes.py)."""
+    return any(held and now and held != now for held, now in zip(before["hero_key"], after["hero_key"]))
+
+
+def a_missile_stops_at_a_skull(before, after):
+    """A missile stops in the cell of a hero out of play, where the revised
+    game lets it fly on: one in flight, or one fired into it this frame."""
+    b, a = before["scratch+1"], after["scratch+1"]
+    skulls = {(a[HERO_X + h], a[HERO_Y + h]) for h in range(HEROES) if a[HERO_DIRECTION + h] == 0}
+    for slot in range(MISSILES):
+        cell = a[MISSILE_X + slot], a[MISSILE_Y + slot]
+        moved = b[MISSILE_DIRECTION + slot] or cell != (b[MISSILE_X + slot], b[MISSILE_Y + slot])
+        if moved and not a[MISSILE_DIRECTION + slot] and cell in skulls:
+            return True
+    return False
+
+
+def taken(before, after, object_type):
+    b, a = before["object_x"], after["object_x"]
+    return any(a[OBJECT_TYPE + n] == object_type and b[OBJECT_X + n] != OFF_MAP and a[OBJECT_X + n] == OFF_MAP
+               for n in range(OBJECTS))
+
+
+def a_cross_is_wasted(before, after):
+    """A Cross is taken with nobody waiting; the revised game leaves it."""
+    return taken(before, after, SPR_CROSS) and not any(1 <= entry <= HEROES for entry in before["returning_hero_queue"])
+
+
+def a_potion_gives_00(before, after):
+    """A potion is drunk and a hero is left on 00; the revised game gives 11."""
+    a = after["scratch+1"]
+    return taken(before, after, SPR_POTION) and any(
+        a[HERO_HEALTH_TENS + h] == a[HERO_HEALTH_UNITS + h] == SPR_DIGIT_0 for h in range(HEROES))
+
+
+# (test, states to keep after the frame in which the test is first true): the
+# fixed cases the comparisons stop at, up to and including the state that still
+# matches.
+FIXED_CASES = (
+    (states_to_key_swap, 1),
+    (a_missile_stops_at_a_skull, 0),
+    (a_cross_is_wasted, 0),
+    (a_potion_gives_00, 0),
+)
+
+
+def states_before_a_fix(original):
+    """How many of the original's states come before a fixed case makes the
+    revised game differ, or None if it never meets one."""
     for frame in range(1, len(original)):
         before, after = original[frame - 1], original[frame]
         if "hero_key" not in after:
             break
-        for hero in range(HEROES):
-            held, now = before["hero_key"][hero], after["hero_key"][hero]
-            if held and now and held != now:
-                return frame
+        for test, keep in FIXED_CASES:
+            if test(before, after):
+                return frame + keep
     return None
 
 
 def compared(original, revised, minimum_states):
-    """Both recordings, up to and including the original's first key-for-key
-    swap, checking that enough is left to compare."""
-    swap = key_swap_frame(original)
-    if swap is None:
+    """Both recordings, up to the first fixed case the original meets,
+    checking that enough is left to compare."""
+    states = states_before_a_fix(original)
+    if states is None:
         return original, revised
-    assert swap + 1 >= minimum_states, f"only {swap + 1} states before the original's first key swap"
-    return original[:swap + 1], revised[:swap + 1]
+    assert states >= minimum_states, f"only {states} states before a fixed case"
+    return original[:states], revised[:states]
 
 
 # Where the views' rooms lie in the "scratch+1" state block, and the views'
@@ -139,7 +198,9 @@ def first_difference(original, revised):
     return None
 
 
-@pytest.mark.parametrize("seed", [1, 2])
+# Seed 2, used before, has heroes die early: a missile is fired into a skull
+# at frame 193, after which the revised game differs by design.
+@pytest.mark.parametrize("seed", [1, 6])
 def test_revised_plays_as_the_original(disc_filepaths, seed):
     script = Script(seed=seed, magic=0)
     original = record(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),

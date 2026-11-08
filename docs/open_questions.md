@@ -29,22 +29,10 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
 
 ## Behaviours to rule on
 
-`bugs.md`, "Rule". *Recommendation in brief:*
-
-| Behaviour | Recommendation |
-|---|---|
-| A monster on exactly 0 hit points survives | Keep: it is the game's balance (five arrows on level 1) |
-| Survivors gain a point at every new level | Keep: harmless, and players won't notice |
-| A missile stops at a dead hero's skull | Fix: skulls are scenery |
-| A bounced missile can hit its firer | Keep: it reads as intended |
-| Any object found takes off the Boots of Speed | Ask: possibly intended, as boots wear out |
-| A Potion of Healing can leave 00 health | Fix: a potion should never leave a hero worse off than one point from death; give at least 1 |
-| A Cross is used up when nobody is waiting | Keep: it scores 10 |
-| A caster killed by magic's cost still kills the room | Keep |
-| Walking into a monster costs one point whatever the armour | Keep |
-| Monsters cross room boundaries two cells in two frames | Keep: changing it changes how the game feels |
-| All 30 monsters emerge together at the start | Keep |
-| A refused move still turns the hero | Keep: it is how you aim |
+All ruled on (2026-11-08). Fixed: a missile stopping at a skull, a Cross
+wasted with nobody waiting, a caster killed by the cost still casting, the
+free point at each level, and a potion giving 00. Kept: the other seven.
+See `bugs.md`, "Fix" and "Kept".
 
 ## Joysticks
 

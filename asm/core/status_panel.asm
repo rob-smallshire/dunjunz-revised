@@ -7,8 +7,9 @@
 ; called for every hero when a game starts, and by level_loop for each hero who died (or
 ; was not playing) when a level ends, so a dead hero comes back on the next level as new,
 ; while survivors keep their scores and the gains from objects. Health and position are
-; not set here: reset_workspace restores those for every hero at each level. The units
-; digit is set one below 0 because draw_status_panel draws the score by adding a point.
+; not set here: reset_workspace restores those for every hero at each level. (The 1987
+; code set the units one below 0, because draw_status_panel drew the score by adding a
+; point.)
 ;
 ; On Entry:
 ;     X: hero number (0-3)
@@ -25,9 +26,8 @@
     lda #spr_digit_0                    ; Score 0000: digit sprite 0...
     sta hero_score_thousands,x          ; ...as the thousands digit...
     sta hero_score_hundreds,x           ; ...the hundreds digit...
-    sta hero_score_tens,x               ; ...and the tens digit
-    lda #spr_digit_0 - 1                ; ...units one below 0: draw_status_panel adds a point
-    sta hero_score_units,x              ; ...as the units digit
+    sta hero_score_tens,x               ; ...the tens digit...
+    sta hero_score_units,x              ; ...and the units digit
     lda #spr_small_digit_1 - 1          ; No ten-thousands digit (&69, one below small 1)
     sta hero_score_ten_thousands,x      ; ...as the ten-thousands digit
     rts                                 ; Return, X still the hero
@@ -40,9 +40,9 @@
 ;
 ; The health and score are drawn by the routines play uses to change them:
 ; lose_health_point takes a point from the template's health of 99 + 1, so every hero
-; starts every level on 99, and add_point adds one to the score, which a hero just reset
-; has one below 0000. So a hero who survived the last level, and kept their score, gains
-; a point here at every new level. Then, through plot_panel_sprite, which places each
+; starts every level on 99, and draw_score draws the score as it stands. (The 1987 code
+; drew it with add_point, from one below 0000 for a hero just reset, so a hero who
+; survived the last level gained a point at every new level.) Then, through plot_panel_sprite, which places each
 ; sprite relative to the hero's panel row (hero_panel_y): the face and the shield on the
 ; section's top row, with the armour rating (10 - health lost per hit) as a small digit
 ; on the shield; the missile damage as a small digit; and one missile icon per missile
@@ -61,7 +61,7 @@
 .draw_panel_hero
     ldx panel_hero                      ; X = this hero
     jsr lose_health_point               ; Take a point from the template's 99 + 1: draws 99
-    jsr add_point                       ; Add a point: draws the score (0000 if just reset)
+    jsr draw_score                      ; Draw the score (0000 if just reset)
 ; The section's top row: the hero's face and the shield, with the armour rating on the shield.
     lda hero_faces,x                    ; The hero's face (their facing-down sprite)...
     ldx #panel_left                     ; ...at column &45, the panel's left...

@@ -14,7 +14,8 @@
 ; caster. Then every monster whose cell lies in the room the caster's view shows, and
 ; whose sprite is below the blank (alive), is given the blank sprite, the first frame of
 ; a death that update_monsters plays out, and the caster scores a point for each, through
-; add_point, even if the cost has just killed them. Unlike a missile's kill, the magic
+; add_point. A caster the cost kills casts nothing (the 1987 code still cleared the room
+; and scored). Unlike a missile's kill, the magic
 ; does not reset the monster's hit points, so a monster wounded before comes back from
 ; its trapdoor still wounded. The caster does not move that frame: play goes on at
 ; draw_moved_hero, which draws them if still in play.
@@ -46,7 +47,7 @@
     jsr osword                          ; SOUND command
     pla                                 ; Recover the hero number...
     tax                                 ; ...the caster, in X again
-; Hold off the key for three frames, then take the cost, 6 health for the Ranger and 3 for the Magic-User, a point at a time through lose_health_point. The caster may die of it; the spell still goes on.
+; Hold off the key for three frames, then take the cost, 6 health for the Ranger and 3 for the Magic-User, a point at a time through lose_health_point. The caster may die of it, and then the spell is not cast.
     lda #4                              ; Ignore the key for the next three frames
     sta hero_magic_delay,x              ; ...so one press casts only once
     cpx #1                              ; Health cost: 3 for the Magic-User...
@@ -63,6 +64,8 @@
     tay                                 ; ...back in Y
     dey                                 ; One point fewer to take
     bne take_magic_cost                 ; Until the whole cost is paid
+    lda hero_direction,x                ; Did the cost kill the caster (direction 0)?
+    beq magic_cast                      ; Yes: the spell dies with them (the 1987 code cast it)
     lda #0                              ; No monsters killed yet:
     sta magic_kill_count                ; ...magic_kill_count counts this cast's kills
     txa                                 ; The caster's view_room index, 2 x hero...

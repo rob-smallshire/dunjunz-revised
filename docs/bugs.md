@@ -2,9 +2,10 @@
 
 The behaviours found in the disassembly
 (`~/Code/acornaeology/dunjunz/docs/findings.md`) that bear on the Model B
-disc version, sorted into four groups. **Fix** means we are sure it is
-a bug. **Rule** means it changes how the game plays, so it waits for a
-decision. **Not a bug** means it looked like one but is kept, because the
+disc version, sorted into four groups. **Fix** means it is a bug, fixed
+or to be fixed. **Kept** means it could be a bug or the game as designed,
+and we decided to keep it, because fixing it would change how the game
+plays. **Not a bug** means it looked like one but is kept, because the
 levels or the play depend on it. **Moot** means the revision's design
 removes it.
 
@@ -33,26 +34,27 @@ settled with the project's owner first.
 | A monster killed by magic comes back with the hit points it had left | &768A | **Fixed** (untested) |
 | The hero menu's sound ON/OFF shows the last choice made, not the setting in force | menu | **Fixed**: shows the setting in force; `test_menu_shows_the_sound_off` |
 | The ten-thousands score digit is lost at each new level | &040F | **Fixed**: one table |
+| A missile stops at a dead hero's skull | &71DD | Ruled a bug (2026-11-08). **Fixed**: a hero out of play (a skull, or a hero dying or returning) lets a missile through; `test_a_missile_flies_through_a_skull`. The comparisons stop where the original stops a missile at a skull |
+| A Cross of Resurrection is used up, and scores 10, when nobody is waiting | &7411 | Ruled a bug (2026-11-08). **Fixed**: with nobody waiting, the Cross stays where it is; it is taken, and scores, only when it brings a hero back; `test_a_cross_with_nobody_to_bring_back_stays`. The comparisons stop where the original wastes a Cross |
+| A caster killed by magic's cost still kills the room's monsters and scores | &7652 | Ruled a bug (2026-11-08). **Fixed**: a caster the cost kills casts nothing; `test_a_caster_killed_by_the_cost_casts_nothing` |
+| Survivors gain a free point at every new level (`draw_status_panel` draws scores with `add_point`) | &0F02 | Ruled a bug (2026-11-08). **Fixed**: the panel draws the score with `draw_score`, and a reset score is 0000; `test_a_survivor_keeps_their_score_at_the_next_level`. The level comparison gives the revised survivors the 1987 point |
+| A Potion of Healing sets health from the score's units digit, so it can give 00 | &7503 | Ruled a bug (2026-11-08) in the 0 case only: the digit-twice health (11 to 99) is the potion's design. **Fixed**: a 0 counts as 1, so health 11; `test_a_potion_never_leaves_00_health`. The comparisons stop where the original's potion leaves 00 |
 
-## Rule
+## Kept
 
-Each of these could be a bug or the game as designed. Fixing any of them
-changes how the game plays.
+Each of these could be a bug or the game as designed. We decided
+(2026-11-08) to keep them all, because fixing any of them changes how the
+game plays.
 
-| Behaviour | Where |
-|---|---|
-| A monster on exactly 0 hit points survives (`BPL`): Ranger arrows take five hits on level 1, not four | &7594 |
-| Survivors gain a free point at every new level (`draw_status_panel` draws scores with `add_point`) | &0F02 |
-| A missile stops at a dead hero's skull | &71DD |
-| A missile bounced by an energy drainer can hit its firer | &71A5 |
-| Finding any object, even a teleporter or the exit, takes off the Boots of Speed | &734D |
-| A Potion of Healing sets health from the score's units digit, so it can give 00 | &7503 |
-| A Cross of Resurrection is used up, and scores 10, when nobody is waiting | &7411 |
-| A caster killed by magic's cost still kills the room's monsters and scores | &7652 |
-| Walking into a monster costs one point whatever the armour; dying monsters still block | &6FFC |
-| Monsters cross room boundaries two cells in two frames | `continue_monster_step` |
-| All 30 monsters emerge together at the start of a level; stacked monsters slide out together | `reset_monsters` |
-| A refused move still turns the hero | &6ECB |
+| Behaviour | Where | Why it stays |
+|---|---|---|
+| A monster on exactly 0 hit points survives (`BPL`): Ranger arrows take five hits on level 1, not four | &7594 | Probably an off-by-one, but the game was balanced and released with it |
+| A missile bounced by an energy drainer can hit its firer | &71A5 | A fair hazard of shooting drainers |
+| Finding any object, even a teleporter or the exit, takes off the Boots of Speed | &734D | Boots that wear out may be intended; removing them only on pickups was considered and not taken |
+| Walking into a monster costs one point whatever the armour; dying monsters still block | &6FFC | A simple rule; the blocking lasts only a few frames |
+| Monsters cross room boundaries two cells in two frames | `continue_monster_step` | Part of how monsters move; it shapes how the game feels |
+| All 30 monsters emerge together at the start of a level; stacked monsters slide out together | `reset_monsters` | The opening rush, in every level |
+| A refused move still turns the hero | &6ECB | How a hero aims without stepping |
 
 ## Not a bug
 
