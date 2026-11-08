@@ -173,6 +173,13 @@ oscli                    = &fff7
     nop                                 ; ...the last of the four
     lda #&14                            ; VDU 20: default colours, showing the picture
     jsr oswrch                          ; ...so the loaded picture appears all at once
+    ldx #0                              ; Print the version below the picture...
+.print_version
+    lda version_text,x                  ; ...the next byte of version_text...
+    jsr oswrch                          ; ...to the screen
+    inx                                 ; Next byte
+    cpx #version_text_end - version_text ; ...all sent?
+    bne print_version                   ; No: the next
     lda #0                              ; Plot the stars left to right
     sta title_plot_reversed             ; ...so title_plot_star steps right across a row
     lda #osbyte_flush_buffer            ; OSBYTE &15: flush the buffer X
@@ -796,6 +803,12 @@ oscli                    = &fff7
 
 ; Each character row's offset from the start of the screen, row x 640, high byte then low
 ; byte (the 1987 release read MOS 1.20's own table at &C375).
+; The version, on the bottom text row, which the picture leaves free. VERSION comes from
+; the build (tools/dunjunz_revised/_version.py).
+.version_text
+    equb 31, 3, 31                      ; VDU 31,3,31: column 3 of the bottom row
+    equs "REVISED ", VERSION            ; "Dunjunz" is in the picture
+.version_text_end
 .title_row_offsets
 FOR row, 0, 31
     equb HI(row * 640), LO(row * 640)

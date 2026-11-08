@@ -140,6 +140,7 @@ def assemble_to_disc(source_filepath: Path, saved_filenames: tuple[str, ...], ou
     result = subprocess.run(
         [find_beebasm(), "-i", str(source_filepath.relative_to(PROJECT_DIRPATH)),
          "-do", str(scratch_filepath.relative_to(PROJECT_DIRPATH)), "-v",
+         "-S", f"VERSION={__version__}",
          "-d", "-labels", str((output_dirpath / f"{source_filepath.stem}.labels").relative_to(PROJECT_DIRPATH))],
         cwd=PROJECT_DIRPATH,
         capture_output=True,
