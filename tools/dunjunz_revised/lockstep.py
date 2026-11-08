@@ -64,7 +64,8 @@ STATE_BLOCKS = (
     ("key_x+1", 20),
     ("key_y+1", 20),
     ("hero_key", 5),                 # keys carried and dropped, doors bumped
-    ("hero_key_dropped", 5),
+    # hero_key_dropped is left out: the revised game keeps the key dropped in a
+    # swap there, not the 1987 one-frame flag (the key swap fix, test_fixes.py).
     ("hero_door_x", 5),
     ("hero_door_y", 5),
     ("monster_x+1", 30),             # the monsters, entries 1-30 (31-40 are scratch)

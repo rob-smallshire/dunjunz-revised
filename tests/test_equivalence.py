@@ -52,6 +52,45 @@ def record(disc_filepath, labels, game_ranges, script, frames):
     return states
 
 
+# Where each hero's map x and y lie in the "scratch" state block (both builds).
+HERO_X_OFFSET = 0x10
+HERO_Y_OFFSET = 0x15
+HEROES = 4
+
+
+def swap_back_frame(original):
+    """The first frame at which the original swaps a hero's key back while they
+    stand on the cell of their last swap (the bug the revised game fixes), or None.
+    The comparison must stop before it."""
+    swap_cells = [None] * HEROES
+    for frame in range(1, len(original)):
+        before, after = original[frame - 1], original[frame]
+        if "hero_key" not in after:
+            break
+        for hero in range(HEROES):
+            cell = (after["scratch"][HERO_X_OFFSET + hero], after["scratch"][HERO_Y_OFFSET + hero])
+            held, now = before["hero_key"][hero], after["hero_key"][hero]
+            if now != held:
+                if held and now and swap_cells[hero] == cell:
+                    return frame
+                # A swap, or a pickup with no key held, remembers the cell; a key
+                # used on a door or dropped at death (now 0) is not a swap.
+                swap_cells[hero] = cell if now else None
+            elif swap_cells[hero] != cell:
+                swap_cells[hero] = None
+    return None
+
+
+def compared(original, revised, minimum_states):
+    """Both recordings cut short before the original's first key swap back,
+    checking that enough is left to compare."""
+    cut = swap_back_frame(original)
+    if cut is None:
+        return original, revised
+    assert cut >= minimum_states, f"only {cut} states before the original swaps a key back"
+    return original[:cut], revised[:cut]
+
+
 def first_difference(original, revised):
     for frame, (a, b) in enumerate(zip(original, revised)):
         if a.keys() != b.keys():
@@ -73,7 +112,7 @@ def test_revised_plays_as_the_original(disc_filepaths, seed):
                       ORIGINAL_GAME_RANGES, script, FRAMES)
     revised = record(REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz"),
                      REVISED_GAME_RANGES, script, FRAMES)
-    assert first_difference(original, revised) is None
+    assert first_difference(*compared(original, revised, 500)) is None
 
 
 def test_scripts_exercise_the_game(disc_filepaths):

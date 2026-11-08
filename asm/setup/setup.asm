@@ -142,7 +142,7 @@
 ; x off the map, so update_monsters brings each out of a trapdoor in turn, with
 ; monster_start_hit_points, the hit points level_loop set for this level. Then, for each
 ; of the four heroes, clear their returning_hero_queue entry, the key they carry
-; (hero_key) and the swap flag (hero_key_dropped), and the cell kept for the door and
+; (hero_key) and the key dropped in a swap (hero_key_dropped), and the cell kept for the door and
 ; Chalice checks (hero_door_x, hero_door_y), so nothing from the last level opens a door
 ; or wins the game. remove_absent_heroes refills the queue later for heroes nobody plays.
 ;

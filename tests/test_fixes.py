@@ -18,6 +18,7 @@ from test_equivalence import ORIGINAL_GAME_RANGES, REVISED_GAME_RANGES
 CTRL = 0xFE            # the Ranger's magic key
 CURSOR_DOWN = 0xD6     # the Magic-User's fire key, internal key &29, below P's &37
 P = 0xC8
+OFF_MAP = 0xFF        # a key x or y off the map
 
 
 def original():
@@ -129,3 +130,31 @@ def test_menu_shows_the_sound_off(disc_filepaths):
         assert bbc.cpu.pc == labels["menu_sound_shown"]
         entry = bytes(bbc.memory.address.peek[labels["menu_text"] + 0x98:labels["menu_text"] + 0x9B])
         assert entry == b"OFF"
+
+
+def keys_carried_on_a_key(build, frames=12):
+    """Give the Ranger key 19, put key 20 (the first searched) under them, stand still, and list the
+    key they carry at each frame. Also say whether key 19 ends up on their cell."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        x = run.peek(run.address("hero_x"), 1)
+        y = run.peek(run.address("hero_y"), 1)
+        run.poke(run.address("hero_key"), bytes([19]))
+        run.poke(run.address("key_x+19"), bytes([OFF_MAP]))
+        run.poke(run.address("key_y+19"), bytes([OFF_MAP]))
+        run.poke(run.address("key_x+20"), x)
+        run.poke(run.address("key_y+20"), y)
+        carried = []
+        for _ in range(frames):
+            run.next_frame(set())
+            carried.append(run.peek(run.address("hero_key"), 1)[0])
+        key_19_here = (run.peek(run.address("key_x+19"), 1), run.peek(run.address("key_y+19"), 1)) == (x, y)
+        return carried, key_19_here
+
+
+def test_standing_on_a_key_swaps_once(disc_filepaths):
+    carried, key_19_here = keys_carried_on_a_key(revised())
+    assert carried == [20] * len(carried)
+    assert key_19_here
+    carried, _ = keys_carried_on_a_key(original())
+    assert carried.count(19) > 1 and carried.count(20) > 1    # back and forth

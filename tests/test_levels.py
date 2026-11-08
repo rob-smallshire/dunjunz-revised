@@ -4,7 +4,7 @@ The original resets the machine and reloads the whole game for every level;
 the revised game stays resident and must reset everything that matters
 itself. Both builds play part of level 1 with the same keys, leave it as if
 a hero had survived, and must match at the start of level 2 and while it is
-played.
+played, up to the original's first key swap back (see test_equivalence).
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from dunjunz_revised.build import (
     read_labels,
 )
 from dunjunz_revised.lockstep import Script, game_run
-from test_equivalence import ORIGINAL_GAME_RANGES, REVISED_GAME_RANGES, first_difference
+from test_equivalence import ORIGINAL_GAME_RANGES, REVISED_GAME_RANGES, compared, first_difference
 
 LEVEL_1_FRAMES = 150
 LEVEL_2_FRAMES = 200
@@ -42,4 +42,4 @@ def test_second_level_matches_the_original(disc_filepaths):
                       ORIGINAL_GAME_RANGES, "to_next_level", script)
     revised = record(REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz"),
                      REVISED_GAME_RANGES, "next_level", script)
-    assert first_difference(original, revised) is None
+    assert first_difference(*compared(original, revised, 50)) is None

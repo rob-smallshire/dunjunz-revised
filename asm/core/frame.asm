@@ -18,8 +18,10 @@
 ; 3. Keys (draw_keys): every key on the floor is redrawn, then each hero is checked. A
 ;    dead hero whose death animation has finished drops their key where they fell. A hero
 ;    in play, or still dying, who stands on a key picks it up and leaves the key they
-;    carried, if any, in its place; hero_key_dropped makes them skip the next frame, so
-;    one who stays on the cell swaps back on the frame after.
+;    carried, if any, in its place. hero_key_dropped remembers the key left there, and
+;    the hero picks up no key until they are off it, so a swap happens once, on arrival.
+;    In the 1987 release it was a flag that held off only the next frame, so a hero who
+;    stayed on the cell swapped back and forth every other frame.
 ; 4. draw_objects: the objects are replotted, repairing any cell a moving sprite has
 ;    crossed.
 ; 5. move_missiles: each missile in flight moves one cell and hits what it meets.
@@ -226,11 +228,18 @@
     tax                                 ; ...into X, for next_hero_keys
     jmp next_hero_keys                  ; Key dropped: on to the next hero
 .check_key_swap
-    lda hero_key_dropped,x              ; Swapped keys on the last frame?
-    beq check_key_cell                  ; No: look for a key at the hero's cell
-    lda #0                              ; Yes: skip this frame, clearing the flag
-    sta hero_key_dropped,x              ; ...so next frame's check may swap again
-    jmp next_hero_keys                  ; ...and move on to the next hero
+    ldy hero_key_dropped,x              ; The key this hero dropped in a swap, if any
+    beq check_key_cell                  ; None: look for a key at the hero's cell
+    lda key_x,y                         ; Is the hero still on it? Its x...
+    cmp hero_x,x                        ; ...at the hero's x?
+    bne left_dropped_key                ; No: the hero has left it
+    lda key_y,y                         ; ...and its y...
+    cmp hero_y,x                        ; ...at the hero's y?
+    bne left_dropped_key                ; No: the hero has left it
+    jmp next_hero_keys                  ; Still on it: no swap back; on to the next hero
+.left_dropped_key
+    lda #0                              ; Off the dropped key (or it was taken): forget it
+    sta hero_key_dropped,x              ; ...and look for a key here as usual
 ; Look for a key at the hero's cell, keys 20 to 1; the first found is picked up.
 .check_key_cell
     lda hero_x,x                        ; Is there a key at the hero's cell? Its x...
@@ -277,7 +286,7 @@
     tax                                 ; ...into X: the key to carry...
     pla                                 ; ...and the hero number...
     tay                                 ; ...into Y: the hero picking it up
-; The swap: the key carried (or unused entry 0) goes on the floor here, the new one is carried and taken off the map, and hero_key_dropped makes the next frame pass this hero by.
+; The swap: the key carried (or unused entry 0) goes on the floor here, the new one is carried and taken off the map, and hero_key_dropped keeps the old one's number, so it is left alone until the hero is off it.
     txa                                 ; Drop the key carried (if any) in this cell...
     pha                                 ; ...keeping the new key's number on the stack...
     ldx hero_key,y                      ; ...the old key, or unseen entry 0 if none...
@@ -285,11 +294,11 @@
     sta key_x,x                         ; ...as its x...
     lda hero_y,y                        ; ...and the hero's y...
     sta key_y,x                         ; ...as its y
+    txa                                 ; Remember the key dropped (0 if none)...
+    sta hero_key_dropped,y              ; ...so it is not picked straight back up
     pla                                 ; Recover the new key's number...
     tax                                 ; ...into X, and in A to carry
     sta hero_key,y                      ; ...and carry the new one
-    lda #1                              ; Mark the swap
-    sta hero_key_dropped,y              ; ...so the dropped key is left alone next frame
     lda #off_map                        ; Take the new key off the floor
     sta key_x,x                         ; ...x off the map, so draw_keys skips it...
     sta key_y,x                         ; ...and y off the map

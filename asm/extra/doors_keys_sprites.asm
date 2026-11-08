@@ -1,6 +1,7 @@
 .hero_key
     equb &00, &00, &00, &00, &00
-; Set when the hero has just swapped keys, so the key dropped is not picked straight back up.
+; The key each hero dropped in their last swap, 0 if none, until they are off it: they pick up
+; no key while standing on it.
 .hero_key_dropped
     equb &00, &00, &00, &00, &00, &00, &00, &00
     equb &00, &00, &00

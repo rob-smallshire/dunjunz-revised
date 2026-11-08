@@ -22,10 +22,10 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
    *Recommendation:* drop the return address when the descent starts.
    The only visible effect is that the level ends a few frames sooner.
 
-3. **A hero standing on a key swaps keys every other frame**, and so do
-   dying heroes.
-   *Recommendation:* swap only when a hero arrives in a cell, never while
-   standing; dying heroes never swap.
+3. ~~A hero standing on a key swaps keys every other frame.~~ Fixed
+   (2026-11-08): one swap on arrival, which the 1987 instructions describe
+   ("the key lying on the floor is picked up, and the original key being
+   carried is dropped in its place"). See `bugs.md`.
 
 4. **A key dropped at the exit can land in a wall**: the fourth
    neighbouring cell isn't tested, and neither is any cell for keys or
