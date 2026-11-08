@@ -77,8 +77,10 @@
     cmp #0                              ; ...up to its zero byte
     bne print_game_over                 ; Not the end: next
 .wait_vsync_game_over
-    lda os_vsync_counter                ; Wait for the vsync counter, still running, to reach 0
-    bne wait_vsync_game_over            ; Not yet: keep waiting
+    lda os_vsync_counter                ; Wait for the vsync counter, still running, to run out
+    beq vsync_game_over_done            ; 0: done
+    bpl wait_vsync_game_over            ; Still counting down: keep waiting
+.vsync_game_over_done
     lda #osbyte_flush_buffer_class      ; Flush the input buffers
     jsr osbyte                          ; Discard keys pressed during play  Flush selected class of buffer
     ldx #&46 ; 'F'                      ; Game over: wait up to &246 cs (5.8 s) for a key...
