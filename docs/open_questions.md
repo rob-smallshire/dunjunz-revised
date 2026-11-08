@@ -22,12 +22,9 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
    ("the key lying on the floor is picked up, and the original key being
    carried is dropped in its place"). See `bugs.md`.
 
-4. **A key dropped at the exit can land in a wall**: the fourth
-   neighbouring cell isn't tested, and neither is any cell for keys or
-   objects already there.
-   *Recommendation:* test all four cells for walls and keys. If none is
-   free, keep the key on the hero, who is leaving anyway, so it is lost
-   from this level as it would be in a wall.
+4. ~~A key dropped at the exit can land in a wall.~~ Fixed (2026-11-08):
+   all four neighbouring cells are tested for walls and keys; with none
+   free, the key is lost off the map. See `bugs.md`.
 
 5. **Teleport landings aren't checked**: the hero is put above the
    destination teleporter whatever is there.

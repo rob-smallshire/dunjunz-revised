@@ -264,3 +264,69 @@ def test_a_trapdoor_a_hero_stands_on_stays_shut(disc_filepaths):
             run.next_frame(set())
         emerged = run.peek(run.address("monster_x+1"), 30)
         assert OFF_MAP not in emerged
+
+
+ABOVE, RIGHT, BELOW, LEFT = (0, -1), (1, 0), (0, 1), (-1, 0)
+
+
+def call(run, label, x):
+    """Call a game routine with X set, from the start of a frame, back to it."""
+    cpu = run.bbc.cpu
+    back = run.labels[UPDATE_GAME] - 1          # rts returns to update_game
+    run.poke(0x100 + cpu.sp - 1, bytes([back & 0xFF, back >> 8]))
+    cpu.sp -= 2
+    cpu.x = x
+    cpu.pc = run.labels[label]
+    run.bbc.debugger.run_to(run.labels[UPDATE_GAME], timeout=60)
+
+
+def wall_address_and_bit(run, x, y):
+    return run.labels["room_walls"] + (y & 0xF8) * 4 + (x & 0xF8) + (y & 7), 0x80 >> (x & 7)
+
+
+def is_wall(run, x, y):
+    address, bit = wall_address_and_bit(run, x, y)
+    return bool(run.peek(address, 1)[0] & bit)
+
+
+def make_wall(run, x, y):
+    address, bit = wall_address_and_bit(run, x, y)
+    run.poke(address, bytes([run.peek(address, 1)[0] | bit]))
+
+
+def drop_key_at_exit(build, keys_beside=0, walls_all_round=False):
+    """The Ranger, carrying key 19, drops it as if at the exit. keys_beside of
+    the open cells around them (in the order tried) first get keys 20, 18,...
+    Return the open cells in order and where key 19 lands."""
+    disc_filepath, labels, ranges = build
+    with game_run(disc_filepath, labels, ranges) as run:
+        x, y = run.peek(run.address("hero_x"), 1)[0], run.peek(run.address("hero_y"), 1)[0]
+        cells = [(x + dx, y + dy) for dx, dy in (ABOVE, RIGHT, BELOW, LEFT)]
+        if walls_all_round:
+            for cell in cells:
+                make_wall(run, *cell)
+        open_cells = [cell for cell in cells if not is_wall(run, *cell)]
+        for key, cell in zip((20, 18, 17, 16), open_cells[:keys_beside]):
+            run.poke(run.address(f"key_x+{key}"), bytes([cell[0]]))
+            run.poke(run.address(f"key_y+{key}"), bytes([cell[1]]))
+        run.poke(run.address("hero_key"), bytes([19]))
+        call(run, "drop_key", 0)
+        landed = run.peek(run.address("key_x+19"), 1)[0], run.peek(run.address("key_y+19"), 1)[0]
+        return cells, open_cells, landed
+
+
+def test_a_key_dropped_at_the_exit_avoids_other_keys(disc_filepaths):
+    _, open_cells, landed = drop_key_at_exit(revised(), keys_beside=1)
+    assert len(open_cells) >= 2
+    assert landed == open_cells[1]
+    _, open_cells, landed = drop_key_at_exit(original(), keys_beside=1)
+    assert landed == open_cells[0]                  # on top of key 20
+
+
+def test_a_key_with_nowhere_to_go_is_lost_not_put_in_a_wall(disc_filepaths):
+    _, _, landed = drop_key_at_exit(revised(), walls_all_round=True)
+    assert landed == (OFF_MAP, OFF_MAP)
+    cells, _, landed = drop_key_at_exit(original(), walls_all_round=True)
+    assert landed == cells[3]                       # in the wall to the left
+    _, open_cells, landed = drop_key_at_exit(revised(), keys_beside=4)
+    assert landed == (OFF_MAP, OFF_MAP)

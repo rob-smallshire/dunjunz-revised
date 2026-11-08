@@ -26,7 +26,7 @@ settled with the project's owner first.
 | The victory bell is set with a stale Y | &10E9, &1124 | **Fixed** (untested: needs the victory sequence) |
 | A hero standing on a key swaps keys every other frame (dying heroes too) | &1E84-&1E9C, &1DF8 | **Fixed**: one swap on arrival, as the instructions describe; `hero_key_dropped` holds the key dropped until the hero is off it, and draw_keys leaves that key undrawn meanwhile, or it would flicker over the hero; `test_standing_on_a_key_swaps_once`, `test_a_dropped_key_is_not_drawn_over_the_hero`. The comparisons stop at the original's first key-for-key swap |
 | Trapdoors are redrawn after the heroes and missiles, so a hero or missile on one flickers with it | `update_monsters` &79C1 | **Fixed**: `draw_trapdoors` runs first in each frame; `test_a_hero_on_a_trapdoor_is_drawn_over_it`. The screen comparisons leave out the trapdoors' cells |
-| A key dropped at the exit can land in a wall: the fallback cell is not tested | &20F7 | |
+| A key dropped at the exit can land in a wall: the fallback cell is not tested | &20F7 | **Fixed**: all four neighbours are tested for walls and keys; with none free the key is lost (off the map); `test_a_key_dropped_at_the_exit_avoids_other_keys`, `test_a_key_with_nowhere_to_go_is_lost_not_put_in_a_wall` |
 | A monster killed this frame can be hit again by another missile, scoring twice | &7147 | **Fixed** (untested) |
 | A monster killed by magic comes back with the hit points it had left | &768A | **Fixed** (untested) |
 | Teleport landings are not checked for walls, monsters or heroes | &73EA-&73F9 | |
