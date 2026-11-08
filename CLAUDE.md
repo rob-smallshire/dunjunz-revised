@@ -34,6 +34,9 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   layouts as label blocks), `low/` and `core/` (most of it, whichever region
   it now lives in), `extra/` (&1C00 up), `upper/` (&6E80 up), `start/`
   (run once), `setup/` (Setup). `asm/title.asm` is DUNJUNZ, the title.
+- The title picture, `Screen`, is the 1987 one changed by the build
+  (`tools/dunjunz_revised/title_picture.py`): "Press any key" in yellow and
+  the version drawn in on the bottom row, from `_version.py`.
 - `uv run dr-sizes` shows where each module is; space is tight, so check it
   after every change. Modules were split to fit: move whole modules between
   regions rather than trimming blindly.

@@ -108,7 +108,8 @@ osasci                   = &ffe3
 ; and "1 " before loading Level1; for each hero, hero_score_ten_thousands = &69 (no digit)
 ; and hero_absent = 0 (playing), so every game starts with all four heroes switched on in
 ; the menu. Title: select MODE 2 (*TV 255,1) with all sixteen colours black, load SCREEN
-; unseen, restore the colours, print the version, and twinkle_stars until a key other
+; unseen, restore the colours (the build draws the version into the picture: see
+; tools/dunjunz_revised/title_picture.py), and twinkle_stars until a key other
 ; than SHIFT or CTRL is pressed. Hand-over: select the game's display (*TV 252,1, MODE 2,
 ; cursor off), and leave_title blanks the display, disables VDU output and runs *RUN
 ; GAME, which never returns.
@@ -192,13 +193,6 @@ osasci                   = &ffe3
     nop                                 ; ...the last of the four
     lda #&14                            ; VDU 20: default colours, showing the picture
     jsr oswrch                          ; ...so the loaded picture appears all at once
-    ldx #0                              ; Print the version below the picture...
-.print_version
-    lda version_text,x                  ; ...the next byte of version_text...
-    jsr oswrch                          ; ...to the screen
-    inx                                 ; Next byte
-    cpx #version_text_end - version_text ; ...all sent?
-    bne print_version                   ; No: the next
     lda #0                              ; Plot the stars left to right
     sta title_plot_reversed             ; ...so title_plot_star steps right across a row
     lda #osbyte_flush_buffer            ; OSBYTE &15: flush the buffer X
@@ -819,17 +813,11 @@ NEXT
     equb &00, &00, &00, &2a, &00, &00, &00  ; Frame 6: 7 bytes by 28 rows
 .dasmos_end
 
-; Each character row's offset from the start of the screen, row x 640, high byte then low
-; byte (the 1987 release read MOS 1.20's own table at &C375).
-; The version, on the bottom text row, which the picture leaves free. VERSION comes from
-; the build (tools/dunjunz_revised/_version.py).
 ; The message for a machine whose filing systems take memory above &1C00.
 .page_message
     equs "Dunjunz Revised needs PAGE at &1C00 or below.", &0d, 0
-.version_text
-    equb 31, 3, 31                      ; VDU 31,3,31: column 3 of the bottom row
-    equs "REVISED ", VERSION            ; "Dunjunz" is in the picture
-.version_text_end
+; Each character row's offset from the start of the screen, row x 640, high byte then low
+; byte (the 1987 release read MOS 1.20's own table at &C375).
 .title_row_offsets
 FOR row, 0, 31
     equb HI(row * 640), LO(row * 640)

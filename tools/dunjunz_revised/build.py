@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dunjunz_revised._version import __version__
+from dunjunz_revised.title_picture import PICTURE_ADDRESS, revised_picture
 
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
 ASM_DIRPATH = PROJECT_DIRPATH / "asm"
@@ -48,7 +49,7 @@ ORIGINAL_DISC_TITLE = "DUNJUNZ 1987"
 
 def disc_title(version: str) -> str:
     """A DFS title (at most 12 characters) for a version: 2026.1 gives
-    "DUNJUNZ 26.1". The full name is on the title screen and in !BOOT."""
+    "DUNJUNZ 26.1". The full version is on the title picture (title_picture.py)."""
     year, n = version.split(".")
     title = f"DUNJUNZ {int(year) % 100:02d}.{n}"
     assert len(title) <= 12, title
@@ -257,13 +258,16 @@ def build_revised() -> Path:
         if REVISED_MUST_MATCH_ORIGINAL:
             verify_against_reference(REVISED_BUILD_DIRPATH, saved_filenames)
 
+    (REVISED_BUILD_DIRPATH / "Screen").write_bytes(
+        revised_picture((REFERENCE_DIRPATH / "Screen").read_bytes(), __version__))
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
     title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
     title = DiscFile("Dunjunz", IO_PROCESSOR | title_labels["dasmos_start"], IO_PROCESSOR | title_labels["title_start"])
     files = [
         (DiscFile("!BOOT", title.load_address, title.exec_address), REVISED_BUILD_DIRPATH / "Dunjunz"),
         (title, REVISED_BUILD_DIRPATH / "Dunjunz"),
-        (DiscFile("Screen", IO_PROCESSOR | 0x3280, IO_PROCESSOR | 0x3280), REFERENCE_DIRPATH / "Screen"),
+        (DiscFile("Screen", IO_PROCESSOR | PICTURE_ADDRESS, IO_PROCESSOR | PICTURE_ADDRESS),
+         REVISED_BUILD_DIRPATH / "Screen"),
         (DiscFile("GAME", IO_PROCESSOR | labels["game_file_start"], IO_PROCESSOR | labels["startup"]),
          REVISED_BUILD_DIRPATH / "GAME"),
         (DiscFile("Setup", IO_PROCESSOR | labels["setup_start"], IO_PROCESSOR | labels["setup_level"]),

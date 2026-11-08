@@ -22,7 +22,7 @@ ENDS = {"RTS", "JMP", "RTI", "BRK"}
 NEVER_FALL_THROUGH = {
     ("dunjunz", "next_queue_entry", "BNE"),     # always taken: the queue has a free entry
     ("title", "send_blank_vdu", "JSR"),         # OSCLI *RUN GAME, which never returns
-    ("title", "print_version", "JSR"),          # leave_title, which never returns
+    ("title", "black_colours", "JSR"),          # leave_title, which never returns
     ("title", "star_not_showing", "BNE"),       # always taken: X = 20
 }
 
