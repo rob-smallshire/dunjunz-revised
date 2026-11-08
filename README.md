@@ -42,7 +42,12 @@ Requires [uv](https://docs.astral.sh/uv/) and
 
 ```sh
 uv sync
-uv run dr-build        # build/dunjunz-original.ssd (the verified baseline)
+uv run dr-build        # build/dunjunz-revised.ssd, and build/dunjunz-original.ssd (the 1987 baseline)
 uv run pytest          # tests, in the beebium emulator
-uv run dr-machines     # PAGE under each tested filing-system configuration
 ```
+
+## Running it
+
+Boot `dunjunz-revised.ssd` with SHIFT-BREAK, or copy its files to any
+filing system (a network file server included) and `*RUN DUNJUNZ`. The game
+needs a BBC Micro with PAGE at &1C00 or below.

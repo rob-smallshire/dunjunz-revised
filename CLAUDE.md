@@ -13,30 +13,39 @@ uv run dr-build                                   # assemble, verify the baselin
 uv run pytest                                     # tests (beebium)
 uv run dr-machines                                # PAGE per machine configuration
 uv run dr-sizes                                   # address range and size of each game module
+uv run python -m dunjunz_revised.coverage 1500 1 2 3   # instructions never run in scripted play
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
 ```
 
 ## Source layout
 
-- `asm/dunjunz.asm` is the game's top level: it INCLUDEs the modules under
-  `asm/` (paths from the project root, where beebasm runs) between the
-  `org`/`copyblock` directives that place them. The modules are grouped by
-  the memory each is assembled into: `defs/` (constants and addresses),
-  `core/` (stored at &3000, runs at &08C0-&1FFF), `low/` (the keyboard and
-  joystick images of &0400-&07FF), `extra/` (&2000-&2FFF), `coder/` (Coder
-  at &5000 and the padding to &6E80) and `upper/` (&6E80-&7FFF). The title
-  and loader are `asm/title.asm`.
-- While `REVISED_MUST_MATCH_ORIGINAL` is set in `build.py`, the revised
-  sources must assemble to the original bytes. A change that is meant to
-  alter the output turns it off, and from then on the tests compare
-  behaviour with the baseline instead.
+- `asm/dunjunz.asm` is the game's top level. It sets out the memory regions
+  (see `docs/memory.md`) and INCLUDEs the modules into them, with ASSERTs
+  that each fits; paths are from the project root, where beebasm runs, and
+  SAVEs go into a scratch disc image that the build reads back. It saves
+  `GAME` (loaded at &1C00; its startup, game_entry and the hero menu run once
+  from screen memory and copy the regions below &1C00 into place) and
+  `Setup` (loaded with each level and run in screen memory).
+- Module groups: `defs/` (constants, addresses, the workspace and level file
+  layouts as label blocks), `low/` and `core/` (most of it, whichever region
+  it now lives in), `extra/` (&1C00 up), `upper/` (&6E80 up), `start/`
+  (run once), `setup/` (Setup). `asm/title.asm` is DUNJUNZ, the title.
+- `uv run dr-sizes` shows where each module is; space is tight, so check it
+  after every change. Modules were split to fit: move whole modules between
+  regions rather than trimming blindly.
+- Everything the tests read is a label: beebasm exports labels, not `=`
+  constants, so variables are declared with `skip` in label blocks.
 
 ## Equivalence
 
 `tests/test_equivalence.py` runs the original and the revised game frame by
-frame with the same scripted keys and compares their state and screen
-(`tools/dunjunz_revised/lockstep.py`). The System VIA timer reads that
+frame (1500 frames, or to game over) with the same scripted keys and
+compares their state and screen (`tools/dunjunz_revised/lockstep.py`);
+`tests/test_levels.py` does the same across a level change, and
+`tests/test_game_over.py` compares the game-over screen. Fixes that change
+play are tested in `tests/test_fixes.py`, and the comparisons' scripts avoid
+them (no magic). The System VIA timer reads that
 supply the game's randomness are patched at run time into calls to a
 generator at &0060-&006F, so the revised game must leave that zero page
 alone. A state block that is rearranged needs its own entry in
@@ -45,7 +54,7 @@ the comparison fail from the first frame it affects. Such a change is
 tested on its own, and the comparison is then made against the fixed
 behaviour or restricted around it.
 
-## Source of truth
+## The 1987 release
 
 - `asm/original/game.asm` and `title.asm` are the acornaeology reassembly
   of the Model B disc side (`~/Code/acornaeology/dunjunz`, commit
@@ -61,6 +70,10 @@ behaviour or restricted around it.
 
 `tools/dunjunz_revised/machines.py` defines the tested configurations as
 beebium presets built from bundled ROMs. Econet uses AUN (no hardware).
+`tests/test_filing_systems.py` loads levels under each; `tests/test_network.py`
+runs a Level 3 File Server (beebium's L3FS preset, its disc given the game by
+oaknut-disc) beside a client station. The peer agent `beebium-architect`
+answers questions about beebium. Beebium has no joystick (ADC) emulation.
 Beebium has no MMFS2 or Master yet; beebjit has a Master. The memory
 layout assumes PAGE is at most &1C00 (ANFS + DFS); see `docs/memory.md`.
 
