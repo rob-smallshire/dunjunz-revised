@@ -5,7 +5,8 @@ Micro, fixed, resident and filing-system agnostic. 6502 in beebasm, built
 by Python tools, tested in beebium. Goals and milestones: `docs/plan.md`.
 Memory and filing-system design, with measurements: `docs/memory.md`. Bug
 triage: `docs/bugs.md`. Record decisions in these as they are made.
-Ideas not yet agreed: `docs/enhancements.md`.
+Ideas not yet agreed: `docs/enhancements.md`. How the game behaves in
+play, level by level: `docs/behaviours.md`.
 
 ## Commands
 

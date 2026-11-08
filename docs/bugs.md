@@ -2,9 +2,11 @@
 
 The behaviours found in the disassembly
 (`~/Code/acornaeology/dunjunz/docs/findings.md`) that bear on the Model B
-disc version, sorted into three groups. **Fix** means we are sure it is
+disc version, sorted into four groups. **Fix** means we are sure it is
 a bug. **Rule** means it changes how the game plays, so it waits for a
-decision. **Moot** means the revision's design removes it.
+decision. **Not a bug** means it looked like one but is kept, because the
+levels or the play depend on it. **Moot** means the revision's design
+removes it.
 
 Each fix gets an emulator test that shows the bug in the baseline
 (`build/dunjunz-original.ssd`) and its absence in the revised game.
@@ -29,7 +31,6 @@ settled with the project's owner first.
 | A key dropped at the exit can land in a wall: the fallback cell is not tested | &20F7 | **Fixed**: all four neighbours are tested for walls and keys; with none free the key is lost (off the map); `test_a_key_dropped_at_the_exit_avoids_other_keys`, `test_a_key_with_nowhere_to_go_is_lost_not_put_in_a_wall` |
 | A monster killed this frame can be hit again by another missile, scoring twice | &7147 | **Fixed** (untested) |
 | A monster killed by magic comes back with the hit points it had left | &768A | **Fixed** (untested) |
-| Teleport landings are not checked for walls, monsters or heroes | &73EA-&73F9 | |
 | The hero menu's sound ON/OFF shows the last choice made, not the setting in force | menu | **Fixed**: shows the setting in force; `test_menu_shows_the_sound_off` |
 | The ten-thousands score digit is lost at each new level | &040F | **Fixed**: one table |
 
@@ -53,13 +54,19 @@ changes how the game plays.
 | All 30 monsters emerge together at the start of a level; stacked monsters slide out together | `reset_monsters` |
 | A refused move still turns the hero | &6ECB |
 
+## Not a bug
+
+| Behaviour | Why it stays |
+|---|---|
+| Teleport landings are not checked for walls, doors, objects, keys or creatures (&73EA-&73F9) | The levels use it: landings inside closed doors (levels 6 and 12), a shortcut to the exit (level 6), arrivals on drainers, treasure and keys. Decided 2026-11-08. See `behaviours.md` |
+
 ## Moot
 
 | Behaviour | Why |
 |---|---|
 | The machine is reset between levels, through MOS 1.20's &D9CD and the BREAK intercept | The game stays resident |
 | The level checksum resets the machine (&D9CD) | Levels are no longer encrypted or checksummed |
-| The joystick BYTEV handler falls through to &E772, and ADC channel 1 is read twice | Replaced by an ADVAL-based driver |
+| The joystick BYTEV handler falls through to &E772, and ADC channel 1 is read twice | Joystick support is left out for now (`plan.md`, milestone 6) |
 | The WRCHV handler jumps to &E0A4, not the saved vector | Chain to the saved vector |
 | `screen_address` reads the MOS 1.20 row table at &C375 | The game carries its own table |
 | Character 128's definition is assumed to be at &0C00 | Define it with VDU 23 |

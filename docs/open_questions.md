@@ -26,10 +26,8 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
    all four neighbouring cells are tested for walls and keys; with none
    free, the key is lost off the map. See `bugs.md`.
 
-5. **Teleport landings aren't checked**: the hero is put above the
-   destination teleporter whatever is there.
-   *Recommendation:* try the cells above, right, below and left of the
-   destination in turn; if all are blocked, don't teleport.
+5. ~~Teleport landings aren't checked.~~ Not a bug (2026-11-08): the
+   levels depend on it. See `bugs.md` and `behaviours.md`.
 
 ## Behaviours to rule on
 
