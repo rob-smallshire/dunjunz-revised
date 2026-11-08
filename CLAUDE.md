@@ -13,6 +13,7 @@ uv run dr-build                                   # assemble, verify the baselin
 uv run pytest                                     # tests (beebium)
 uv run dr-machines                                # PAGE per machine configuration
 uv run dr-sizes                                   # address range and size of each game module
+uv run dr-sprites [--original]                    # every sprite as an HTML table: build/sprites-*.html
 uv run python -m dunjunz_revised.coverage 1500 1 2 3   # instructions never run in scripted play
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
