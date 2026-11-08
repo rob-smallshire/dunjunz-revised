@@ -184,3 +184,28 @@ def test_sprites_match_the_original(disc_filepaths):
         if n in REMOVED_SPRITES:
             continue
         assert a == b, f"sprite &{n:02X}"
+
+
+DESCENT_FRAMES = 40
+
+
+def record_descent(disc_filepath, labels, game_ranges):
+    """The Ranger put on the exit at the first frame, then the state at the
+    start of each frame while they go down it (20 frames) and after."""
+    states = []
+    with game_run(disc_filepath, labels, game_ranges) as run:
+        run.poke(run.address("hero_x"), run.peek(run.address("exit_x"), 1))
+        run.poke(run.address("hero_y"), run.peek(run.address("exit_y"), 1))
+        states.append(run.state())
+        for _ in range(DESCENT_FRAMES):
+            run.next_frame(set())
+            states.append(run.state())
+    return states
+
+
+def test_exit_descent_matches_the_original(disc_filepaths):
+    original = record_descent(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),
+                              ORIGINAL_GAME_RANGES)
+    revised = record_descent(REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz"),
+                             REVISED_GAME_RANGES)
+    assert first_difference(original, revised) is None
