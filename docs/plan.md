@@ -11,8 +11,7 @@ filing system, and keeps it resident. The goals:
   attached. The layout assumes PAGE is at most &1C00;
 - fits on one volume, an 80-track single-sided DFS disc (200 KB);
 - behaves as the original does, without its bugs (see `bugs.md`);
-- joysticks through OSBYTE &80 (ADVAL), including four on the SPItFIRE
-  interface (channels 1-4 and 16-20, buttons on 0 and 16);
+- later: redefinable keys and a choice of joystick drivers (see milestone 6);
 - "Dunjunz Revised 2026.1" on `!BOOT`'s banner and the title screen. The
   disc title, limited to 12 characters by DFS, is "DUNJUNZ 26.1": "DUNJUNZ"
   and the version with the year shortened (`build.disc_title`).
@@ -38,8 +37,17 @@ filing system, and keeps it resident. The goals:
    and loading it mid-game would need screen memory that is on show.
 5. **Fixes.** One at a time from `bugs.md`, each with a test against the
    baseline.
-6. **Joysticks.** An ADVAL driver, chosen per hero on the hero menu, with
-   SPItFIRE detected for heroes 3 and 4.
+6. **Controls** (deferred; decided 2026-11-08). No joystick support for
+   now: keyboard only, so the 1987 Model B disc's Barbarian-on-joystick
+   mode (Coder's BYTEV handler) is gone. Later, a new phase in loading,
+   before the game, will redefine the keys and pick one of several
+   joystick drivers, which is loaded with the game:
+   - standard Acorn: two sticks, one button each;
+   - Voltmace Delta 14/B: extra buttons (magic could have its own);
+   - SPItFIRE: four sticks of one button each (channels 1-4 and 16-20,
+     buttons on 0 and 16, through a ROM on BYTEV; detectable).
+   One-button sticks leave the Ranger's and Magic-User's magic to be
+   settled: on the keyboard, or a gesture on the button.
 7. **Release.** The version is on the title screen and in the disc title
    (done). Still to do: a CI and release workflow like Don't Dither!'s.
 

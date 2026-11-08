@@ -60,20 +60,11 @@ These are definite bugs (`bugs.md`, "Fix"), but more than one fix is possible.
 
 ## Joysticks
 
-- **What to build:** a driver that reads OSBYTE &80 (ADVAL) through the
-  MOS, so that a ROM on BYTEV, like SPItFIRE's, is honoured. A joystick
-  stands in for a hero's direction and fire keys; the hero's keyboard keys
-  go on working.
-- **Who gets which stick:** the hero menu gets a line per hero: keys, or
-  joystick 1 to 4. Defaults: Barbarian on joystick 1, as the 1987 disc
-  version had it, then the Fighter on joystick 2; joysticks 3 and 4 only if
-  SPItFIRE is found.
-- **Space:** about 200 bytes are free in resident memory, scattered
-  (`dr-sizes`); a driver needs about 100-150.
-- **Needed:** SPItFIRE's channel and button layout, and how to detect it.
-  Beebium has no ADC (joystick) emulation, so the driver can't be tested
-  in the emulator yet. Would you file a beebium issue for that, or ask
-  `beebium-architect`?
+Deferred (2026-11-08): no joystick support for now. A later loading phase
+will redefine keys and select a joystick driver; see `plan.md`,
+milestone 6. Still needed then: SPItFIRE's and the Delta 14/B's button
+layouts and detection, how one-button sticks cast magic, and ADC
+emulation in beebium to test the drivers.
 
 ## Machines
 
