@@ -78,7 +78,8 @@ behaviour or restricted around it.
 beebium presets built from bundled ROMs. Econet uses AUN (no hardware).
 `tests/test_filing_systems.py` loads levels under each; `tests/test_network.py`
 runs a Level 3 File Server (beebium's L3FS preset, its disc given the game by
-oaknut-disc) beside a client station. The peer agent `beebium-architect`
+oaknut-disc) beside a client station. CI skips it for now (the clients never
+reach level 1 on GitHub's runners), so run it locally before a release. The peer agent `beebium-architect`
 answers questions about beebium. Beebium has no joystick (ADC) emulation.
 Beebium has no MMFS2 or Master yet; beebjit has a Master. The memory
 layout assumes PAGE is at most &1C00 (ANFS + DFS); see `docs/memory.md`.
