@@ -11,10 +11,8 @@
 ; least one hero is playing. Before each key is read, the keyboard buffer is flushed and
 ; CAPS LOCK is forced on with SHIFT LOCK off.
 ;
-; Neither hero_absent nor the menu text is set up here: the menu opens with whatever they
-; held, which after a game over in the same load is the last game's choices. The ON/OFF
-; entry shows only what was last chosen on the menu, not the sound suppression actually
-; in force. hero_absent is read by remove_absent_heroes at each level.
+; The ON/OFF entry is set from the sound suppression in force (OSBYTE &D2), which
+; outlasts a game; in the 1987 release it showed only the menu text as loaded. hero_absent is read by remove_absent_heroes at each level.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -33,6 +31,18 @@
     jsr oswrch                          ; Send the top row
     lda #&0c                            ; ...VDU 12 to clear it
     jsr oswrch                          ; Send VDU 12: clear the window
+    lda #osbyte_sound_suppression       ; Show the sound as it is: OSBYTE &D2...
+    ldx #0                              ; ...X = 0, Y = &FF: read the setting into X
+    ldy #&ff                            ; ...unchanged
+    jsr osbyte                          ; X non-zero if the sound is off
+    ldy #&99                            ; The second letter of the menu's ON/OFF entry
+    txa                                 ; Sound off?
+    bne menu_starts_off                 ; Yes: show OFF
+    jsr set_menu_on                     ; No: show ON
+    jmp menu_sound_shown                ; ...and on
+.menu_starts_off
+    jsr set_menu_off                    ; Show OFF
+.menu_sound_shown
     jsr print_menu                      ; Print the menu
     jmp menu_key_loop                   ; Read keys until the players start the game
 ; ***************************************************************************************
