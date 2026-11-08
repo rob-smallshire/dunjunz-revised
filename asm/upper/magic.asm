@@ -24,7 +24,7 @@
 .check_magic
     dec hero_magic_delay,x              ; Count down this hero's magic key delay
     beq read_magic_key                  ; Zero: time to look at the magic key
-    rts                                 ; Not yet: RTS ends move_heroes; later heroes wait too
+    jmp read_hero_keys                  ; Not yet: on with the hero's other keys
 .read_magic_key
     lda #1                              ; Delay 1: the key is read every frame from now on
     sta hero_magic_delay,x              ; ...so the next press is seen at once
