@@ -9,7 +9,13 @@
 ; its absolute workspace with service call &0A. Then copy the parts of the game stored in
 ; screen memory to where they run, and enter the game with VDU output on and the play
 ; screen's 23 rows shown. Coder did most of this in the 1987 release, for every level.
+;
+; Booted with SHIFT+BREAK, some filing systems (DFS 2.26, DNFS 1.20) *RUN !BOOT, the
+; title, with interrupts disabled, and *RUN GAME from the title keeps them so. The MOS
+; finds a fresh key press only through the keyboard interrupt, so the hero menu, waiting
+; in OSRDCH, would never see one. Interrupts are enabled first.
 .startup
+    cli                                 ; Enable interrupts, whatever *RUN left
     lda #osbyte_close_spool_exec        ; OSBYTE &77: close any *SPOOL and *EXEC files
     jsr osbyte                          ; ...so no open file depends on the workspace
     lda #osbyte_escape_break_effect     ; Disable ESCAPE for the whole game...
