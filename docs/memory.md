@@ -100,7 +100,7 @@ original MMFS, at &1D00, does not fit.
 - `GAME`, loaded once at &1C00-&7FFF. Its startup runs from screen memory
   (&6980): it closes any `*EXEC` file, notes the filing system (OSARGS 0,0),
   claims the absolute workspace (service &0A), copies the parts stored at
-  &3000-&41FF to &0400, &0900 and &0E00, and runs `game_entry` and the hero
+  &3000-&3FFF to &0400, &0900 and &0F00 (and the joystick code, at &4000, which the hero menu copies out), and runs `game_entry` and the hero
   menu, also from screen memory, so neither stays resident.
 - `Setup`, loaded with every level at &5000 and run there: it unpacks the
   level, refreshes the workspace from its template and resets the monsters,

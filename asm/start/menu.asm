@@ -4,7 +4,8 @@
 ; The screen before each game where the players choose who plays, and how. It is called
 ; once per game, when a new game starts, after reset_hero has given every hero their
 ; starting attributes and before the first level. Set a text window the full width of
-; the screen (MODE 2's 20 columns) and clear it, find the joysticks (find_sticks), print
+; the screen (MODE 2's 20 columns) and clear it, having first found the joysticks
+; (find_sticks, which copies their driver out of the screen memory the clear wipes), print
 ; the menu (print_menu) and read keys and sticks until SPACE.
 ;
 ; Keys 1-4 toggle a hero between playing on the keyboard (KEYS) and not playing (NO), by
@@ -14,7 +15,8 @@
 ; plays nobody, leaving its last hero on the keyboard. A stick nobody presses fire on
 ; plays nobody, so an empty port does no harm. Keys 5 and 6 switch the sound on and off
 ; with OSBYTE &D2. After each change the whole menu is reprinted. SPACE returns, so the
-; game starts, only if at least one hero is playing; if no stick plays, read_controls
+; game starts, only if at least one hero is playing, and "SPACE TO PLAY" is shown in
+; yellow only then, in black (unseen) otherwise; if no stick plays, read_controls
 ; becomes an RTS. Before each key is read, the keyboard buffer is flushed and CAPS LOCK is
 ; forced on with SHIFT LOCK off.
 ;
@@ -27,6 +29,7 @@
 ;     X: corrupted
 ;     Y: corrupted
 .hero_menu
+    jsr find_sticks                     ; Find the joysticks and set up their driver, before the screen holding it is cleared
     lda #&1c                            ; VDU 28: the menu's window, the screen's full width...
     jsr oswrch                          ; Send VDU 28
     lda #0                              ; Left column 0
@@ -39,7 +42,6 @@
     jsr oswrch                          ; Send the top row
     lda #&0c                            ; ...VDU 12 to clear it
     jsr oswrch                          ; Send VDU 12: clear the window
-    jsr find_sticks                     ; Find the joysticks and set up their driver
     lda #osbyte_sound_suppression       ; Show the sound as it is: OSBYTE &D2...
     ldx #0                              ; ...X = 0, Y = &FF: read the setting into X
     ldy #&ff                            ; ...unchanged
@@ -67,6 +69,13 @@
 ;     Y: corrupted
 .print_menu
     jsr show_hero_entries               ; Each hero's KEYS, NO or JOYn
+    jsr any_hero_playing                ; Anyone playing?
+    lda #space_to_play_colour           ; Yes: SPACE TO PLAY in yellow...
+    inx                                 ; (X = 0 now if nobody)
+    bne space_colour_chosen
+    lda #0                              ; ...no: in black, unseen, as SPACE does nothing
+.space_colour_chosen
+    sta menu_space_colour               ; The colour in its VDU 17
     ldy #0                              ; Y walks through menu_text from its start
 .print_menu_loop
     lda menu_text,y                     ; The next string's column, or &FF at the end
@@ -307,15 +316,26 @@
     jmp menu_key_loop                   ; Wait for the next key
 ; SPACE: return, so the game starts, if at least one hero is playing; otherwise ignore it.
 .menu_space
-    ldx #3                              ; SPACE: is any hero playing?
-.menu_space_check_hero
-    lda hero_absent,x                   ; Is this hero playing (absent flag 0)?
-    beq menu_done                       ; Yes: return, and the game starts
-    dex                                 ; Absent: try the previous hero
-    bpl menu_space_check_hero           ; Heroes left to check: loop
+    jsr any_hero_playing                ; SPACE: is any hero playing?
+    inx                                 ; X = 0 if nobody
+    bne menu_done                       ; Someone: return, and the game starts
     jmp menu_key_loop                   ; Nobody playing: ignore SPACE
 .menu_done
     jmp sticks_for_play                 ; Leave the sticks ready for play, and return
+; ***************************************************************************************
+; Is any hero playing?
+;
+; On Exit:
+;     X: a hero who plays (hero_absent 0), or &FF if none does
+.any_hero_playing
+    ldx #3                              ; Heroes 3 to 0
+.check_hero_playing
+    lda hero_absent,x                   ; Playing (absent flag 0)?
+    beq hero_playing_found              ; Yes: X is them
+    dex                                 ; No: the previous hero
+    bpl check_hero_playing              ; Until hero 0; X = &FF if none
+.hero_playing_found
+    rts
 ; Keys 5 and 6: sound on or off, through OSBYTE &D2, and the menu's entry to match.
 .menu_sound_key
     ldy #menu_sound_entry + 1 - menu_text  ; Sound: Y = offset of the second letter of ON/OFF
@@ -378,5 +398,9 @@
 .menu_spitfire_line
     equs "                   ", &0d     ; Blank, or what find_sticks found of SPItFIRE
     equb &03, &16                       ; Column 3, row 22, the window's last
-    equs "SPACE TO PLAY", &0d
+    equb &11                            ; VDU 17: text colour...
+.menu_space_colour
+    equb space_to_play_colour           ; ...yellow, or black when nobody plays (print_menu)
+    equs "SPACE TO PLAY"
+    equb &11, menu_colour, &0d          ; Back to the menu's green
     equb &ff                            ; The end

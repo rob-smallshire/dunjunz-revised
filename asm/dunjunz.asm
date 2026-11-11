@@ -100,7 +100,7 @@ PAGE9_STORE = &3400
 WS_STORE = &3800
 STASH = &3000
 STARTUP = &6980                         ; Rows 23-24, which the hero menu leaves alone
-JOYSTICK_STORE = &6df0                  ; The joystick code's stored copies, at the end of rows 23-24
+JOYSTICK_STORE = WS_STORE + STATIC_WORKSPACE_PAGES * 256  ; The joystick code's stored copies, which find_sticks copies out before the hero menu clears the screen
 SETUP_ADDRESS = &5000                   ; Setup, loaded with each level, clear of STASH and LEVEL_FILE
 
 INCLUDE "asm/defs/joystick.asm"
@@ -167,12 +167,13 @@ INCLUDE "asm/start/game_entry.asm"
 INCLUDE "asm/start/menu.asm"
 INCLUDE "asm/start/joysticks.asm"
 .startup_end
-ASSERT startup_end <= JOYSTICK_STORE
+ASSERT startup_end <= UP_START
 
 ; ***************************************************************************************
-; The joystick code, assembled where it runs and stored at JOYSTICK_STORE, after the hero
-; menu, which copies the parts needed into place (asm/start/joysticks.asm): map_controls
-; in the MOS's printer buffer, and one driver at read_controls, in zero page.
+; The joystick code, assembled where it runs and stored at JOYSTICK_STORE, in screen
+; memory after the workspace's stored copy, until find_sticks copies the parts needed into
+; place (asm/start/joysticks.asm): map_controls in the MOS's printer buffer, and one driver
+; at read_controls, in zero page.
 PRINTER_BUFFER = &0880
 PRINTER_BUFFER_END = &08b0              ; The page &08 state follows
     org PRINTER_BUFFER
@@ -197,7 +198,7 @@ ASSERT analogue_axes - analogue_driver = ANALOGUE_AXES_OFFSET
 analogue_driver_image = spitfire_driver_image + spitfire_driver_end - spitfire_driver
     copyblock analogue_driver, analogue_driver_end, analogue_driver_image
     clear analogue_driver, analogue_driver_end
-ASSERT analogue_driver_image + analogue_driver_end - analogue_driver <= UP_START
+ASSERT analogue_driver_image + analogue_driver_end - analogue_driver <= SETUP_ADDRESS
 
 ; ***************************************************************************************
 ; Setup: its own file, loaded with each level and run in screen memory

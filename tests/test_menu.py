@@ -17,6 +17,8 @@ from dunjunz_revised.lockstep import SPACE, UPDATE_GAME, hold_key, inkey_to_matr
 from dunjunz_revised.machines import MACHINES, launched
 
 KEY_1 = inkey_to_matrix(0xCF)       # INKEY -49
+HERO_KEYS = [inkey_to_matrix(inkey) for inkey in (0xCF, 0xCE, 0xEE, 0xED)]   # 1-4
+YELLOW, BLACK = 3, 0
 
 
 @pytest.mark.parametrize("machine_key", ["dfs090", "dfs226", "dnfs120"])
@@ -46,3 +48,29 @@ def test_menu_answers_tapped_keys(disc_filepaths, machine_key):
         tap(SPACE)
         bbc.debugger.run_to(labels[UPDATE_GAME], timeout=120)
         assert bbc.cpu.pc == labels[UPDATE_GAME]
+
+
+def test_space_to_play_is_hidden_while_nobody_plays(disc_filepaths):
+    labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
+    colour_address = labels["menu_space_colour"]
+
+    with launched(MACHINES["dfs226"]) as bbc:
+        def tap(key):
+            hold_key(bbc, *key)
+            bbc.run_for_emulated_seconds(0.5)
+
+        bbc.boot_disc(REVISED_DISC_FILEPATH)
+        bbc.run_for_emulated_seconds(8)
+        tap(SPACE)
+        bbc.debugger.run_to(labels["menu_key_loop"], timeout=120)
+        bbc.run_for_emulated_seconds(0.5)
+        assert bbc.memory.address.peek[colour_address] == YELLOW
+
+        for key in HERO_KEYS:
+            tap(key)
+        assert bbc.memory.address.peek[colour_address] == BLACK
+        tap(SPACE)                                  # does nothing
+        assert bbc.cpu.pc != labels[UPDATE_GAME]
+
+        tap(HERO_KEYS[2])                           # the Barbarian plays
+        assert bbc.memory.address.peek[colour_address] == YELLOW
