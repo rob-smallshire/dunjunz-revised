@@ -132,8 +132,9 @@ def test_menu_shows_the_sound_off(disc_filepaths):
             hold_key(bbc, *SPACE)
         bp.remove()
         assert bbc.cpu.pc == labels["menu_sound_shown"]
-        entry = bytes(bbc.memory.address.peek[labels["menu_sound_entry"]:labels["menu_sound_entry"] + 3])
-        assert entry == b"OFF"
+        green, yellow = 2, 3
+        assert bbc.memory.address.peek[labels["menu_sound_on_colour"]] == green
+        assert bbc.memory.address.peek[labels["menu_sound_off_colour"]] == yellow   # OFF(6) highlighted
 
 
 def ranger_on_a_key(run):

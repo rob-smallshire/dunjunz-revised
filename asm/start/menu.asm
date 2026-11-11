@@ -14,14 +14,15 @@
 ; and that hero plays (JOY1-JOY4); each further press moves it on, and past the Fighter it
 ; plays nobody, leaving its last hero on the keyboard. A stick nobody presses fire on
 ; plays nobody, so an empty port does no harm. Keys 5 and 6 switch the sound on and off
-; with OSBYTE &D2. After each change the whole menu is reprinted. SPACE returns, so the
+; with OSBYTE &D2, and the sound line shows which in yellow. After each change the whole menu is reprinted. SPACE returns, so the
 ; game starts, only if at least one hero is playing, and "SPACE TO PLAY" is shown in
 ; yellow only then, in black (unseen) otherwise; if no stick plays, read_controls
 ; becomes an RTS. Before each key is read, the keyboard buffer is flushed and CAPS LOCK is
 ; forced on with SHIFT LOCK off.
 ;
-; The ON/OFF entry is set from the sound suppression in force (OSBYTE &D2), which
-; outlasts a game; in the 1987 release it showed only the menu text as loaded. hero_absent
+; The sound line's highlight is set from the sound suppression in force (OSBYTE &D2),
+; which outlasts a game; in the 1987 release its ON/OFF entry showed only the menu text as
+; loaded. hero_absent
 ; is read by remove_absent_heroes at each level.
 ;
 ; On Exit:
@@ -46,7 +47,6 @@
     ldx #0                              ; ...X = 0, Y = &FF: read the setting into X
     ldy #&ff                            ; ...unchanged
     jsr osbyte                          ; X non-zero if the sound is off
-    ldy #menu_sound_entry + 1 - menu_text  ; The second letter of the menu's ON/OFF entry
     txa                                 ; Sound off?
     bne menu_starts_off                 ; Yes: show OFF
     jsr set_menu_on                     ; No: show ON
@@ -70,7 +70,7 @@
 .print_menu
     jsr show_hero_entries               ; Each hero's KEYS, NO or JOYn
     jsr any_hero_playing                ; Anyone playing?
-    lda #space_to_play_colour           ; Yes: SPACE TO PLAY in yellow...
+    lda #menu_highlight_colour          ; Yes: SPACE TO PLAY in yellow...
     inx                                 ; (X = 0 now if nobody)
     bne space_colour_chosen
     lda #0                              ; ...no: in black, unseen, as SPACE does nothing
@@ -167,30 +167,26 @@
     equb menu_hero_entries - menu_text, menu_hero_entries + 7 - menu_text
     equb menu_hero_entries + 14 - menu_text, menu_hero_entries + 21 - menu_text
 ; ***************************************************************************************
-; Change the sound entry to OFF
+; Show the sound off
 ;
-; Write "FF" at menu_text+Y, after the sound entry's "O", when key 6 turns the sound off.
-;
-; On Entry:
-;     Y: offset of the entry's second character
+; Highlight "OFF(6)" on the sound line, in yellow, and leave "ON(5)" in the menu's green,
+; when key 6 turns the sound off or the menu finds it off.
 .set_menu_off
-    lda #'F'                            ; "FF" after the O
-    sta menu_text,y                     ; ...over the N of ON...
-    sta menu_text + 1,y                 ; ...and the space after it
-    rts                                 ; Return: the entry reads OFF
+    lda #menu_colour                    ; ON(5) plain
+    ldx #menu_highlight_colour          ; OFF(6) highlighted
+    bne set_sound_colours               ; Always
 ; ***************************************************************************************
-; Change the sound entry to ON
+; Show the sound on
 ;
-; Write "N " at menu_text+Y, after the sound entry's "O", when key 5 turns the sound on.
-;
-; On Entry:
-;     Y: offset of the entry's second character
+; Highlight "ON(5)" on the sound line, in yellow, and leave "OFF(6)" in the menu's green,
+; when key 5 turns the sound on or the menu finds it on.
 .set_menu_on
-    lda #'N'                            ; "N " after the O
-    sta menu_text,y                     ; ...over OFF's first F
-    lda #' '                            ; ...then a space...
-    sta menu_text + 1,y                 ; ...over OFF's second F
-    rts                                 ; Return: the entry reads ON
+    lda #menu_highlight_colour          ; ON(5) highlighted
+    ldx #menu_colour                    ; OFF(6) plain
+.set_sound_colours
+    sta menu_sound_on_colour            ; The colours in their VDU 17s
+    stx menu_sound_off_colour
+    rts
 ; ***************************************************************************************
 ; Wait for a key, letting sticks join meanwhile
 ;
@@ -336,16 +332,15 @@
     bpl check_hero_playing              ; Until hero 0; X = &FF if none
 .hero_playing_found
     rts
-; Keys 5 and 6: sound on or off, through OSBYTE &D2, and the menu's entry to match.
+; Keys 5 and 6: sound on or off, through OSBYTE &D2, and the sound line's highlight to match.
 .menu_sound_key
-    ldy #menu_sound_entry + 1 - menu_text  ; Sound: Y = offset of the second letter of ON/OFF
     cmp #5                              ; Key 6 (A = key - "1")?
     beq menu_sound_off                  ; Yes: sound off
-    jsr set_menu_on                     ; Key 5: ON...
+    jsr set_menu_on                     ; Key 5: ON highlighted...
     ldx #0                              ; ...with X = 0 to enable the sound
     beq menu_set_sound                  ; Always: set the sound
 .menu_sound_off
-    jsr set_menu_off                    ; Key 6: OFF...
+    jsr set_menu_off                    ; Key 6: OFF highlighted...
     ldx #1                              ; ...with X = 1 to suppress it
 .menu_set_sound
     lda #osbyte_sound_suppression       ; OSBYTE &D2: sound suppression
@@ -358,8 +353,9 @@
 ; Entries of: column, row, text, carriage return; printed in order by print_menu, each at
 ; its own text position (the heroes on every other row, as the font's letters fill their
 ; rows and run together otherwise), up to the &FF at the end. The four heroes' entries (from
-; menu_hero_entries, seven bytes apart) are rewritten by show_hero_entries, the sound
-; entry's ON/OFF by set_menu_on and set_menu_off, and the SPItFIRE line by find_sticks,
+; menu_hero_entries, seven bytes apart) are rewritten by show_hero_entries, the colours of
+; the sound line's ON(5) and OFF(6) by set_menu_on and set_menu_off, the colour of SPACE TO
+; PLAY by print_menu, and the SPItFIRE line by find_sticks,
 ; so the table holds the players' choices as well as showing them.
 .menu_text
     equb &06, &00                       ; Column 6, row 0
@@ -389,18 +385,24 @@
     equs "KEYBOARD: 1234 JOINS", &0d
     equb &00, &0e                       ; Column 0, row 14
     equs "JOYSTICK: FIRE JOINS", &0d
-    equb &00, &10                       ; Column 0, row 16
-    equs "SOUND ON(5) OFF(6)", &0d
-    equb &07, &12                       ; Column 7, row 18
-.menu_sound_entry
-    equs "ON ", &0d
+    equb &00, &11                       ; Column 0, row 17
+    equs "SOUND "
+    equb &11                            ; VDU 17: text colour...
+.menu_sound_on_colour
+    equb menu_highlight_colour          ; ...yellow while the sound is on, else green
+    equs "ON(5) "
+    equb &11                            ; VDU 17: text colour...
+.menu_sound_off_colour
+    equb menu_colour                    ; ...yellow while the sound is off, else green
+    equs "OFF(6)"
+    equb &11, menu_colour, &0d          ; Back to the menu's green
     equb &00, &14                       ; Column 0, row 20
 .menu_spitfire_line
     equs "                   ", &0d     ; Blank, or what find_sticks found of SPItFIRE
     equb &03, &16                       ; Column 3, row 22, the window's last
     equb &11                            ; VDU 17: text colour...
 .menu_space_colour
-    equb space_to_play_colour           ; ...yellow, or black when nobody plays (print_menu)
+    equb menu_highlight_colour          ; ...yellow, or black when nobody plays (print_menu)
     equs "SPACE TO PLAY"
     equb &11, menu_colour, &0d          ; Back to the menu's green
     equb &ff                            ; The end
