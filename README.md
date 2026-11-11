@@ -2,7 +2,7 @@
 
 ![The Dunjunz Revised title screen](docs/title-screen.png)
 
-**Dunjunz Revised 2026.1**: a revised version of *Dunjunz*, the
+**Dunjunz Revised**: a revised version of *Dunjunz*, the
 four-player dungeon game by Julian Avis, published by Bug-Byte for the BBC
 Micro in 1986 (cassette) and 1987 (disc).
 

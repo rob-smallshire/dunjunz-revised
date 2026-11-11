@@ -109,7 +109,7 @@ wheels = [
 
 [[package]]
 name = "dunjunz-revised"
-version = "2026.1"
+version = "2026.2"
 source = { editable = "." }
 dependencies = [
     { name = "oaknut-adfs" },

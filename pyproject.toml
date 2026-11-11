@@ -1,6 +1,6 @@
 [project]
 name = "dunjunz-revised"
-version = "2026.1"
+version = "2026.2"
 description = "Dunjunz Revised -- Julian Avis's 1986 four-player dungeon game for the BBC Micro, fixed and made filing-system agnostic"
 requires-python = ">=3.12"
 dependencies = [
@@ -54,7 +54,7 @@ url = "https://pypi.org/simple"
 #   uvx bump-my-version bump --dry-run --verbose minor
 
 [tool.bumpversion]
-current_version = "2026.1"
+current_version = "2026.2"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)"
 serialize = ["{major}.{minor}"]
 search = "{current_version}"
