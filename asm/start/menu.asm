@@ -336,7 +336,8 @@
 ; Hero menu text
 ;
 ; Entries of: column, row, text, carriage return; printed in order by print_menu, each at
-; its own text position, up to the &FF at the end. The four heroes' entries (from
+; its own text position (the heroes on every other row, as the font's letters fill their
+; rows and run together otherwise), up to the &FF at the end. The four heroes' entries (from
 ; menu_hero_entries, seven bytes apart) are rewritten by show_hero_entries, the sound
 ; entry's ON/OFF by set_menu_on and set_menu_off, and the SPItFIRE line by find_sticks,
 ; so the table holds the players' choices as well as showing them.
@@ -349,35 +350,35 @@
     equs "PLAYING", &0d
     equb &00, &04                       ; Column 0, row 4
     equs "1 RANGER", &0d
-    equb &00, &05                       ; Column 0, row 5
-    equs "2 MAGIC-USER", &0d
     equb &00, &06                       ; Column 0, row 6
+    equs "2 MAGIC-USER", &0d
+    equb &00, &08                       ; Column 0, row 8
     equs "3 BARBARIAN", &0d
-    equb &00, &07                       ; Column 0, row 7
+    equb &00, &0a                       ; Column 0, row 10
     equs "4 FIGHTER", &0d
     equb &0e, &04                       ; Column 14, row 4
 .menu_hero_entries
     equs "KEYS", &0d                    ; The Ranger's entry, then each hero's, seven bytes apart
-    equb &0e, &05                       ; Column 14, row 5
-    equs "KEYS", &0d
     equb &0e, &06                       ; Column 14, row 6
     equs "KEYS", &0d
-    equb &0e, &07                       ; Column 14, row 7
+    equb &0e, &08                       ; Column 14, row 8
     equs "KEYS", &0d
-    equb &00, &09                       ; Column 0, row 9
+    equb &0e, &0a                       ; Column 14, row 10
+    equs "KEYS", &0d
+    equb &00, &0c                       ; Column 0, row 12
     equs "TYPE NUMBER", &0d
-    equb &00, &0a                       ; Column 0, row 10
-    equs "TO TOGGLE", &0d
-    equb &00, &0b                       ; Column 0, row 11
-    equs "OR FIRE TO JOIN", &0d
     equb &00, &0d                       ; Column 0, row 13
+    equs "TO TOGGLE", &0d
+    equb &00, &0e                       ; Column 0, row 14
+    equs "OR FIRE TO JOIN", &0d
+    equb &00, &10                       ; Column 0, row 16
     equs "SOUND ON(5) OFF(6)", &0d
-    equb &07, &0f                       ; Column 7, row 15
+    equb &07, &12                       ; Column 7, row 18
 .menu_sound_entry
     equs "ON ", &0d
-    equb &01, &11                       ; Column 1, row 17
+    equb &01, &14                       ; Column 1, row 20
 .menu_spitfire_line
     equs "                  ", &0d      ; Blank, or what find_sticks found of SPItFIRE
-    equb &03, &14                       ; Column 3, row 20
+    equb &03, &16                       ; Column 3, row 22, the window's last
     equs "SPACE TO PLAY", &0d
     equb &ff                            ; The end
