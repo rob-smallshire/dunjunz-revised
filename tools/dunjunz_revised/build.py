@@ -7,8 +7,10 @@ Two stages:
   checked byte-for-byte against the original disc's in reference/disc/, and
   build/dunjunz-original.ssd boots it (it needs DFS 0.90). Its behaviour,
   minus the bugs, is what the revised game must keep.
-- The revised game: asm/dunjunz.asm and asm/title.asm, written to
-  build/dunjunz-revised.ssd. While REVISED_MUST_MATCH_ORIGINAL is set, the
+- The revised game: asm/dunjunz.asm and asm/title.asm, written to a DFS
+  disc, build/dunjunz-revised-v<version>.ssd, with a README, and the same
+  files to an ADFS disc, build/dunjunz-revised-v<version>.adl (names and
+  titles from disc_files.py). While REVISED_MUST_MATCH_ORIGINAL is set, the
   revised sources are still a rearrangement of the original and must
   assemble to the same bytes.
 
@@ -31,6 +33,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dunjunz_revised._version import __version__
+from dunjunz_revised.disc_files import (
+    DFS_CATALOGUE_LIMIT,
+    DISC_STEM,
+    README_FILENAME,
+    acorn_text,
+    adfs_title,
+    copyright_text,
+    dfs_title,
+    disc_filename,
+    key_name,
+    readme_text,
+)
 from dunjunz_revised.title_picture import PICTURE_ADDRESS, revised_picture, title_png
 
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
@@ -42,24 +56,15 @@ ORIGINAL_BUILD_DIRPATH = BUILD_DIRPATH / "original"
 ORIGINAL_DISC_FILEPATH = BUILD_DIRPATH / "dunjunz-original.ssd"
 
 REVISED_BUILD_DIRPATH = BUILD_DIRPATH / "revised"
-REVISED_DISC_FILEPATH = BUILD_DIRPATH / "dunjunz-revised.ssd"
+REVISED_DISC_FILEPATH = BUILD_DIRPATH / disc_filename(".ssd")
+REVISED_ADFS_DISC_FILEPATH = BUILD_DIRPATH / disc_filename(".adl")
+README_MARKDOWN_FILEPATH = PROJECT_DIRPATH / "README.md"
 # The README's picture of the revised title screen, kept in step with the
 # version by the build (and so by bump-my-version, which runs it).
 TITLE_SCREEN_PNG_FILEPATH = PROJECT_DIRPATH / "docs" / "title-screen.png"
 
 ORIGINAL_DISC_TITLE = "DUNJUNZ 1987"
 
-
-def disc_title(version: str) -> str:
-    """A DFS title (at most 12 characters) for a version: 2026.1 gives
-    "DUNJUNZ 26.1". The full version is on the title picture (title_picture.py)."""
-    year, n = version.split(".")
-    title = f"DUNJUNZ {int(year) % 100:02d}.{n}"
-    assert len(title) <= 12, title
-    return title
-
-
-REVISED_DISC_TITLE = disc_title(__version__)
 
 # The beebasm sources of the revised game and the files each SAVEs.
 REVISED_SOURCES = {
@@ -280,12 +285,65 @@ def build_revised() -> Path:
          REVISED_BUILD_DIRPATH / "Setup"),
     ]
     files += [(f, REVISED_BUILD_DIRPATH / f.name) for f in write_revised_levels(REVISED_BUILD_DIRPATH)]
-    write_disc(REVISED_DISC_FILEPATH, REVISED_DISC_TITLE, 2, files)
+    readme = readme_text(hero_keys(REVISED_BUILD_DIRPATH), copyright_text(README_MARKDOWN_FILEPATH.read_text()))
+    (REVISED_BUILD_DIRPATH / README_FILENAME).write_bytes(acorn_text(readme))
+    files.append((DiscFile(README_FILENAME, 0, 0), REVISED_BUILD_DIRPATH / README_FILENAME))
+    if len(files) > DFS_CATALOGUE_LIMIT:
+        raise RuntimeError(f"{len(files)} files: a DFS catalogue holds {DFS_CATALOGUE_LIMIT}")
+    for stale_filepath in BUILD_DIRPATH.glob(f"{DISC_STEM}*"):
+        stale_filepath.unlink()             # earlier versions' images
+    write_disc(REVISED_DISC_FILEPATH, dfs_title(), 2, files)
+    write_adfs_disc(REVISED_ADFS_DISC_FILEPATH, adfs_title(), 2, files)
     return REVISED_DISC_FILEPATH
 
 
+def write_adfs_disc(disc_filepath: Path, title: str, boot_option: int, files: list[tuple[DiscFile, Path]]) -> None:
+    """Write an ADFS L disc (640 KB, the Master Compact's 3.5-inch format)
+    with the same files as the DFS disc, in its root directory."""
+    from oaknut.adfs import ADFS, ADFS_L
+
+    disc_filepath.unlink(missing_ok=True)
+    with ADFS.create_file(disc_filepath, ADFS_L, title=title, boot_option=boot_option) as adfs:
+        for disc_file, source_filepath in files:
+            (adfs.root / disc_file.name).write_bytes(
+                source_filepath.read_bytes(),
+                load_address=disc_file.load_address,
+                exec_address=disc_file.exec_address,
+            )
+
+
+INKEY_CONSTANT = re.compile(r"^inkey_key_(\w+)\s*=\s*&([0-9a-f]{2})", re.M)
+HEROES = ("Ranger", "Magic-User", "Barbarian", "Fighter")
+KEY_TABLES = (("up", "hero_key_up"), ("down", "hero_key_down"), ("left", "hero_key_left"),
+              ("right", "hero_key_right"), ("fire", "hero_key_fire"))
+
+
+def hero_keys(build_dirpath: Path) -> list[tuple[str, dict[str, str]]]:
+    """Each hero's keys, read from the built game: the direction and fire
+    keys from Setup's workspace template, the magic keys from GAME, named
+    through asm/defs/constants.asm's inkey_key_ constants."""
+    names = {int(code, 16): key_name(name)
+             for name, code in INKEY_CONSTANT.findall((ASM_DIRPATH / "defs" / "constants.asm").read_text())}
+    labels = read_labels(build_dirpath, "dunjunz")
+    setup = (build_dirpath / "Setup").read_bytes()
+    game = (build_dirpath / "GAME").read_bytes()
+    stores = dict(re.findall(r"^(PAGE9_STORE|PAGE9_START) = &([0-9a-f]+)", (ASM_DIRPATH / "dunjunz.asm").read_text(), re.M))
+    magic_offset = int(stores["PAGE9_STORE"], 16) + labels["hero_magic_key"] - int(stores["PAGE9_START"], 16) - labels["game_file_start"]
+
+    def template_byte(label: str, hero: int) -> int:
+        return setup[labels["workspace_template"] - labels["setup_start"] + labels[label] - labels["workspace"] + hero]
+
+    keys = []
+    for hero, hero_name in enumerate(HEROES):
+        hero_actions = {action: names[template_byte(label, hero)] for action, label in KEY_TABLES}
+        if hero < 2:
+            hero_actions["magic"] = names[game[magic_offset + hero]]
+        keys.append((hero_name, hero_actions))
+    return keys
+
+
 def build() -> list[Path]:
-    return [build_original(), build_revised()]
+    return [build_original(), build_revised(), REVISED_ADFS_DISC_FILEPATH]
 
 
 def main() -> None:

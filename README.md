@@ -44,21 +44,26 @@ Requires [uv](https://docs.astral.sh/uv/) and
 
 ```sh
 uv sync
-uv run dr-build        # build/dunjunz-revised.ssd, and build/dunjunz-original.ssd (the 1987 baseline)
+uv run dr-build        # build/dunjunz-revised-v<version>.ssd and .adl, and build/dunjunz-original.ssd (the 1987 baseline)
 uv run pytest          # tests, in the beebium emulator
 ```
 
 ## Running it
 
-Boot `dunjunz-revised.ssd` with SHIFT-BREAK, or copy its files to any
-filing system (a network file server included) and `*RUN DUNJUNZ`. The game
-needs a BBC Micro with PAGE at &1C00 or below.
+Boot `dunjunz-revised-v<version>.ssd` (DFS, any BBC Micro) or
+`dunjunz-revised-v<version>.adl` (ADFS, a Master or a Master Compact) with
+SHIFT-BREAK, or copy the files to any filing system (a network file server
+included) and `*RUN DUNJUNZ`. The game needs PAGE at &1C00 or below.
+`*TYPE README` on either disc shows its version, how to play, and the
+copyright notice; the disc titles carry the version too.
 
 ## Playing it
 
-Up to four players share the keyboard, one hero each. On the hero menu,
-1-4 switch a hero in or out, 5 and 6 turn the sound on and off, and SPACE
-starts the game.
+Up to four players share the keyboard, one hero each, or play with
+joysticks: up to four through SPItFIRE on a Master Compact, otherwise two on
+the analogue port (or a Compact's own joystick port). On the hero menu,
+1-4 switch a hero in or out, fire on a joystick joins with that stick,
+5 and 6 turn the sound on and off, and SPACE starts the game.
 
 | Hero | Up | Down | Left | Right | Fire | Magic |
 |---|---|---|---|---|---|---|
@@ -69,4 +74,6 @@ starts the game.
 
 The Magic-User's arrow keys don't move the way they are labelled: → moves
 up and ↑ moves down. Only the Ranger and the Magic-User can cast magic.
-P pauses and resumes the game.
+P pauses and resumes the game; holding ESCAPE for half a second ends it.
+On a joystick, fire and a direction held together for half a second cast
+magic.

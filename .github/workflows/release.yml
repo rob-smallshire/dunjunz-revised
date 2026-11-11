@@ -2,8 +2,9 @@ name: Release
 
 # Triggered by a version tag (v2026.2, ...), which `uvx bump-my-version bump
 # minor` makes (see pyproject.toml). Runs the whole test suite first; only if
-# it passes does it build the disc and publish a GitHub release with the
-# disc image, ready to run: Shift-Break to boot.
+# it passes does it build the discs and publish a GitHub release with both
+# images, DFS and ADFS, named for the version (build/ already names them
+# dunjunz-revised-v<version>, and the tag is v<version>).
 
 on:
   push:
@@ -63,16 +64,19 @@ jobs:
             exit 1
           fi
 
-      - name: Build the disc
+      - name: Build the discs
         run: |
           uv run dr-build
-          cp build/dunjunz-revised.ssd "dunjunz-revised-${GITHUB_REF_NAME}.ssd"
+          test -f "build/dunjunz-revised-${GITHUB_REF_NAME}.ssd"
+          test -f "build/dunjunz-revised-${GITHUB_REF_NAME}.adl"
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" "dunjunz-revised-${GITHUB_REF_NAME}.ssd" \
+          gh release create "${GITHUB_REF_NAME}" \
+            "build/dunjunz-revised-${GITHUB_REF_NAME}.ssd" \
+            "build/dunjunz-revised-${GITHUB_REF_NAME}.adl" \
             --repo "${GITHUB_REPOSITORY}" \
             --title "Dunjunz Revised ${GITHUB_REF_NAME}" \
-            --notes "Dunjunz Revised on an 80-track DFS disc image for the BBC Micro (or an emulator of one): insert it and press Shift-Break to boot. The files can also be copied to any filing system, including a Level 3 File Server, and run with *RUN DUNJUNZ."
+            --notes "Dunjunz Revised for the BBC Micro (or an emulator of one), on two disc images: an 80-track DFS disc (.ssd) for any BBC Micro, and an ADFS L disc (.adl) for a Master or a Master Compact. Insert one and press Shift-Break to boot. The files can also be copied to any filing system, including a Level 3 File Server, and run with *RUN DUNJUNZ. *TYPE README on either disc shows the version, how to play, and the copyright notice."

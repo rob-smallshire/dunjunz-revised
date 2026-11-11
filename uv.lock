@@ -112,6 +112,7 @@ name = "dunjunz-revised"
 version = "2026.1"
 source = { editable = "." }
 dependencies = [
+    { name = "oaknut-adfs" },
     { name = "oaknut-dfs" },
 ]
 
@@ -119,7 +120,6 @@ dependencies = [
 dev = [
     { name = "beebium", extra = ["imaging"] },
     { name = "beebium-server" },
-    { name = "oaknut-adfs" },
     { name = "oaknut-afs" },
     { name = "oaknut-disc" },
     { name = "py65" },
@@ -129,7 +129,6 @@ dev = [
 test = [
     { name = "beebium", extra = ["imaging"] },
     { name = "beebium-server" },
-    { name = "oaknut-adfs" },
     { name = "oaknut-afs" },
     { name = "oaknut-disc" },
     { name = "py65" },
@@ -138,13 +137,15 @@ test = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "oaknut-dfs", specifier = ">=12.18.2" }]
+requires-dist = [
+    { name = "oaknut-adfs", specifier = ">=13.6.1" },
+    { name = "oaknut-dfs", specifier = ">=12.18.2" },
+]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "beebium", extras = ["imaging"] },
     { name = "beebium-server" },
-    { name = "oaknut-adfs", specifier = ">=13.6.1" },
     { name = "oaknut-afs", specifier = ">=13.6.1" },
     { name = "oaknut-disc", specifier = ">=13.6.1" },
     { name = "py65", specifier = ">=1.2" },
@@ -154,7 +155,6 @@ dev = [
 test = [
     { name = "beebium", extras = ["imaging"] },
     { name = "beebium-server" },
-    { name = "oaknut-adfs", specifier = ">=13.6.1" },
     { name = "oaknut-afs", specifier = ">=13.6.1" },
     { name = "oaknut-disc", specifier = ">=13.6.1" },
     { name = "py65", specifier = ">=1.2" },

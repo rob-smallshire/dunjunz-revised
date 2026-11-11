@@ -13,9 +13,19 @@ filing system, and keeps it resident. The goals:
 - fits on one volume, an 80-track single-sided DFS disc (200 KB);
 - behaves as the original does, without its bugs (see `bugs.md`);
 - joysticks: SPItFIRE's four, or two on the analogue port (see milestone 6);
-- "Dunjunz Revised 2026.1" on `!BOOT`'s banner and the title screen. The
-  disc title, limited to 12 characters by DFS, is "DUNJUNZ 26.1": "DUNJUNZ"
-  and the version with the year shortened (`build.disc_title`).
+- every disc says its version (`tools/dunjunz_revised/disc_files.py`,
+  decided 2026-11-11): the images are `dunjunz-revised-v2026.1.ssd` (DFS)
+  and `.adl` (ADFS L, the same files); the DFS title (12 characters) is the
+  first of DUNJUNZ␣, DUNJUNZ, DUNJNZ and DNJNZ that fits with the full
+  version ("DUNJNZ2026.1", then "DNJNZ2026.12"); the ADFS title (19) is the
+  first of "Dunjunz Revised ", "Dunjunz Rev " and "Dunjunz " that fits
+  ("Dunjunz Rev 2026.1"); a name that cannot fit raises an error. A README
+  on the disc (39 columns, for MODE 7's *TYPE) gives the version, the
+  project's address, how to play (keys read from the game's tables) and
+  the copyright message from README.md. The DFS catalogue's 31 files leave
+  room for the README alone, so there is no separate version file or
+  LICENSE (the repository has no licence). The title screen shows
+  "Revised 2026.1" too.
 
 ## Milestones
 

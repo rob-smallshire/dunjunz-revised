@@ -66,3 +66,13 @@ jobs:
       # here for now; run them locally before a release.
       - name: Run the tests
         run: uv run pytest -q --ignore=tests/test_network.py
+
+      # The disc images, named for the version: DFS and ADFS.
+      - name: Keep the disc images
+        uses: actions/upload-artifact@v7
+        with:
+          name: discs
+          path: |
+            build/dunjunz-revised-v*.ssd
+            build/dunjunz-revised-v*.adl
+          if-no-files-found: error

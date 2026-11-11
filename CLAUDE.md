@@ -11,7 +11,7 @@ play, level by level: `docs/behaviours.md`.
 ## Commands
 
 ```bash
-uv run dr-build                                   # assemble, verify the baseline, write build/*.ssd
+uv run dr-build                                   # assemble, verify the baseline, write build/dunjunz-revised-v<version>.ssd and .adl
 uv run pytest                                     # tests (beebium)
 uv run dr-machines                                # PAGE per machine configuration
 uv run dr-sizes                                   # address range and size of each game module
