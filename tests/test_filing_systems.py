@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
-from dunjunz_revised.lockstep import SPACE, hold_key
+from dunjunz_revised.lockstep import SPACE, hold_key, switch_on_heroes
 from dunjunz_revised.machines import MACHINES, launched
 
 MACHINE_KEYS = [
@@ -48,6 +48,7 @@ def test_levels_load(disc_filepaths, machine_key):
         bbc.run_for_emulated_seconds(1)
         bbc.keyboard.type("*RUN DUNJUNZ\r")
         bbc.run_for_emulated_seconds(3)     # let the typing finish before SPACE is held
+        switch_on_heroes(bbc, labels)
         assert run_to(bbc, labels["update_game"], 120, press_space=True), \
             f"level 1 not reached; PC &{bbc.cpu.pc:04X}"
         bbc.cpu.pc = labels["next_level"]

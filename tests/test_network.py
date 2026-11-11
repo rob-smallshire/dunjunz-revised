@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
-from dunjunz_revised.lockstep import SPACE, hold_key
+from dunjunz_revised.lockstep import SPACE, hold_key, switch_on_heroes
 from dunjunz_revised.machines import MACHINES, launched
 
 SERVER_PRESET = "model-b-l3fs-aun"
@@ -104,6 +104,7 @@ def test_levels_load_over_econet(file_server_preset_filepath, client_key):
             for command in CLIENTS[client_key] + ["*DIR Dunjunz", "*RUN DUNJUNZ"]:
                 bbc.keyboard.type(command + "\r")
                 bbc.run_for_emulated_seconds(4)
+            switch_on_heroes(bbc, labels)
             assert run_to(bbc, labels["update_game"], 120, press_space=True), \
                 f"level 1 not reached; {screens(bbc, server)}"
             bbc.cpu.pc = labels["next_level"]

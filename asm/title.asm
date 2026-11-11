@@ -106,8 +106,8 @@ osasci                   = &ffe3
 ; comments below. Set-up: disable ESCAPE and make the cursor keys return codes. Page &08:
 ; levels_started = 0 and level_digits = "0 ", which the game's next_level advances to 1
 ; and "1 " before loading Level1; for each hero, hero_score_ten_thousands = &69 (no digit)
-; and hero_absent = 0 (playing), so every game starts with all four heroes switched on in
-; the menu. Title: select MODE 2 (*TV 255,1) with all sixteen colours black, load SCREEN
+; and hero_absent = 1 (not playing), so every game starts with all four heroes switched
+; off in the menu, for the players to choose (the 1987 release started with all four on). Title: select MODE 2 (*TV 255,1) with all sixteen colours black, load SCREEN
 ; unseen, restore the colours (the build draws the version into the picture: see
 ; tools/dunjunz_revised/title_picture.py), and twinkle_stars until a key other
 ; than SHIFT or CTRL is pressed. Hand-over: select the game's display (*TV 252,1, MODE 2,
@@ -164,7 +164,7 @@ osasci                   = &ffe3
 .init_hero_tables
     lda #spr_no_small_digit             ; ...no ten-thousands digit (sprite &69)...
     sta hero_score_ten_thousands,x      ; ...in the score digit table at &08B0...
-    lda #0                              ; ...and switched on...
+    lda #1                              ; ...and switched off, for the players to choose...
     sta hero_absent,x                   ; ...at &08B4 (the menu tables)
     dex                                 ; Next hero, counting 3 down to 0
     bpl init_hero_tables                ; Until all four heroes are set

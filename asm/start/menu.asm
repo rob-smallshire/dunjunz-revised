@@ -11,8 +11,9 @@
 ; Keys 1-4 toggle a hero between playing on the keyboard (KEYS) and not playing (NO), by
 ; flipping their hero_absent flag; either way the hero leaves any stick. Pressing fire on
 ; a stick gives it the first hero, from the one it plays now, that no other stick plays,
-; and that hero plays (JOY1-JOY4); each further press moves it on, and past the Fighter it
-; plays nobody, leaving its last hero on the keyboard. A stick nobody presses fire on
+; and that hero plays (JOY1-JOY4); each further press moves it on, switching off the hero
+; it leaves, and past the Fighter it plays nobody. Every hero starts off (the title sets
+; hero_absent), so one player can choose a hero without switching the others off. A stick nobody presses fire on
 ; plays nobody, so an empty port does no harm. Keys 5 and 6 switch the sound on and off
 ; with OSBYTE &D2, and the sound line shows which in yellow. After each change the whole menu is reprinted. SPACE returns, so the
 ; game starts, only if at least one hero is playing, and "SPACE TO PLAY" is shown in
@@ -115,7 +116,8 @@
 ; Show how each hero plays
 ;
 ; Write each hero's entry in menu_text from hero_absent and hero_stick: "NO  " if the
-; hero is not playing, "JOYn" if stick n-1 plays them, otherwise "KEYS".
+; hero is not playing, "JOYn" if stick n-1 plays them, otherwise "KEYS". A hero who plays
+; has their whole line in yellow; one who does not, in the menu's green.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -128,9 +130,13 @@
     ldy menu_hero_entry_offsets,x       ; Y = the hero's entry in menu_text
     lda hero_absent,x                   ; Not playing?
     beq hero_entry_playing              ; Playing: on the keyboard or a stick
-    ldx #entry_no - entry_words         ; Not playing: "NO  "
+    lda #menu_colour                    ; Not playing: the line in green...
+    sta menu_text + HERO_LINE_COLOUR - HERO_LINE_ENTRY,y
+    ldx #entry_no - entry_words         ; ...and "NO  "
     bne copy_hero_entry                 ; Always
 .hero_entry_playing
+    lda #menu_highlight_colour          ; Playing: the line in yellow
+    sta menu_text + HERO_LINE_COLOUR - HERO_LINE_ENTRY,y
     lda hero_stick,x                    ; On a stick?
     bmi hero_entry_keys                 ; No: "KEYS"
     clc                                 ; Stick 0-3...
@@ -164,8 +170,10 @@
     equs "JOY?"                         ; The digit is filled in for each hero
 ; The offset in menu_text of each hero's entry.
 .menu_hero_entry_offsets
-    equb menu_hero_entries - menu_text, menu_hero_entries + 7 - menu_text
-    equb menu_hero_entries + 14 - menu_text, menu_hero_entries + 21 - menu_text
+    equb menu_hero_lines + HERO_LINE_ENTRY - menu_text
+    equb menu_hero_lines + HERO_LINE_BYTES + HERO_LINE_ENTRY - menu_text
+    equb menu_hero_lines + 2 * HERO_LINE_BYTES + HERO_LINE_ENTRY - menu_text
+    equb menu_hero_lines + 3 * HERO_LINE_BYTES + HERO_LINE_ENTRY - menu_text
 ; ***************************************************************************************
 ; Show the sound off
 ;
@@ -240,7 +248,7 @@
 ; ***************************************************************************************
 ; Move a stick on to its next hero
 ;
-; Take stick Y from the hero it plays, if any (who stays playing, on the keyboard), and
+; Take stick Y from the hero it plays, if any (who then plays no more), and
 ; give it the next hero after them that no other stick plays, who then plays; past the
 ; Fighter the stick plays nobody. Reprint the menu.
 ;
@@ -264,8 +272,10 @@
 .stick_hero_found
     txa                                 ; A hero?
     bmi next_stick_hero                 ; No: start from hero 0
-    lda #no_stick                       ; Yes: the hero goes back to the keyboard
+    lda #no_stick                       ; Yes: off the stick...
     sta hero_stick,x
+    lda #1                              ; ...and not playing
+    sta hero_absent,x
 .next_stick_hero
     inx                                 ; The next hero
     cpx #4                              ; Past the Fighter?
@@ -352,8 +362,9 @@
 ;
 ; Entries of: column, row, text, carriage return; printed in order by print_menu, each at
 ; its own text position (the heroes on every other row, as the font's letters fill their
-; rows and run together otherwise), up to the &FF at the end. The four heroes' entries (from
-; menu_hero_entries, seven bytes apart) are rewritten by show_hero_entries, the colours of
+; rows and run together otherwise), up to the &FF at the end. The four heroes' lines (from
+; menu_hero_lines, HERO_LINE_BYTES apart) have their entries and colours rewritten by
+; show_hero_entries, the colours of
 ; the sound line's ON(5) and OFF(6) by set_menu_on and set_menu_off, the colour of SPACE TO
 ; PLAY by print_menu, and the SPItFIRE line by find_sticks,
 ; so the table holds the players' choices as well as showing them.
@@ -364,23 +375,31 @@
     equs "HERO", &0d
     equb &0c, &02                       ; Column 12, row 2
     equs "PLAYING", &0d
+; Each hero's line, HERO_LINE_BYTES long: column and row, VDU 17 and the line's colour,
+; the hero's number and name padded to column 14, their entry, and back to green.
+.menu_hero_lines
     equb &00, &04                       ; Column 0, row 4
-    equs "1 RANGER", &0d
+    equb &11, menu_colour               ; The line's colour (yellow while the hero plays)
+    equs "1 RANGER      "
+    equs "NO  "                         ; The entry: KEYS, NO or JOYn
+    equb &11, menu_colour, &0d          ; Back to green
     equb &00, &06                       ; Column 0, row 6
-    equs "2 MAGIC-USER", &0d
+    equb &11, menu_colour
+    equs "2 MAGIC-USER  "
+    equs "NO  "
+    equb &11, menu_colour, &0d
     equb &00, &08                       ; Column 0, row 8
-    equs "3 BARBARIAN", &0d
+    equb &11, menu_colour
+    equs "3 BARBARIAN   "
+    equs "NO  "
+    equb &11, menu_colour, &0d
     equb &00, &0a                       ; Column 0, row 10
-    equs "4 FIGHTER", &0d
-    equb &0e, &04                       ; Column 14, row 4
-.menu_hero_entries
-    equs "KEYS", &0d                    ; The Ranger's entry, then each hero's, seven bytes apart
-    equb &0e, &06                       ; Column 14, row 6
-    equs "KEYS", &0d
-    equb &0e, &08                       ; Column 14, row 8
-    equs "KEYS", &0d
-    equb &0e, &0a                       ; Column 14, row 10
-    equs "KEYS", &0d
+    equb &11, menu_colour
+    equs "4 FIGHTER     "
+    equs "NO  "
+    equb &11, menu_colour, &0d
+.menu_hero_lines_end
+ASSERT menu_hero_lines_end - menu_hero_lines = 4 * HERO_LINE_BYTES
     equb &00, &0c                       ; Column 0, row 12 (the full width: the cursor wraps)
     equs "KEYBOARD: 1234 JOINS", &0d
     equb &00, &0e                       ; Column 0, row 14

@@ -101,4 +101,7 @@ filing_system_net                    = &05  ; OSARGS 0,0's number for the networ
 osfile_load                          = &ff  ; OSFILE &FF: load a file
 inkey_key_p                          = &c8  ; P, INKEY -56
 menu_colour                          = 2    ; The hero menu's text: green
+HERO_LINE_COLOUR = 3                         ; In a hero's line on the menu: the colour byte...
+HERO_LINE_ENTRY = 18                         ; ...the entry (KEYS, NO or JOYn)...
+HERO_LINE_BYTES = 25                         ; ...and the line's length
 menu_highlight_colour                = 3    ; The hero menu's highlights (SPACE TO PLAY, the sound's state): yellow

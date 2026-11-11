@@ -18,13 +18,14 @@ from dunjunz_revised.machines import MACHINES, launched
 
 KEY_1 = inkey_to_matrix(0xCF)       # INKEY -49
 HERO_KEYS = [inkey_to_matrix(inkey) for inkey in (0xCF, 0xCE, 0xEE, 0xED)]   # 1-4
-YELLOW, BLACK = 3, 0
+GREEN, YELLOW, BLACK = 2, 3, 0
+HERO_LINE_COLOUR, HERO_LINE_ENTRY, HERO_LINE_BYTES = 3, 18, 25   # in each hero's line on the menu
 
 
 @pytest.mark.parametrize("machine_key", ["dfs090", "dfs226", "dnfs120"])
 def test_menu_answers_tapped_keys(disc_filepaths, machine_key):
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
-    entry_address = labels["menu_hero_entries"]   # the Ranger's KEYS/NO/JOYn
+    entry_address = labels["menu_hero_lines"] + HERO_LINE_ENTRY   # the Ranger's KEYS/NO/JOYn
 
     with launched(MACHINES[machine_key]) as bbc:
         def ranger_entry():
@@ -40,10 +41,17 @@ def test_menu_answers_tapped_keys(disc_filepaths, machine_key):
         bbc.debugger.run_to(labels["menu_key_loop"], timeout=120)
         bbc.run_for_emulated_seconds(0.5)           # the menu waits for a key
 
+        def ranger_colour():
+            return bbc.memory.address.peek[labels["menu_hero_lines"] + HERO_LINE_COLOUR]
+
+        assert ranger_entry() == b"NO  "               # every hero starts off
+        assert ranger_colour() == GREEN
+        tap(KEY_1)
+        assert ranger_entry() == b"KEYS"
+        assert ranger_colour() == YELLOW               # the line of a hero who plays
         tap(KEY_1)
         assert ranger_entry() == b"NO  "
         tap(KEY_1)
-        assert ranger_entry() == b"KEYS"
 
         tap(SPACE)
         bbc.debugger.run_to(labels[UPDATE_GAME], timeout=120)
@@ -64,13 +72,11 @@ def test_space_to_play_is_hidden_while_nobody_plays(disc_filepaths):
         tap(SPACE)
         bbc.debugger.run_to(labels["menu_key_loop"], timeout=120)
         bbc.run_for_emulated_seconds(0.5)
-        assert bbc.memory.address.peek[colour_address] == YELLOW
-
-        for key in HERO_KEYS:
-            tap(key)
-        assert bbc.memory.address.peek[colour_address] == BLACK
+        assert bbc.memory.address.peek[colour_address] == BLACK    # every hero starts off
         tap(SPACE)                                  # does nothing
         assert bbc.cpu.pc != labels[UPDATE_GAME]
 
         tap(HERO_KEYS[2])                           # the Barbarian plays
         assert bbc.memory.address.peek[colour_address] == YELLOW
+        tap(HERO_KEYS[2])                           # and no more
+        assert bbc.memory.address.peek[colour_address] == BLACK

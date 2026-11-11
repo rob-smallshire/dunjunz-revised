@@ -17,6 +17,7 @@ from dunjunz_revised.build import (
     REVISED_MUST_MATCH_ORIGINAL,
     read_labels,
 )
+from dunjunz_revised.lockstep import switch_on_heroes
 from dunjunz_revised.machines import MACHINES, launched
 
 GAME_FILENAMES = ("Dun1", "Coder", "Dunjunz")
@@ -59,9 +60,11 @@ def run_until(bbc, address, seconds, press_space=False):
 @pytest.mark.parametrize("build", ["original", "revised"])
 def test_boots_into_play_on_dfs_0_90(disc_filepaths, build):
     if build == "original":
-        disc_filepath, update_game = ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game")["update_game"]
+        disc_filepath, labels = ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game")
     else:
-        disc_filepath, update_game = REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz")["update_game"]
+        disc_filepath, labels = REVISED_DISC_FILEPATH, read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
+    update_game = labels["update_game"]
     with launched(MACHINES["dfs090"]) as bbc:
         bbc.boot_disc(disc_filepath)
+        switch_on_heroes(bbc, labels)           # the revised game's heroes start off
         assert run_until(bbc, update_game, 120, press_space=True), f"PC &{bbc.cpu.pc:04X}"

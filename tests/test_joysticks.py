@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 
 from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
-from dunjunz_revised.lockstep import SPACE, UPDATE_GAME, hold_key
+from dunjunz_revised.lockstep import HERO_SWITCHES, SPACE, UPDATE_GAME, hold_key
 from dunjunz_revised.machines import MACHINES, launched
 from fake_spitfire import DOWN, FIRE, RIGHT, Fake, machine_with_fake, twin_twins
 
@@ -44,8 +44,8 @@ def to_menu(bbc, labels, before_menu=None):
 
 def entries(bbc, labels) -> list[bytes]:
     """Each hero's entry on the menu: KEYS, NO or JOYn."""
-    start = labels["menu_hero_entries"]
-    return [bytes(bbc.memory.address.peek[start + 7 * hero:start + 7 * hero + 4]) for hero in range(4)]
+    start = labels["menu_hero_lines"] + 18                  # each line's entry, 25 bytes apart
+    return [bytes(bbc.memory.address.peek[start + 25 * hero:start + 25 * hero + 4]) for hero in range(4)]
 
 
 def spitfire_line(bbc, labels) -> bytes:
@@ -83,17 +83,17 @@ def test_spitfire_sticks_join_with_fire(labels):
         bbc = fake.bbc
         assert spitfire_line(bbc, labels) == b"SPITFIRE STICKS: 4 "
         assert peek(bbc, labels, "stick_usable") == bytes([1, 1, 1, 1])
-        assert entries(bbc, labels) == [b"KEYS"] * 4
+        assert entries(bbc, labels) == [b"NO  "] * 4               # every hero starts off
 
         press_fire(fake, 0)                     # joystick 1 takes the Ranger
-        assert entries(bbc, labels) == [b"JOY1", b"KEYS", b"KEYS", b"KEYS"]
+        assert entries(bbc, labels) == [b"JOY1", b"NO  ", b"NO  ", b"NO  "]
         press_fire(fake, 2)                     # joystick 3 takes the next free hero
-        assert entries(bbc, labels) == [b"JOY1", b"JOY3", b"KEYS", b"KEYS"]
-        press_fire(fake, 2)                     # and moves on, leaving the Magic-User on keys
-        assert entries(bbc, labels) == [b"JOY1", b"KEYS", b"JOY3", b"KEYS"]
+        assert entries(bbc, labels) == [b"JOY1", b"JOY3", b"NO  ", b"NO  "]
+        press_fire(fake, 2)                     # and moves on, switching the Magic-User off
+        assert entries(bbc, labels) == [b"JOY1", b"NO  ", b"JOY3", b"NO  "]
         press_fire(fake, 2)
         press_fire(fake, 2)                     # past the Fighter: nobody
-        assert entries(bbc, labels) == [b"JOY1", b"KEYS", b"KEYS", b"KEYS"]
+        assert entries(bbc, labels) == [b"JOY1", b"NO  ", b"NO  ", b"NO  "]
         assert peek(bbc, labels, "hero_stick") == bytes([0, NO_STICK, NO_STICK, NO_STICK])
 
         start_play(bbc, labels)
@@ -177,7 +177,7 @@ def test_analogue_sticks_without_spitfire(labels):
         bbc.run_for_emulated_seconds(0.2)
         fake.set_fire(0)
         bbc.run_for_emulated_seconds(0.2)
-        assert entries(bbc, labels) == [b"JOY2", b"KEYS", b"KEYS", b"KEYS"]
+        assert entries(bbc, labels) == [b"JOY2", b"NO  ", b"NO  ", b"NO  "]
 
         start_play(bbc, labels)
         fake.set_axes([0x8000, 0x8000, 0x1000, 0x8000])     # joystick 2's X low: right
@@ -188,6 +188,8 @@ def test_analogue_sticks_without_spitfire(labels):
 def test_keyboard_play_reads_no_sticks(labels):
     with launched(MACHINES["dfs226"]) as bbc:
         to_menu(bbc, labels)
+        hold_key(bbc, *HERO_SWITCHES[0])         # the Ranger plays, on the keyboard
+        bbc.run_for_emulated_seconds(0.3)
         start_play(bbc, labels)
         assert bbc.memory.address.peek[labels["read_controls"]] == RTS
         assert peek(bbc, labels, "control_bits") == bytes(4)

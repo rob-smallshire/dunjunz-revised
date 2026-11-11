@@ -216,6 +216,39 @@ def hold_key(bbc, row: int, column: int, seconds: float = 0.1) -> None:
 
 
 SPACE = inkey_to_matrix(0x9D)
+HERO_SWITCHES = tuple(inkey_to_matrix(inkey) for inkey in (0xCF, 0xCE, 0xEE, 0xED))   # keys 1-4
+
+
+def run_to_pressing_space(bbc, address: int, seconds: float) -> bool:
+    """Run until address, tapping SPACE every half second (to leave the title,
+    and to start the game from the hero menu). True if address was reached."""
+    bp = bbc.debugger.add_breakpoint(address)
+    try:
+        for _ in range(int(seconds / 0.5)):
+            bbc.run_for_emulated_seconds(0.5)
+            if bbc.cpu.pc == address:
+                return True
+            bbc.debugger.run()
+            hold_key(bbc, *SPACE)
+            if bbc.cpu.pc == address:       # reached while SPACE was down
+                return True
+        return False
+    finally:
+        bp.remove()
+
+
+def switch_on_heroes(bbc, labels: dict[str, int], seconds: float = 120) -> None:
+    """The revised game's heroes start off: run to its hero menu (SPACE leaves
+    the title, and does nothing on the menu while nobody plays) and switch on
+    all four with keys 1-4, as players would. The 1987 release's start on."""
+    if "find_sticks" not in labels:
+        return
+    if not run_to_pressing_space(bbc, labels["menu_read_key"], seconds):   # the menu's poll, every 2 cs
+        raise RuntimeError(f"never reached the hero menu; PC &{bbc.cpu.pc:04X}")
+    bbc.debugger.run()
+    for key in HERO_SWITCHES:
+        hold_key(bbc, *key)
+        bbc.run_for_emulated_seconds(0.3)
 
 
 @contextlib.contextmanager
@@ -229,6 +262,7 @@ def game_run(
     """Boot a disc, start a game with every hero, and stop at the first frame."""
     with launched(machine) as bbc:
         bbc.boot_disc(disc_filepath)
+        switch_on_heroes(bbc, labels, boot_seconds)
         # Hold SPACE from the title to the first frame: it leaves the title, and
         # its auto-repeat answers the hero menu (which flushes the keyboard
         # buffer first). run_to stops exactly at the first update_game, so every
