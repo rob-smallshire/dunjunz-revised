@@ -32,8 +32,8 @@
 ; 6. move_missiles: each missile in flight moves one cell and hits what it meets.
 ; 7. update_monsters: the monsters move.
 ; 8. The pause key: if it is held, the game freezes here until it is pressed again.
-;    OSBYTE &7A reports only the lowest-numbered key held, so a held movement key can
-;    hide it.
+; 9. check_escape: ESCAPE held for about half a second ends the game, back to the title
+;    and the hero menu.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -369,7 +369,7 @@
     lda #&10                            ; Next frame in 17 vsyncs, not the usual 3...
     sta os_vsync_counter                ; ...about a third of a second before play resumes
 .not_paused
-    rts                                 ; Return to play_level: this frame's update is done
+    jmp check_escape                    ; Last, ESCAPE held to end the game; it returns to play_level
 ; ***************************************************************************************
 ; Play a level until it ends
 ;

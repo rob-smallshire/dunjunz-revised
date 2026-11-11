@@ -128,6 +128,7 @@ INCLUDE "asm/core/loader.asm"
 INCLUDE "asm/core/level_loop.asm"
 INCLUDE "asm/low/hero_on_trapdoor.asm"
 INCLUDE "asm/low/key_in_cell.asm"
+INCLUDE "asm/low/escape.asm"
 .low_end
 ASSERT low_end <= WORKSPACE
     copyblock LOW_START, low_end, LOW_STORE

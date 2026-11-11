@@ -493,3 +493,22 @@ def score_on_the_next_level(build, next_level_label):
 def test_a_survivor_keeps_their_score_at_the_next_level(disc_filepaths):
     assert score_on_the_next_level(revised(), "next_level") == [0, 0, 0, 5]
     assert score_on_the_next_level(original(), "to_next_level") == [0, 0, 0, 6]
+
+
+ESCAPE = 0x8F          # INKEY -113
+ESCAPE_HOLD_FRAMES = 9
+
+
+def test_holding_escape_ends_the_game(disc_filepaths):
+    disc_filepath, labels, ranges = revised()
+    title_start = read_labels(REVISED_BUILD_DIRPATH, "title")["title_start"]
+    with game_run(disc_filepath, labels, ranges) as run:
+        for _ in range(ESCAPE_HOLD_FRAMES - 1):         # a shorter press does nothing...
+            assert run.next_frame({ESCAPE})
+        assert run.next_frame(set())
+        assert run.next_frame(set())                    # ...and the count starts again
+        for _ in range(ESCAPE_HOLD_FRAMES - 1):
+            assert run.next_frame({ESCAPE})
+        run.set_keys({ESCAPE})                          # the ninth frame in a row ends it
+        run.bbc.debugger.run_to(title_start, timeout=60)
+        assert run.bbc.cpu.pc == title_start

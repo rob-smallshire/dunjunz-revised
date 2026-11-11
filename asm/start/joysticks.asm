@@ -176,7 +176,8 @@
     lda #&60                            ; No: read_controls is just an RTS
     sta read_controls
 .clear_controls
-    lda #0                              ; Every hero: no stick bits, no charge
+    lda #0                              ; Every hero: no stick bits, no charge...
+    sta escape_frames                   ; ...and ESCAPE not yet held (check_escape)
     ldx #max_sticks - 1
 .clear_hero_controls
     sta control_bits,x

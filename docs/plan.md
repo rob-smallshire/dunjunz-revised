@@ -63,6 +63,9 @@ filing system, and keeps it resident. The goals:
      magic key does; CTRL and RETURN still cast for everyone. On the
      keyboard a held direction beats fire, so the combination meant nothing
      before.
+   - **Ending a game**: ESCAPE held for about half a second (9 frames)
+     goes back to the title, as game over does, and any key there to the
+     hero menu (decided 2026-11-11). A shorter press does nothing.
    - **Space**: the menu copies the chosen driver into zero page &00-&5F
      (language workspace, unused while the game runs), or just an RTS when
      nobody joined with a stick, so keyboard play is unchanged.

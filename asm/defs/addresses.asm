@@ -17,6 +17,7 @@ plot_offset_y            = &7e  ; Vertical offset added by plot_at_cell, in pixe
 ring_x                   = &80  ; Map x of the cell being drawn in the victory ring.
 ring_y                   = &81  ; Map y of the cell being drawn in the victory ring.
 victory_sprite           = &82  ; Sprite drawn in the victory ring: a sparkle, &16-&19, or the blank, &15, to erase it.
+escape_frames            = &83  ; Frames ESCAPE has been held in a row, for check_escape; cleared as each game starts.
 victory_delay            = &84  ; Wait between passes of the victory sequence, in units of 255 loops: &E6 at the start, one less each pass, down to 1.
 victory_pitch_step       = &8d  ; Amount the victory tone's pitch rises each pass: 1 at the start, one more each time the pitch wraps past 255.
 level_count_copy         = &8e  ; Copy of levels_started that coder_start leaves for game_entry, which makes it level_number. In play the game uses &8E for its own victory_steps_left.
