@@ -376,9 +376,9 @@
     equb &07, &12                       ; Column 7, row 18
 .menu_sound_entry
     equs "ON ", &0d
-    equb &01, &14                       ; Column 1, row 20
+    equb &00, &14                       ; Column 0, row 20
 .menu_spitfire_line
-    equs "                  ", &0d      ; Blank, or what find_sticks found of SPItFIRE
+    equs "                   ", &0d     ; Blank, or what find_sticks found of SPItFIRE
     equb &03, &16                       ; Column 3, row 22, the window's last
     equs "SPACE TO PLAY", &0d
     equb &ff                            ; The end

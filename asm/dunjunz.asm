@@ -100,7 +100,7 @@ PAGE9_STORE = &3400
 WS_STORE = &3800
 STASH = &3000
 STARTUP = &6980                         ; Rows 23-24, which the hero menu leaves alone
-JOYSTICK_STORE = &6dc0                  ; The joystick code's stored copies, at the end of rows 23-24
+JOYSTICK_STORE = &6df0                  ; The joystick code's stored copies, at the end of rows 23-24
 SETUP_ADDRESS = &5000                   ; Setup, loaded with each level, clear of STASH and LEVEL_FILE
 
 INCLUDE "asm/defs/joystick.asm"

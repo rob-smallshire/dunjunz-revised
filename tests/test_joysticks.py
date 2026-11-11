@@ -48,6 +48,11 @@ def entries(bbc, labels) -> list[bytes]:
     return [bytes(bbc.memory.address.peek[start + 7 * hero:start + 7 * hero + 4]) for hero in range(4)]
 
 
+def spitfire_line(bbc, labels) -> bytes:
+    line = labels["menu_spitfire_line"]
+    return bytes(bbc.memory.address.peek[line:line + 19])
+
+
 def press_fire(fake: Fake, stick: int, sticks: int = 4) -> None:
     """Press and release fire on one stick, as SPItFIRE's switch bytes."""
     switches = [0] * sticks
@@ -76,8 +81,7 @@ def test_spitfire_sticks_join_with_fire(labels):
     with machine_with_fake() as fake:
         spitfire_menu(fake, labels)
         bbc = fake.bbc
-        line = labels["menu_spitfire_line"]
-        assert bytes(bbc.memory.address.peek[line:line + 18]) == b"SPITFIRE STICKS: 4"
+        assert spitfire_line(bbc, labels) == b"SPITFIRE STICKS: 4 "
         assert peek(bbc, labels, "stick_usable") == bytes([1, 1, 1, 1])
         assert entries(bbc, labels) == [b"KEYS"] * 4
 
@@ -144,10 +148,22 @@ def test_spitfire_not_ready_offers_no_sticks(labels):
         fake.as_spitfire(identify, summary, describe)
         to_menu(fake.bbc, labels, before_menu=fake.hook_osbyte)
         bbc = fake.bbc
-        line = labels["menu_spitfire_line"]
-        assert bytes(bbc.memory.address.peek[line:line + 18]) == b"SPITFIRE NOT READY"
+        assert spitfire_line(bbc, labels) == b"SPITFIRE:CTRL-BREAK"
         assert bbc.memory.address.peek[labels["read_controls"]] == RTS
         assert peek(bbc, labels, "stick_usable") == bytes(4)
+
+
+@pytest.mark.parametrize("flags, text", [
+    (0x02, b"SPITFIRE NO REPLY  "),
+    (0x04 | 0x08, b"SPITFIRE STICKS OFF"),      # the first flag set is the one shown
+    (0x08, b"SPITFIRE: *FX16,4  "),
+])
+def test_spitfire_says_why_it_is_not_ready(labels, flags, text):
+    with machine_with_fake() as fake:
+        identify, summary, describe = twin_twins()
+        fake.as_spitfire(identify[:4] + bytes([flags]), summary, describe)
+        to_menu(fake.bbc, labels, before_menu=fake.hook_osbyte)
+        assert spitfire_line(fake.bbc, labels) == text
 
 
 def test_analogue_sticks_without_spitfire(labels):
@@ -155,8 +171,7 @@ def test_analogue_sticks_without_spitfire(labels):
         fake.as_analogue_port()
         to_menu(fake.bbc, labels, before_menu=fake.hook_osbyte)
         bbc = fake.bbc
-        line = labels["menu_spitfire_line"]
-        assert bytes(bbc.memory.address.peek[line:line + 18]) == b" " * 18
+        assert spitfire_line(bbc, labels) == b" " * 19       # nothing said of SPItFIRE
         assert peek(bbc, labels, "stick_usable") == bytes([1, 1, 0, 0])
         fake.set_fire(0x02)                     # joystick 2's fire
         bbc.run_for_emulated_seconds(0.2)

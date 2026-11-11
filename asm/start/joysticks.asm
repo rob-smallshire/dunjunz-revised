@@ -15,7 +15,11 @@
 ; - If SPItFIRE answered with status flags set (no workspace, no hardware, joysticks off
 ;   or updates stopped), its joysticks cannot be read, and the joystick port's lines are
 ;   its SPI bus, so ADVAL means nothing: no stick is usable, read_controls is an RTS, and
-;   the menu says SPItFIRE is not ready.
+;   the menu says why, from the first flag set, with what to do where it fits: press
+;   CTRL-BREAK, SPItFIRE gives no reply, its sticks are off (*SPITFIRE JOYSTICK ON), or
+;   *FX16,0 stopped them (*FX16,4).
+; - Without SPItFIRE the menu says nothing of it: a player who has never heard of
+;   SPItFIRE need not read about it.
 ; - Without SPItFIRE, the analogue driver is installed and sticks 0 and 1 (joysticks 1
 ;   and 2) are usable. A port with nothing in it, or a machine without an ADC, never
 ;   presses fire, so its stick never joins. On a Master Compact (OSBYTE 0 gives 5) the
@@ -51,7 +55,18 @@
     bne no_spitfire                     ; No: the analogue port
     lda spitfire_block + 5              ; Status flags: ready?
     beq spitfire_ready                  ; None: ready
-    ldx #spitfire_not_ready_text - spitfire_texts  ; Not ready: say so...
+    ldx #spitfire_no_workspace_text - spitfire_texts  ; Not ready: say why, from the first flag set
+.find_spitfire_flag
+    lsr a                               ; This flag...
+    bcs spitfire_flag_found             ; ...set: its text
+    pha                                 ; Not: the next text
+    txa
+    clc
+    adc #SPITFIRE_LINE_LENGTH
+    tax
+    pla
+    bne find_spitfire_flag              ; Always, while a flag remains (flags 0-3 are known)
+.spitfire_flag_found
     jsr show_spitfire_line
     lda #&60                            ; ...and no driver: read_controls is an RTS
     sta read_controls
@@ -131,7 +146,7 @@
 ; ***************************************************************************************
 ; Write the menu's SPItFIRE line
 ;
-; Copy the eighteen characters at spitfire_texts+X into menu_spitfire_line.
+; Copy the SPITFIRE_LINE_LENGTH characters at spitfire_texts+X into menu_spitfire_line.
 ;
 ; On Entry:
 ;     X: offset of the text in spitfire_texts
@@ -142,7 +157,7 @@
     sta menu_spitfire_line,y
     inx
     iny
-    cpy #18
+    cpy #SPITFIRE_LINE_LENGTH
     bne copy_spitfire_line
     rts
 ; ***************************************************************************************
@@ -169,14 +184,18 @@
     dex
     bpl clear_hero_controls
     rts
-; The SPItFIRE line's texts, eighteen characters each.
+; The SPItFIRE line's texts, SPITFIRE_LINE_LENGTH characters each: ready, then why not,
+; one for each of status flags 0-3 in turn.
 .spitfire_texts
 .spitfire_sticks_text
     equs "SPITFIRE STICKS: "
 .spitfire_count_digit
-    equs "0"                            ; The usable sticks, counted by find_sticks
-.spitfire_not_ready_text
-    equs "SPITFIRE NOT READY"
+    equs "0 "                           ; The usable sticks, counted by find_sticks
+.spitfire_no_workspace_text
+    equs "SPITFIRE:CTRL-BREAK"          ; Flag 0: the ROM has no workspace yet
+    equs "SPITFIRE NO REPLY  "          ; Flag 1: the hardware did not answer
+    equs "SPITFIRE STICKS OFF"          ; Flag 2: *SPITFIRE JOYSTICK ON
+    equs "SPITFIRE: *FX16,4  "          ; Flag 3: *FX16,0 stopped the updates
 ; Each stick's fire at the last poll (switch_fire, or 0), for poll_sticks.
 .stick_fire_before
     skip max_sticks

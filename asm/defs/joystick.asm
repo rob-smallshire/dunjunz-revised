@@ -34,6 +34,7 @@ adval_switch_bytes_1_2               = 12   ; ADVAL(12): joysticks 1 and 2's swi
 adval_switch_bytes_3_4               = 28   ; ADVAL(28): joysticks 3 and 4's
 
 ANALOGUE_AXES_OFFSET = 18               ; analogue_axes in the analogue driver, which find_sticks patches on a Compact
+SPITFIRE_LINE_LENGTH = 19               ; The menu's SPItFIRE line, in characters
 DRIVER_END = &60                        ; read_controls's driver ends below the tests' random number generator
 
     org &00
