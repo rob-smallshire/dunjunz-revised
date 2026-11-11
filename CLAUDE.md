@@ -38,6 +38,19 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   (`tools/dunjunz_revised/title_picture.py`): "Press any key" in yellow and
   the version drawn in on the bottom row, from `_version.py`. The build also
   renders it to `docs/title-screen.png`, which the README shows.
+- Joysticks (`docs/plan.md`, milestone 6): every key goes through `test_key`
+  (`asm/core/test_key.asm`), which also takes the hero's stick bits from
+  `control_bits`. The hero menu (`asm/start/joysticks.asm`) detects SPItFIRE
+  with OSWORD &3F and copies a driver (`asm/joystick/`) into zero page at
+  `read_controls`, which `update_game` calls each frame, and `map_controls`
+  into the printer buffer at &0880; with no stick playing, `read_controls` is
+  an RTS. `tests/test_joysticks.py` runs a fake SPItFIRE in sideways RAM
+  (`tests/fake_spitfire.asm`, `tests/fake_spitfire.py`), which also stands in
+  for the analogue port. b2 (`/Applications/b2 Debug.app`, `-c "Master
+  Compact (MOS 5.00)"`) runs the game from an ADFS copy of the disc (b2's
+  Compact boots ADFS). Its HTTP API (port 48075) peeks and pokes; its paste
+  holds SPACE for up to a second before typing, which the menu takes as
+  SPACE, and it rejects control characters such as RETURN.
 - `uv run dr-sizes` shows where each module is; space is tight, so check it
   after every change. Modules were split to fit: move whole modules between
   regions rather than trimming blindly.

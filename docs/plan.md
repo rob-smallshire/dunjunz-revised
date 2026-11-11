@@ -12,7 +12,7 @@ filing system, and keeps it resident. The goals:
   attached. The layout assumes PAGE is at most &1C00;
 - fits on one volume, an 80-track single-sided DFS disc (200 KB);
 - behaves as the original does, without its bugs (see `bugs.md`);
-- later: redefinable keys and a choice of joystick drivers (see milestone 6);
+- joysticks: SPItFIRE's four, or two on the analogue port (see milestone 6);
 - "Dunjunz Revised 2026.1" on `!BOOT`'s banner and the title screen. The
   disc title, limited to 12 characters by DFS, is "DUNJUNZ 26.1": "DUNJUNZ"
   and the version with the year shortened (`build.disc_title`).
@@ -38,17 +38,34 @@ filing system, and keeps it resident. The goals:
    and loading it mid-game would need screen memory that is on show.
 5. **Fixes.** One at a time from `bugs.md`, each with a test against the
    baseline.
-6. **Controls** (deferred; decided 2026-11-08). No joystick support for
-   now: keyboard only, so the 1987 Model B disc's Barbarian-on-joystick
-   mode (Coder's BYTEV handler) is gone. Later, a new phase in loading,
-   before the game, will redefine the keys and pick one of several
-   joystick drivers, which is loaded with the game:
-   - standard Acorn: two sticks, one button each;
-   - Voltmace Delta 14/B: extra buttons (magic could have its own);
-   - SPItFIRE: four sticks of one button each (channels 1-4 and 16-20,
-     buttons on 0 and 16, through a ROM on BYTEV; detectable).
-   One-button sticks leave the Ranger's and Magic-User's magic to be
-   settled: on the keyboard, or a gesture on the button.
+6. **Controls** (in progress on the `spitfire` branch; decided 2026-11-11).
+   Joysticks join the keyboard; every key keeps working for every hero.
+   - **SPItFIRE** (`~/Code/spitfire/docs/joystick-programming.md`): up to
+     four sticks through its switch bytes (`ADVAL(12)` and `ADVAL(28)`),
+     detected only through OSWORD &3F (reason 0 answers `&53` with no
+     status flags; reasons 1 and 2 give the sticks of kind 1 whose switch
+     byte carries directions). Today its ROM runs only on the Master Compact
+     (MOS 5); the detection works on any model and finds nothing elsewhere.
+   - **Without SPItFIRE**: two sticks through the BBC's analogue port
+     (`ADVAL(1)`-`(4)`, thresholded at a quarter of full scale, and the fire
+     bits of `ADVAL(0)`), which also gives a Master Compact's own digital
+     port as joystick 1 (MOS 5 reports its directions in `ADVAL(0)`).
+   - **Joining**: on the hero menu, keys 1-4 still toggle a hero between NO
+     and the keyboard. Pressing fire on joystick j gives it the first hero
+     not on a stick, and each further press moves it on to the next, then
+     off. A stick that never presses fire is never used, so an empty port
+     or a missing ADC does no harm.
+   - **Magic** (Ranger and Magic-User): the stick's fire and a direction
+     held together for about half a second (8 frames) casts, as holding the
+     magic key does; CTRL and RETURN still cast for everyone. On the
+     keyboard a held direction beats fire, so the combination meant nothing
+     before.
+   - **Space**: the menu copies the chosen driver into zero page &00-&5F
+     (language workspace, unused while the game runs), or just an RTS when
+     nobody joined with a stick, so keyboard play is unchanged.
+   - Beebium emulates neither SPItFIRE nor the ADC, so the tests run a fake
+     SPItFIRE in sideways RAM that answers OSWORD &3F and OSBYTE &80.
+
 7. **Release.** The version is on the title screen and in the disc title
    (done). Still to do: a CI and release workflow like Don't Dither!'s.
 

@@ -17,17 +17,16 @@ from dunjunz_revised.lockstep import SPACE, UPDATE_GAME, hold_key, inkey_to_matr
 from dunjunz_revised.machines import MACHINES, launched
 
 KEY_1 = inkey_to_matrix(0xCF)       # INKEY -49
-RANGER_ENTRY = 0x51                 # offset of the Ranger's YES/NO in menu_text
 
 
 @pytest.mark.parametrize("machine_key", ["dfs090", "dfs226", "dnfs120"])
 def test_menu_answers_tapped_keys(disc_filepaths, machine_key):
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
-    entry_address = labels["menu_text"] + RANGER_ENTRY
+    entry_address = labels["menu_hero_entries"]   # the Ranger's KEYS/NO/JOYn
 
     with launched(MACHINES[machine_key]) as bbc:
         def ranger_entry():
-            return bytes(bbc.memory.address.peek[entry_address:entry_address + 3])
+            return bytes(bbc.memory.address.peek[entry_address:entry_address + 4])
 
         def tap(key):
             hold_key(bbc, *key)
@@ -40,9 +39,9 @@ def test_menu_answers_tapped_keys(disc_filepaths, machine_key):
         bbc.run_for_emulated_seconds(0.5)           # the menu waits for a key
 
         tap(KEY_1)
-        assert ranger_entry() == b"NO "
+        assert ranger_entry() == b"NO  "
         tap(KEY_1)
-        assert ranger_entry() == b"YES"
+        assert ranger_entry() == b"KEYS"
 
         tap(SPACE)
         bbc.debugger.run_to(labels[UPDATE_GAME], timeout=120)

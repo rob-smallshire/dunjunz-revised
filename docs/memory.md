@@ -71,10 +71,12 @@ from its real private page, which its table entry doesn't give.
 
 | Range | In play |
 |---|---|
-| &0000-&03FF | MOS; the game's zero page is &70-&8F (&60-&6F is reserved for the tests' random number generator) |
+| &0000-&005F | The joysticks: which stick plays each hero, their switch bytes, and the driver at `read_controls` (language workspace, unused while the game runs; `asm/defs/joystick.asm`) |
+| &0060-&03FF | MOS; the game's zero page is &70-&8F (&60-&6F is reserved for the tests' random number generator) |
 | &0400-&06FF | Scores, the loader, the level loop (stored in GAME, copied by startup) |
 | &0700-&07FF | The per-level workspace (`WORKSPACE`), refreshed by Setup for each level |
-| &0800-&08AF | MOS (sound) |
+| &0800-&087F | MOS (sound) |
+| &0880-&08AF | `map_controls`, copied by the hero menu into the MOS's printer buffer, which the game never prints to |
 | &08B0-&08BF | State kept across games: ten-thousands digits, absent heroes, level counter and digits |
 | &08C0-&08FF | MOS: envelopes 1-4, which the game defines |
 | &0900-&0CFF | Plotter, hero tables, the wall map at &0C00 (character 128's definition too) |

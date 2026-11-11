@@ -36,11 +36,20 @@ See `bugs.md`, "Fix" and "Kept".
 
 ## Joysticks
 
-Deferred (2026-11-08): no joystick support for now. A later loading phase
-will redefine keys and select a joystick driver; see `plan.md`,
-milestone 6. Still needed then: SPItFIRE's and the Delta 14/B's button
-layouts and detection, how one-button sticks cast magic, and ADC
-emulation in beebium to test the drivers.
+Under way on the `spitfire` branch (decided 2026-11-11; `plan.md`,
+milestone 6). Still open:
+
+- **A real Compact with SPItFIRE and two Delta 3B Twins** is the test that
+  counts: the fake SPItFIRE in `tests/` answers as the guide says, but
+  timing, the real ROM's OSBYTE cost and the feel of the half-second magic
+  hold are untested.
+- **A Compact's own digital port** (without SPItFIRE) is read from
+  `ADVAL(0)` alone; b2 shows `ADVAL(1)`-`(4)` reading 0 with no stick,
+  which is why the axes are skipped there. Not yet tried with a stick.
+- **BBC analogue sticks** are thresholded at a quarter of full scale from
+  the centre. Not yet tried on a real Model B, B+ or Master 128.
+- **Redefinable keys** and the Delta 14B's keypad (magic on a key of its
+  own) are not planned yet.
 
 ## Machines
 

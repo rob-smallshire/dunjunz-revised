@@ -11,7 +11,7 @@
 ; step (step 1) finishes it through continue_hero_step and reads no keys. Otherwise
 ; heroes 0 and 1 first go through check_magic, which comes back to read_hero_keys, or
 ; after a cast to draw_moved_hero with no move; then the first held of up, down, right,
-; left and fire decides. A direction turns the hero that way (directions 1, 3, 5, 7) and
+; left and fire decides, on the hero's keys or their stick (test_key). A direction turns the hero that way (directions 1, 3, 5, 7) and
 ; tries the next cell, which is recorded in hero_door_x/y whatever is there, so a hero
 ; pushing on a door opens it. A wall or closed door, a monster (alive or dying, found by
 ; find_creature) or another hero in play refuses the move; walking into a monster also
@@ -69,40 +69,45 @@
     jmp check_magic                     ; Ranger or Magic-User: magic key, then back
 ; Standing in a cell: the first held key of up, down, right, left and fire decides what the hero does.
 .read_hero_keys
+    ldy #switch_up                      ; Up on the stick...
     lda hero_key_up,x                   ; Up key held? (directions beat fire, up first)
-    jsr test_key                        ; Z set if held
+    jsr test_key                        ; Z set if either is held
     bne check_key_down                  ; Not held: try down
     lda #1                              ; Held: face up...
     sta hero_direction,x                ; ...direction 1: drawn as sprite base + 1 or + 2
     jsr start_hero_step                 ; ...set the half-cell offsets for the step...
     jmp step_hero                       ; ...and try the cell above
 .check_key_down
+    ldy #switch_down                    ; Down on the stick...
     lda hero_key_down,x                 ; Down key held?
-    jsr test_key                        ; Z set if held
+    jsr test_key                        ; Z set if either is held
     bne check_key_right                 ; Not held: try right
     lda #5                              ; Held: face down...
     sta hero_direction,x                ; ...direction 5: drawn as sprite base + 5 or + 6
     jsr start_hero_step                 ; ...set the half-cell offsets for the step...
     jmp step_hero                       ; ...and try the cell below
 .check_key_right
+    ldy #switch_right                   ; Right on the stick...
     lda hero_key_right,x                ; Right key held?
-    jsr test_key                        ; Z set if held
+    jsr test_key                        ; Z set if either is held
     bne check_key_left                  ; Not held: try left
     lda #3                              ; Held: face right...
     sta hero_direction,x                ; ...direction 3: drawn as sprite base + 3 or + 4
     jsr start_hero_step                 ; ...set the half-cell offsets for the step...
     jmp step_hero                       ; ...and try the cell to the right
 .check_key_left
+    ldy #switch_left                    ; Left on the stick...
     lda hero_key_left,x                 ; Left key held?
-    jsr test_key                        ; Z set if held
+    jsr test_key                        ; Z set if either is held
     bne check_key_fire                  ; Not held: try fire
     lda #7                              ; Held: face left...
     sta hero_direction,x                ; ...direction 7: drawn as sprite base + 7 or + 8
     jsr start_hero_step                 ; ...set the half-cell offsets for the step...
     jmp step_hero                       ; ...and try the cell to the left
 .check_key_fire
+    ldy #switch_fire                    ; Fire on the stick...
     lda hero_key_fire,x                 ; Fire key held? (only when no direction is)
-    jsr test_key                        ; Z set if held
+    jsr test_key                        ; Z set if either is held
     beq fire_missile                    ; Held: launch a missile the way the hero faces
     jmp draw_moved_hero                 ; No key: the hero stands still, drawn in place
 ; Fire: put a missile in the hero's first free slot, in the hero's cell, flying the way the hero faces.

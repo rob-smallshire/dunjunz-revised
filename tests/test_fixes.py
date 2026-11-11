@@ -132,7 +132,7 @@ def test_menu_shows_the_sound_off(disc_filepaths):
             hold_key(bbc, *SPACE)
         bp.remove()
         assert bbc.cpu.pc == labels["menu_sound_shown"]
-        entry = bytes(bbc.memory.address.peek[labels["menu_text"] + 0x98:labels["menu_text"] + 0x9B])
+        entry = bytes(bbc.memory.address.peek[labels["menu_sound_entry"]:labels["menu_sound_entry"] + 3])
         assert entry == b"OFF"
 
 

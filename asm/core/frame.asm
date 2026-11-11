@@ -5,6 +5,8 @@
 ; check_for_victory; play_level deals with the exit when this returns. The work, in
 ; order:
 ;
+; 0. read_controls: the sticks are read into control_bits, if any stick plays (see
+;    asm/defs/joystick.asm); otherwise it is an RTS.
 ; 1. draw_trapdoors: the eight trapdoors are redrawn, under everything drawn after.
 ; 2. move_heroes: each hero in play walks, fires or casts magic, is redrawn, and picks up
 ;    any object in their cell. It records in hero_door_x/y the cell each hero stepped or
@@ -38,6 +40,7 @@
 ;     X: corrupted
 ;     Y: corrupted
 .update_game
+    jsr read_controls                   ; Read the sticks, if any play (otherwise an RTS)
     jsr draw_trapdoors                  ; Redraw the trapdoors first, under everything else
     jsr move_heroes                     ; Move the heroes: steps, shots, magic, pick-ups
 ; Doors: for each hero, find a door at the cell they last stepped or tried to step into, and open it if they carry its key.
@@ -344,24 +347,24 @@
     jsr draw_objects                    ; Draw the objects over the floor
     jsr move_missiles                   ; Move the missiles a cell each
     jsr update_monsters                 ; Move the monsters
-; The pause key, last in each frame's update: P, read with test_key, which sees it
+; The pause key, last in each frame's update: P, read with test_keyboard, which sees it
 ; whatever other keys are held (OSBYTE &7A, which the 1987 release used, reports only the
 ; lowest-numbered key held, so a movement key could hide P). Pause until P is pressed
 ; again, then wait for it to be released, so that a P still held does not pause again.
     lda #inkey_key_p                    ; P held?
-    jsr test_key                        ; ...Z set if so
+    jsr test_keyboard                   ; ...Z set if so
     bne not_paused                      ; No: on with play
 .wait_pause_release
     lda #inkey_key_p                    ; Paused: wait for P to be released...
-    jsr test_key                        ; ...is it still held?
+    jsr test_keyboard                   ; ...is it still held?
     beq wait_pause_release              ; Yes: keep waiting
 .wait_pause_press
     lda #inkey_key_p                    ; ...then pressed again
-    jsr test_key                        ; ...is it held yet?
+    jsr test_keyboard                   ; ...is it held yet?
     bne wait_pause_press                ; No: stay paused
 .wait_resume_release
     lda #inkey_key_p                    ; ...and released
-    jsr test_key                        ; ...is it still held?
+    jsr test_keyboard                   ; ...is it still held?
     beq wait_resume_release             ; Yes: keep waiting
     lda #&10                            ; Next frame in 17 vsyncs, not the usual 3...
     sta os_vsync_counter                ; ...about a third of a second before play resumes

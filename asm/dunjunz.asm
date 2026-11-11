@@ -100,8 +100,10 @@ PAGE9_STORE = &3400
 WS_STORE = &3800
 STASH = &3000
 STARTUP = &6980                         ; Rows 23-24, which the hero menu leaves alone
+JOYSTICK_STORE = &6dc0                  ; The joystick code's stored copies, at the end of rows 23-24
 SETUP_ADDRESS = &5000                   ; Setup, loaded with each level, clear of STASH and LEVEL_FILE
 
+INCLUDE "asm/defs/joystick.asm"
 INCLUDE "asm/defs/workspace.asm"
 INCLUDE "asm/defs/level_file.asm"
 
@@ -150,6 +152,7 @@ INCLUDE "asm/core/font.asm"
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
 INCLUDE "asm/core/game_over_text.asm"
+INCLUDE "asm/core/test_key.asm"
 .ws_end
 ASSERT ws_end <= WS_END
     copyblock WS_START, ws_end, WS_STORE
@@ -162,8 +165,39 @@ ASSERT WS_STORE + (WS_END - WS_START) <= STARTUP
 INCLUDE "asm/start/startup.asm"
 INCLUDE "asm/start/game_entry.asm"
 INCLUDE "asm/start/menu.asm"
+INCLUDE "asm/start/joysticks.asm"
 .startup_end
-ASSERT startup_end <= UP_START
+ASSERT startup_end <= JOYSTICK_STORE
+
+; ***************************************************************************************
+; The joystick code, assembled where it runs and stored at JOYSTICK_STORE, after the hero
+; menu, which copies the parts needed into place (asm/start/joysticks.asm): map_controls
+; in the MOS's printer buffer, and one driver at read_controls, in zero page.
+PRINTER_BUFFER = &0880
+PRINTER_BUFFER_END = &08b0              ; The page &08 state follows
+    org PRINTER_BUFFER
+INCLUDE "asm/joystick/map_controls.asm"
+.map_controls_end
+ASSERT map_controls_end <= PRINTER_BUFFER_END
+map_controls_image = JOYSTICK_STORE
+    copyblock map_controls, map_controls_end, map_controls_image
+    clear map_controls, map_controls_end
+    org read_controls
+INCLUDE "asm/joystick/spitfire_driver.asm"
+.spitfire_driver_end
+ASSERT spitfire_driver_end <= DRIVER_END
+spitfire_driver_image = map_controls_image + map_controls_end - map_controls
+    copyblock spitfire_driver, spitfire_driver_end, spitfire_driver_image
+    clear spitfire_driver, spitfire_driver_end
+    org read_controls
+INCLUDE "asm/joystick/analogue_driver.asm"
+.analogue_driver_end
+ASSERT analogue_driver_end <= DRIVER_END
+ASSERT analogue_axes - analogue_driver = ANALOGUE_AXES_OFFSET
+analogue_driver_image = spitfire_driver_image + spitfire_driver_end - spitfire_driver
+    copyblock analogue_driver, analogue_driver_end, analogue_driver_image
+    clear analogue_driver, analogue_driver_end
+ASSERT analogue_driver_image + analogue_driver_end - analogue_driver <= UP_START
 
 ; ***************************************************************************************
 ; Setup: its own file, loaded with each level and run in screen memory

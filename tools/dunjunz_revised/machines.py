@@ -29,6 +29,7 @@ class Machine:
     extensions: tuple[str, ...] = field(default=())
     bundled_preset: str | None = None     # use one of beebium's presets, as it is
     variant: str = "model-b"
+    ram_slots: tuple[int, ...] = field(default=())   # empty sideways RAM
 
     def preset(self) -> dict:
         preset = {
@@ -38,6 +39,7 @@ class Machine:
             "description": self.description,
             "sideways_bank": {
                 "slots": [{"slot": slot, "type": "rom", "image_uri": rom} for slot, rom in self.roms]
+                + [{"slot": slot, "type": "ram"} for slot in self.ram_slots]
             },
         }
         if self.fdc is not None:

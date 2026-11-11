@@ -6,7 +6,8 @@
 ; in a cell, before reading their other keys.
 ;
 ; hero_magic_delay is counted down first. It normally stands at 1, so the magic key
-; (hero_magic_key) is scanned every frame; while it is not yet zero the RTS here returns
+; (hero_magic_key), or a stick's magic gesture (fire and a direction held together, see
+; map_controls), is tested every frame; while it is not yet zero the RTS here returns
 ; from move_heroes itself, so neither this hero nor those after it move that frame.
 ; Without the key held, play goes on to read_hero_keys. With it held, the magic sound
 ; plays, the delay is set to 4 (three frozen frames follow) and the cost is taken one
@@ -29,8 +30,9 @@
 .read_magic_key
     lda #1                              ; Delay 1: the key is read every frame from now on
     sta hero_magic_delay,x              ; ...so the next press is seen at once
-    lda hero_magic_key,x                ; This hero's magic key, an INKEY number...
-    jsr test_key                        ; ...scanned: Z set if held
+    ldy #switch_magic                   ; The stick's magic gesture...
+    lda hero_magic_key,x                ; ...or this hero's magic key, an INKEY number...
+    jsr test_key                        ; ...scanned: Z set if either is held
     beq cast_magic                      ; Held: cast
     jmp read_hero_keys                  ; Not held: read the movement and fire keys
 .cast_magic
