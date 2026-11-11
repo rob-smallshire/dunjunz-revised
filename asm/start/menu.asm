@@ -365,12 +365,10 @@
     equs "KEYS", &0d
     equb &0e, &0a                       ; Column 14, row 10
     equs "KEYS", &0d
-    equb &00, &0c                       ; Column 0, row 12
-    equs "TYPE NUMBER", &0d
-    equb &00, &0d                       ; Column 0, row 13
-    equs "TO TOGGLE", &0d
+    equb &00, &0c                       ; Column 0, row 12 (the full width: the cursor wraps)
+    equs "KEYBOARD: 1234 JOINS", &0d
     equb &00, &0e                       ; Column 0, row 14
-    equs "OR FIRE TO JOIN", &0d
+    equs "JOYSTICK: FIRE JOINS", &0d
     equb &00, &10                       ; Column 0, row 16
     equs "SOUND ON(5) OFF(6)", &0d
     equb &07, &12                       ; Column 7, row 18
