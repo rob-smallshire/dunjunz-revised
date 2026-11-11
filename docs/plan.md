@@ -50,10 +50,13 @@ filing system, and keeps it resident. The goals:
      (`ADVAL(1)`-`(4)`, thresholded at a quarter of full scale, and the fire
      bits of `ADVAL(0)`), which also gives a Master Compact's own digital
      port as joystick 1 (MOS 5 reports its directions in `ADVAL(0)`).
-   - **Joining**: on the hero menu, keys 1-4 still toggle a hero between NO
-     and the keyboard. Pressing fire on joystick j gives it the first hero
-     not on a stick, and each further press moves it on to the next, then
-     off. A stick that never presses fire is never used, so an empty port
+   - **Joining**: every hero starts off (the 1987 release started all four
+     on), so one player can pick a hero alone. On the hero menu, keys 1-4
+     toggle a hero between NO and the keyboard. Pressing fire on joystick j
+     gives it the first hero not on a stick, and each further press moves it
+     on to the next, switching off the one it leaves, then off. A hero who
+     plays has their line in yellow; SPACE TO PLAY is yellow, or black while
+     nobody plays; the sound line highlights ON or OFF. A stick that never presses fire is never used, so an empty port
      or a missing ADC does no harm.
    - **Magic** (Ranger and Magic-User): the stick's fire and a direction
      held together for about half a second (8 frames) casts, as holding the
