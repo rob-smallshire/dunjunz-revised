@@ -4,6 +4,8 @@ original did not. See docs/bugs.md.
 
 from __future__ import annotations
 
+import pytest
+
 from dunjunz_revised.build import (
     ORIGINAL_BUILD_DIRPATH,
     ORIGINAL_DISC_FILEPATH,
@@ -302,6 +304,9 @@ def drop_key_at_exit(build, keys_beside=0, walls_all_round=False):
     disc_filepath, labels, ranges = build
     with game_run(disc_filepath, labels, ranges) as run:
         x, y = run.peek(run.address("hero_x"), 1)[0], run.peek(run.address("hero_y"), 1)[0]
+        for hero in (1, 2, 3):              # the others start beside the Ranger: out of the way
+            run.poke(run.address(f"hero_x+{hero}"), bytes([OFF_MAP]))
+            run.poke(run.address(f"hero_y+{hero}"), bytes([OFF_MAP]))
         cells = [(x + dx, y + dy) for dx, dy in (ABOVE, RIGHT, BELOW, LEFT)]
         if walls_all_round:
             for cell in cells:
@@ -360,7 +365,7 @@ SPR_DIGIT_0 = 0x1E
 SPR_CROSS = 0x2A
 SPR_POTION = 0x61
 STEP_OUT_OF_PLAY = 0x63
-RANGER, FIGHTER = 0, 3
+RANGER, MAGIC_USER, BARBARIAN, FIGHTER = 0, 1, 2, 3
 DIRECTIONS = {1: ABOVE, 2: RIGHT, 3: BELOW, 4: LEFT}
 
 
@@ -512,3 +517,121 @@ def test_holding_escape_ends_the_game(disc_filepaths):
         run.set_keys({ESCAPE})                          # the ninth frame in a row ends it
         run.bbc.debugger.run_to(title_start, timeout=60)
         assert run.bbc.cpu.pc == title_start
+
+
+def object_may_lie(run, x, y):
+    """Whether level's object-free map leaves the cell clear for an object."""
+    address = run.labels["object_free_map"] + (y & 0xF8) * 4 + (x & 0xF8) + (y & 7)
+    return not run.peek(address, 1)[0] & (0x80 >> (x & 7))
+
+
+def mark_object(run, x, y):
+    address = run.labels["object_free_map"] + (y & 0xF8) * 4 + (x & 0xF8) + (y & 7)
+    run.poke(address, bytes([run.peek(address, 1)[0] & ~(0x80 >> (x & 7)) & 0xFF]))
+
+
+def key_cell(run, key):
+    return byte(run, f"key_x+{key}"), byte(run, f"key_y+{key}")
+
+
+def free_cells_beside(run, hero):
+    """The cells beside hero, in the order tried, with no wall, key, object or
+    other hero in them."""
+    x, y = byte(run, f"hero_x+{hero}"), byte(run, f"hero_y+{hero}")
+    keys = {key_cell(run, key) for key in range(1, 21)}
+    heroes = {(byte(run, f"hero_x+{h}"), byte(run, f"hero_y+{h}")) for h in range(4)}
+    cells = [(x + dx, y + dy) for dx, dy in (ABOVE, RIGHT, BELOW, LEFT)]
+    return [c for c in cells
+            if not is_wall(run, *c) and c not in keys and not object_may_lie(run, *c) and c not in heroes]
+
+
+def fighter_dies_with_a_key(run):
+    """The Fighter, carrying key 19, reaches the end of their death animation
+    as a skull where they stand, as lose_health_point and animate_absent_hero
+    leave a hero who has died. The Magic-User and the Barbarian, who start
+    beside the Fighter, are taken out of play and moved off the map; the
+    Ranger, diagonally beside them, plays on, or the level would end."""
+    for hero in (MAGIC_USER, BARBARIAN):
+        take_out_of_play(run, hero)
+        set_byte(run, f"hero_x+{hero}", OFF_MAP)
+        set_byte(run, f"hero_y+{hero}", OFF_MAP)
+    skull = byte(run, f"hero_x+{FIGHTER}"), byte(run, f"hero_y+{FIGHTER}")
+    for key in range(1, 21):                           # level 1 has key 3 under the Fighter
+        if key_cell(run, key) == skull:
+            set_byte(run, f"key_x+{key}", OFF_MAP)
+            set_byte(run, f"key_y+{key}", OFF_MAP)
+    set_byte(run, f"hero_key+{FIGHTER}", 19)
+    set_byte(run, "key_x+19", OFF_MAP)
+    set_byte(run, "key_y+19", OFF_MAP)
+    set_byte(run, f"hero_direction+{FIGHTER}", 0)
+    set_byte(run, f"hero_frame+{FIGHTER}", 8)
+    set_byte(run, f"hero_offset_x+{FIGHTER}", 1)       # stepping forwards, held at the skull
+    set_byte(run, f"hero_offset_y+{FIGHTER}", 1)       # the skull is plotted next frame
+    return skull
+
+
+def test_a_dead_heros_key_is_put_down_beside_the_skull(disc_filepaths):
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        fighter_dies_with_a_key(run)
+        free = free_cells_beside(run, FIGHTER)
+        assert free
+        run.next_frame(set())
+        assert key_cell(run, 19) == free[0]
+        assert byte(run, f"hero_key+{FIGHTER}") == 0
+    disc_filepath, labels, ranges = original()
+    with game_run(disc_filepath, labels, ranges) as run:
+        skull = fighter_dies_with_a_key(run)
+        run.next_frame(set())
+        assert key_cell(run, 19) == skull                  # under the skull
+
+
+@pytest.mark.parametrize("in_the_way", ["hero", "object"])
+def test_a_dead_heros_key_avoids_heroes_and_objects(disc_filepaths, in_the_way):
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        fighter_dies_with_a_key(run)
+        free = free_cells_beside(run, FIGHTER)
+        assert len(free) >= 2
+        if in_the_way == "hero":
+            set_byte(run, f"hero_x+{MAGIC_USER}", free[0][0])  # the Magic-User's skull lies there
+            set_byte(run, f"hero_y+{MAGIC_USER}", free[0][1])
+        else:
+            mark_object(run, *free[0])                     # an object may lie on the first
+        run.next_frame(set())
+        assert key_cell(run, 19) == free[1]
+
+
+def cell_plots(run, frames):
+    """Each sprite plotted at a map cell in the next frames, as (sprite, x, y)."""
+    labels = run.labels
+    debugger = run.bbc.debugger
+    breakpoints = [debugger.add_breakpoint(labels["plot_at_cell"]), debugger.add_breakpoint(labels[UPDATE_GAME])]
+    plots, seen = [], 0
+    try:
+        while seen < frames:
+            debugger.run_and_wait_for_stop(timeout=60)
+            if run.bbc.cpu.pc == labels[UPDATE_GAME]:
+                seen += 1
+            else:
+                plots.append((run.peek(SPRITE_NUMBER, 1)[0], byte(run, "cell_x"), byte(run, "cell_y")))
+    finally:
+        for bp in breakpoints:
+            bp.remove()
+    return plots
+
+
+def test_a_key_with_no_room_beside_the_skull_stays_under_it_undrawn(disc_filepaths):
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        skull = fighter_dies_with_a_key(run)
+        for dx, dy in (ABOVE, RIGHT, BELOW, LEFT):
+            make_wall(run, skull[0] + dx, skull[1] + dy)
+        run.next_frame(set())
+        assert key_cell(run, 19) == skull                  # not lost
+        skull_sprite = run.peek(run.address("hero_appearance_sprites") + 8, 1)[0]
+        plots = cell_plots(run, 4)
+        assert (skull_sprite, *skull) in plots
+        assert (SPR_KEY, *skull) not in plots
+        set_byte(run, f"hero_x+{FIGHTER}", OFF_MAP)       # with the skull gone, the key shows
+        assert (SPR_KEY, *skull) in cell_plots(run, 3)

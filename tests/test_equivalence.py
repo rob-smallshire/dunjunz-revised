@@ -8,7 +8,8 @@ exceptions for fixes that change what is drawn:
 - the comparison stops at the first fixed case the original meets
   (FIXED_CASES): a swap of one key for another, after which the revised game
   draws and swaps keys differently; a missile stopping at a skull; a Cross
-  taken with nobody to bring back; a potion leaving 00 health;
+  taken with nobody to bring back; a potion leaving 00 health; a dead
+  hero's key dropped under the skull, where the revised game puts it beside;
 - the trapdoors' cells are left out of the screen comparison, because the
   revised game redraws trapdoors at the start of a frame, not part way
   through, so a trapdoor something has just left is still blank at the
@@ -114,6 +115,15 @@ def a_potion_gives_00(before, after):
         a[HERO_HEALTH_TENS + h] == a[HERO_HEALTH_UNITS + h] == SPR_DIGIT_0 for h in range(HEROES))
 
 
+def a_dead_hero_drops_a_key(before, after):
+    """A dead hero's key is dropped under their skull; the revised game puts
+    it beside the skull. (A hero leaving by the exit, whose key is dropped
+    beside it in both, is moved off the map.)"""
+    a = after["scratch+1"]
+    return any(held and not now and a[HERO_DIRECTION + h] == 0 and a[HERO_X + h] != OFF_MAP
+               for h, (held, now) in enumerate(zip(before["hero_key"], after["hero_key"])))
+
+
 # (test, states to keep after the frame in which the test is first true): the
 # fixed cases the comparisons stop at, up to and including the state that still
 # matches.
@@ -122,6 +132,7 @@ FIXED_CASES = (
     (a_missile_stops_at_a_skull, 0),
     (a_cross_is_wasted, 0),
     (a_potion_gives_00, 0),
+    (a_dead_hero_drops_a_key, 0),
 )
 
 
