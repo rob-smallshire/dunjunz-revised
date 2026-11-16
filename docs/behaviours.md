@@ -51,5 +51,5 @@ Teleporters are on levels 5, 6, 9, 11, 12, 13, 14, 15, 16, 18, 22, 23 and
 
 - Killed monsters reappear at the level's eight trapdoors in turn. All 30
   monsters emerge at the start of a level, several to a trapdoor.
-- In the revision a trapdoor a hero in play stands on stays shut, and the
-  monster tries the next one on the next frame.
+- In the revision a trapdoor a hero stands on, or died on, stays shut, and
+  the monster tries the next one on the next frame.

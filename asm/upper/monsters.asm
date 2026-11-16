@@ -6,6 +6,10 @@
 ; monster is drawn over them. The 1987 release drew them at the start of update_monsters,
 ; after the heroes and missiles, so a hero or missile on a trapdoor flickered with it.
 ;
+; A trapdoor with a hero out of play on it (dying, a skull, or returning) is not drawn,
+; since that hero is plotted only every other frame and would flicker with it; it is shut
+; meanwhile (hero_on_trapdoor). A hero in play is drawn every frame, over the trapdoor.
+;
 ; On Exit:
 ;     A: corrupted
 ;     X: 0
@@ -18,6 +22,14 @@
     lda #spr_trapdoor                   ; The trapdoor sprite...
     sta sprite_number                   ; ...the same for all eight
 .draw_trapdoor
+    txa                                 ; Is a hero on this trapdoor? Its number...
+    tay                                 ; ...in Y...
+    dey                                 ; ...counted from 0
+    jsr hero_on_trapdoor                ; Carry set if so, with the hero in Y
+    bcc plot_trapdoor                   ; Nobody on it: draw it
+    lda hero_direction,y                ; Is that hero in play?
+    beq trapdoor_drawn                  ; No: leave the trapdoor undrawn under them
+.plot_trapdoor
     lda trapdoor_x - 1,x                ; This trapdoor's map x...
     sta cell_x                          ; ...as the cell to plot
     lda trapdoor_y - 1,x                ; ...and its map y
@@ -27,6 +39,7 @@
     jsr plot_at_cell                    ; Draw it in every view showing its cell
     pla                                 ; Recover the trapdoor number...
     tax                                 ; ...back in X
+.trapdoor_drawn
     dex                                 ; Next trapdoor down
     bne draw_trapdoor                   ; Until trapdoor 1 is drawn
     rts                                 ; Return with every trapdoor drawn

@@ -635,3 +635,43 @@ def test_a_key_with_no_room_beside_the_skull_stays_under_it_undrawn(disc_filepat
         assert (SPR_KEY, *skull) not in plots
         set_byte(run, f"hero_x+{FIGHTER}", OFF_MAP)       # with the skull gone, the key shows
         assert (SPR_KEY, *skull) in cell_plots(run, 3)
+
+
+SPR_TRAPDOOR = 0x2C
+
+
+def fighter_dies_on_every_trapdoor(run):
+    """Every trapdoor is moved under the Fighter, who then dies there as a
+    skull (as fighter_dies_with_a_key, without the key)."""
+    skull = byte(run, f"hero_x+{FIGHTER}"), byte(run, f"hero_y+{FIGHTER}")
+    run.poke(run.address("trapdoor_x"), bytes([skull[0]]) * 8)
+    run.poke(run.address("trapdoor_y"), bytes([skull[1]]) * 8)
+    set_byte(run, f"hero_direction+{FIGHTER}", 0)
+    set_byte(run, f"hero_frame+{FIGHTER}", 8)
+    set_byte(run, f"hero_offset_x+{FIGHTER}", 1)
+    set_byte(run, f"hero_offset_y+{FIGHTER}", 1)
+    return skull
+
+
+def test_a_skull_on_a_trapdoor_keeps_it_shut(disc_filepaths):
+    """A hero who dies on a trapdoor shuts it, as one standing on it does:
+    none of the 30 monsters waiting to emerge at the start comes out."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        fighter_dies_on_every_trapdoor(run)
+        for _ in range(10):
+            run.next_frame(set())
+        assert set(run.peek(run.address("monster_x+1"), 30)) == {OFF_MAP}
+
+
+def test_a_trapdoor_under_a_skull_is_not_drawn(disc_filepaths):
+    """The skull is plotted every other frame and the trapdoor not at all, so
+    the skull stays on the screen instead of alternating with the trapdoor."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        skull = fighter_dies_on_every_trapdoor(run)
+        run.next_frame(set())
+        skull_sprite = run.peek(run.address("hero_appearance_sprites") + 8, 1)[0]
+        plots = cell_plots(run, 4)
+        assert (skull_sprite, *skull) in plots
+        assert (SPR_TRAPDOOR, *skull) not in plots
