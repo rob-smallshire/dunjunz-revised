@@ -9,8 +9,11 @@
 ; hero's cell only for the room offset it leaves in map_ptr; that becomes the low byte of
 ; the view's view_room entry (view_room + 2 x hero), the pointer into room_walls that
 ; draw_view_0 to draw_view_3 and plot_at_cell read; the high byte never changes. The
-; matching draw_view_n then draws the room's walls and doors. Creatures and objects
-; appear in the new view as they are next plotted.
+; matching draw_view_n then draws the room's walls and doors, and draw_floor everything
+; under the heroes in play (trapdoors, skulls, objects, keys), which update_game drew at
+; the start of the frame, before this room was on show. Creatures appear as they are
+; next plotted. In the 1987 release the objects and keys were drawn later in the frame,
+; and the trapdoors with the monsters, so the room came up whole in the same frame.
 ;
 ; On Entry:
 ;     X: hero number (0-3)
@@ -32,32 +35,28 @@
     tay                                 ; ...two bytes, a pointer into room_walls
     lda map_ptr                         ; The room's offset that test_wall left...
     sta view_room,y                     ; ...becomes the view's room
-; Redraw the hero's own view, which is fixed by hero number.
+; Redraw the hero's own view, which is fixed by hero number, then the floor, which update_game drew before the room was on show.
     cpx #0                              ; Redraw this hero's own view: hero 0's?
     bne check_view_1                    ; No: try hero 1
     jsr draw_view_0                     ; Hero 0: redraw the top-left view
-    pla                                 ; Recover the hero...
-    tax                                 ; ...into X, as the caller had it
-    rts                                 ; Return with the Ranger's view redrawn
+    jmp draw_room_floor                 ; ...and its floor
 .check_view_1
     cpx #1                              ; Hero 1, the top-right view?
     bne check_view_2                    ; No: try hero 2
     jsr draw_view_1                     ; Yes: redraw it
-    pla                                 ; Recover the hero...
-    tax                                 ; ...into X, as the caller had it
-    rts                                 ; Return with the Magic-User's view redrawn
+    jmp draw_room_floor                 ; ...and its floor
 .check_view_2
     cpx #2                              ; Hero 2, the bottom-left view?
     bne show_view_3                     ; No: hero 3
     jsr draw_view_2                     ; Yes: redraw it
-    pla                                 ; Recover the hero...
-    tax                                 ; ...into X, as the caller had it
-    rts                                 ; Return with the Barbarian's view redrawn
+    jmp draw_room_floor                 ; ...and its floor
 .show_view_3
     jsr draw_view_3                     ; Hero 3: redraw the bottom-right view
+.draw_room_floor
+    jsr draw_floor                      ; Trapdoors, skulls, objects and keys, in every view
     pla                                 ; Recover the hero...
     tax                                 ; ...into X, as the caller had it
-    rts                                 ; Return with the Fighter's view redrawn
+    rts                                 ; Return with the hero's view redrawn
 ; Magic sword: one more damage for each missile the hero fires from now on, to at most 9, and the panel's damage digit redrawn. Missiles already in flight keep their damage.
 .magic_sword
     inc hero_missile_damage,x           ; Magic sword: one more damage per missile...

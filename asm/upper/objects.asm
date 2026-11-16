@@ -2,10 +2,12 @@
 ; Draw the level's objects
 ;
 ; Draw every object still on the level (treasure, food, teleporters, drainers, magic
-; items, the exit) in whichever views show it. update_game calls this every frame, after
-; move_heroes and the door and key checks and before move_missiles and update_monsters,
-; so an object that a hero has just walked off or a monster has crossed is put back
-; before the next sprites are drawn over it.
+; items, the exit) in whichever views show it. update_game calls this at the start of
+; every frame, after the trapdoors and the heroes out of play and before the keys and
+; move_heroes, so an object that something crossed last frame is put back, and a hero in
+; play is drawn over any object in their cell (a Cross nobody is waiting for, say). An
+; energy drainer is drawn over its hero again by collect_objects. The 1987 release drew
+; the objects after the heroes, so a hero standing on any object flickered with it.
 ;
 ; Objects 30 (the exit) down to 1 are plotted with plot_at_cell, their type being their
 ; sprite, squarely in their cells (no pixel offset). Object 0 is not drawn. A collected
@@ -291,11 +293,17 @@
     bcs magic_item                      ; Yes: collect the magic item
     cmp #spr_exit                       ; The exit? The main loop deals with it...
     beq next_object                     ; ...so search on for another object in the cell
-; An energy drainer (&53-&5E): sound it by playing hit_sound with its pitch changed to &32 for the call, then take 10 health one point at a time. The drainer stays, and acts again on every frame the hero's cell is its cell.
-    lda #&32 ; '2'                      ; Any other type is an energy drainer: pitch &32...
-    sta hit_sound + 4                   ; ...instead of 6 in hit_sound, the drainer's noise
+; An energy drainer (&53-&5E): draw it again over the hero, sound it by playing hit_sound with its pitch changed to &32 for the call, then take 10 health one point at a time. The drainer stays, and acts again on every frame the hero's cell is its cell. The objects are drawn under the heroes, so this plot alone makes a hero on a drainer flicker with it, a warning kept from the 1987 release, which drew every object over the heroes.
+    lda object_type,y                   ; Any other type is an energy drainer: its stage...
+    sta sprite_number                   ; ...as the sprite to plot over the hero
+    lda #0                              ; Squarely in its cell, the hero's (cell_x, cell_y)...
+    sta plot_offset_x                   ; ...whatever the hero's own offsets...
+    sta plot_offset_y                   ; ...across and down
     txa                                 ; Keep the hero...
-    pha                                 ; ...across the OSWORD call
+    pha                                 ; ...across the plot and the OSWORD call
+    jsr plot_at_cell                    ; Draw the drainer in every view showing it
+    lda #&32 ; '2'                      ; The drainer's noise: pitch &32...
+    sta hit_sound + 4                   ; ...instead of 6 in hit_sound
     ldx #<(hit_sound)                   ; XY = hit_sound, now at the drainer's pitch...
     ldy #>(hit_sound)                   ; ...the block in page &0C...
     lda #osword_sound                   ; ...OSWORD 7, SOUND

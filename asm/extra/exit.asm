@@ -122,12 +122,12 @@
 ;
 ; Leave hero X's key behind beside the exit, so the heroes still playing can use it.
 ; Called by play_level's check_exit as the hero steps onto the exit, before they are
-; taken out of play. draw_keys enters at drop_key_here with cell_x, cell_y set, to put a
+; taken out of play. check_keys enters at drop_key_here with cell_x, cell_y set, to put a
 ; dead hero's key down.
 ;
 ; find_open_neighbour picks the first of the cells above, right of, below and left of the
 ; hero that is free (no wall, key, object or hero). The key's key_x/key_y are set to that
-; cell, so update_game's draw_keys shows it from the next frame; hero_key is cleared and
+; cell, so draw_floor_keys shows it from the next frame; hero_key is cleared and
 ; the key icon erased from the hero's panel section. If none of the four is free, the key
 ; is put off the map: lost for this level, as it would have been in a wall. A hero with
 ; no key moves key entry 0, which is never drawn or picked up.
@@ -172,7 +172,7 @@
 ; Find a free cell next to a hero
 ;
 ; Find where a key can be put down next to hero X: beside the exit (drop_key), or beside
-; a dead hero's skull (draw_keys). The first of the cells above, to the right of, below
+; a dead hero's skull (check_keys). The first of the cells above, to the right of, below
 ; and to the left of the hero, in that order, with no wall or closed door (test_wall), no
 ; key (key_in_cell), no object (test_object_free: a cell that held one at the start of
 ; the level counts, as the map is not updated when one is taken) and no hero, in play or

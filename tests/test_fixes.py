@@ -178,31 +178,18 @@ def test_standing_on_a_key_swaps_once(disc_filepaths):
     assert carried.count(19) > 1 and carried.count(20) > 1    # back and forth
 
 
-def test_a_dropped_key_is_not_drawn_over_the_hero(disc_filepaths):
-    """After the swap, the key left under the Ranger is not plotted where the
-    Ranger is drawn, so the hero does not flicker with it."""
+def test_a_dropped_key_is_drawn_under_the_hero(disc_filepaths):
+    """After the swap, the key left under the Ranger is drawn at the start of
+    each frame and the Ranger over it, so the hero does not flicker with it."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
-        ranger_on_a_key(run)
+        x, y = ranger_on_a_key(run)
+        cell = x[0], y[0]
         for _ in range(3):
             run.next_frame(set())
-        debugger = run.bbc.debugger
-        breakpoints = [debugger.add_breakpoint(labels["plot_sprite"]), debugger.add_breakpoint(labels[UPDATE_GAME])]
-        plots, frames = [], 0
-        try:
-            while frames < 4:
-                debugger.run_and_wait_for_stop(timeout=60)
-                if run.bbc.cpu.pc == labels[UPDATE_GAME]:
-                    frames += 1
-                else:
-                    sprite, x, y = run.peek(SPRITE_NUMBER, 1)[0], *run.peek(PLOT_X, 2)
-                    plots.append((sprite, x, y))
-        finally:
-            for bp in breakpoints:
-                bp.remove()
-        ranger = {(x, y) for sprite, x, y in plots if sprite == RANGER_STANDING}
-        assert ranger
-        assert not [p for p in plots if p[0] == SPR_KEY and p[1:] in ranger]
+        for frame in cell_plots_per_frame(run, 4):
+            assert SPR_KEY in [sprite for sprite, *at in frame if tuple(at) == cell]
+            assert last_plotted_at(frame, cell) == RANGER_STANDING
 
 
 def plots_per_frame(run, frames):
@@ -696,3 +683,33 @@ def test_a_hero_in_play_is_drawn_over_a_skull(disc_filepaths):
         run.next_frame(set())
         for frame in cell_plots_per_frame(run, 4):
             assert last_plotted_at(frame, skull) == RANGER_STANDING
+
+
+SPR_DRAINER = 0x53
+
+
+def test_a_hero_on_a_cross_is_drawn_over_it(disc_filepaths):
+    """A Cross nobody is waiting for stays where it is (see above), so a hero
+    can stand on it. The objects are drawn under the heroes, so the Ranger is
+    the last thing plotted there every frame, rather than the Cross."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        ranger_on_a_cross(run)
+        cell = byte(run, "hero_x"), byte(run, "hero_y")
+        for _ in range(2):
+            run.next_frame(set())
+        for frame in cell_plots_per_frame(run, 4):
+            assert last_plotted_at(frame, cell) == RANGER_STANDING
+
+
+def test_a_hero_on_an_energy_drainer_still_flickers(disc_filepaths):
+    """Kept on purpose: the drainer is drawn over the hero standing on it every
+    frame, after the hero, as a warning."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        ranger_on_a_cross(run, object_type=SPR_DRAINER)
+        cell = byte(run, "hero_x"), byte(run, "hero_y")
+        run.next_frame(set())
+        for frame in cell_plots_per_frame(run, 3):
+            assert RANGER_STANDING in [sprite for sprite, *at in frame if tuple(at) == cell]
+            assert last_plotted_at(frame, cell) == SPR_DRAINER

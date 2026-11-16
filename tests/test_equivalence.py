@@ -15,7 +15,8 @@ exceptions for fixes that change what is drawn:
   through, so a trapdoor something has just left is still blank at the
   frame's start; and so are the cells of heroes out of play, whose
   sparkles and skull the revised game draws every frame, under the heroes
-  in play, each sprite a frame sooner.
+  in play, each sprite a frame sooner, and of keys and objects on or beside
+  a hero, which are drawn under the heroes at the start of a frame.
 """
 
 from __future__ import annotations
@@ -187,14 +188,22 @@ def cell_screen_offsets(state, cells):
 
 def masked_cells(state):
     """The cells whose drawing the revised game changes on purpose: the
-    trapdoors, redrawn at the start of a frame, not part way through; and the
+    trapdoors, redrawn at the start of a frame, not part way through; the
     heroes out of play, whose sparkles and skull are drawn every frame, under
-    the heroes in play, each sprite a frame sooner."""
+    the heroes in play, each sprite a frame sooner; and keys and objects on or
+    beside a hero, now drawn under the heroes at the start of a frame, so a
+    hero on one covers it, and one a hero has just left is still blank."""
     if "trapdoor_x" not in state:
         return []
     s = state["scratch+1"]
     absent = [(s[HERO_X + h], s[HERO_Y + h]) for h in range(HEROES) if s[HERO_DIRECTION + h] == 0]
-    return list(zip(state["trapdoor_x"], state["trapdoor_y"])) + absent
+    heroes = [(s[HERO_X + h], s[HERO_Y + h]) for h in range(HEROES)]
+    objects = state["object_x"]
+    things = list(zip(state["key_x+1"], state["key_y+1"])) + list(
+        zip(objects[OBJECT_X:OBJECT_X + OBJECTS], objects[OBJECT_Y:OBJECT_Y + OBJECTS]))
+    near = [(x, y) for x, y in things
+            if any(abs(x - hx) <= 1 and abs(y - hy) <= 1 for hx, hy in heroes)]
+    return list(zip(state["trapdoor_x"], state["trapdoor_y"])) + absent + near
 
 
 def masked_screen(state, offsets):
