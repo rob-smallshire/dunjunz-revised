@@ -602,26 +602,33 @@ def test_a_dead_heros_key_avoids_heroes_and_objects(disc_filepaths, in_the_way):
         assert key_cell(run, 19) == free[1]
 
 
-def cell_plots(run, frames):
-    """Each sprite plotted at a map cell in the next frames, as (sprite, x, y)."""
+def cell_plots_per_frame(run, frames):
+    """Each frame's sprites plotted at map cells, as (sprite, x, y) in order."""
     labels = run.labels
     debugger = run.bbc.debugger
     breakpoints = [debugger.add_breakpoint(labels["plot_at_cell"]), debugger.add_breakpoint(labels[UPDATE_GAME])]
-    plots, seen = [], 0
+    result = [[]]
     try:
-        while seen < frames:
+        while True:
             debugger.run_and_wait_for_stop(timeout=60)
             if run.bbc.cpu.pc == labels[UPDATE_GAME]:
-                seen += 1
+                if len(result) == frames:
+                    return result
+                result.append([])
             else:
-                plots.append((run.peek(SPRITE_NUMBER, 1)[0], byte(run, "cell_x"), byte(run, "cell_y")))
+                result[-1].append((run.peek(SPRITE_NUMBER, 1)[0], byte(run, "cell_x"), byte(run, "cell_y")))
     finally:
         for bp in breakpoints:
             bp.remove()
-    return plots
 
 
-def test_a_key_with_no_room_beside_the_skull_stays_under_it_undrawn(disc_filepaths):
+def last_plotted_at(frame, cell):
+    return [sprite for sprite, *at in frame if tuple(at) == cell][-1]
+
+
+def test_a_key_with_no_room_beside_the_skull_is_drawn_over_it(disc_filepaths):
+    """With walls all round, the key stays in the skull's cell, not lost, and
+    is the last thing drawn there every frame: steady, and plain to see."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         skull = fighter_dies_with_a_key(run)
@@ -629,12 +636,8 @@ def test_a_key_with_no_room_beside_the_skull_stays_under_it_undrawn(disc_filepat
             make_wall(run, skull[0] + dx, skull[1] + dy)
         run.next_frame(set())
         assert key_cell(run, 19) == skull                  # not lost
-        skull_sprite = run.peek(run.address("hero_appearance_sprites") + 8, 1)[0]
-        plots = cell_plots(run, 4)
-        assert (skull_sprite, *skull) in plots
-        assert (SPR_KEY, *skull) not in plots
-        set_byte(run, f"hero_x+{FIGHTER}", OFF_MAP)       # with the skull gone, the key shows
-        assert (SPR_KEY, *skull) in cell_plots(run, 3)
+        for frame in cell_plots_per_frame(run, 4):
+            assert last_plotted_at(frame, skull) == SPR_KEY
 
 
 SPR_TRAPDOOR = 0x2C
@@ -644,6 +647,10 @@ def fighter_dies_on_every_trapdoor(run):
     """Every trapdoor is moved under the Fighter, who then dies there as a
     skull (as fighter_dies_with_a_key, without the key)."""
     skull = byte(run, f"hero_x+{FIGHTER}"), byte(run, f"hero_y+{FIGHTER}")
+    for key in range(1, 21):                           # level 1 has key 3 under the Fighter
+        if key_cell(run, key) == skull:
+            set_byte(run, f"key_x+{key}", OFF_MAP)
+            set_byte(run, f"key_y+{key}", OFF_MAP)
     run.poke(run.address("trapdoor_x"), bytes([skull[0]]) * 8)
     run.poke(run.address("trapdoor_y"), bytes([skull[1]]) * 8)
     set_byte(run, f"hero_direction+{FIGHTER}", 0)
@@ -664,14 +671,28 @@ def test_a_skull_on_a_trapdoor_keeps_it_shut(disc_filepaths):
         assert set(run.peek(run.address("monster_x+1"), 30)) == {OFF_MAP}
 
 
-def test_a_trapdoor_under_a_skull_is_not_drawn(disc_filepaths):
-    """The skull is plotted every other frame and the trapdoor not at all, so
-    the skull stays on the screen instead of alternating with the trapdoor."""
+def test_a_skull_is_drawn_over_a_trapdoor_every_frame(disc_filepaths):
+    """The skull is plotted every frame, after the trapdoor, so it stays on the
+    screen instead of alternating with the trapdoor."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         skull = fighter_dies_on_every_trapdoor(run)
         run.next_frame(set())
         skull_sprite = run.peek(run.address("hero_appearance_sprites") + 8, 1)[0]
-        plots = cell_plots(run, 4)
-        assert (skull_sprite, *skull) in plots
-        assert (SPR_TRAPDOOR, *skull) not in plots
+        for frame in cell_plots_per_frame(run, 4):
+            assert last_plotted_at(frame, skull) == skull_sprite
+
+
+def test_a_hero_in_play_is_drawn_over_a_skull(disc_filepaths):
+    """The Ranger stands on the Fighter's skull. The Fighter comes later in the
+    heroes' order, so the 1987 game plotted the skull over the Ranger every
+    other frame; now the Ranger is the last thing plotted there every frame."""
+    disc_filepath, labels, ranges = revised()
+    with game_run(disc_filepath, labels, ranges) as run:
+        skull = fighter_dies_with_a_key(run)
+        set_byte(run, f"hero_key+{FIGHTER}", 0)
+        set_byte(run, f"hero_x+{RANGER}", skull[0])
+        set_byte(run, f"hero_y+{RANGER}", skull[1])
+        run.next_frame(set())
+        for frame in cell_plots_per_frame(run, 4):
+            assert last_plotted_at(frame, skull) == RANGER_STANDING

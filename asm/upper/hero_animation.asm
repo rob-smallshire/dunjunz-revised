@@ -1,23 +1,26 @@
 ; ***************************************************************************************
 ; Animate a hero who is out of play
 ;
-; Play a dying hero's sparkles and skull, or a returning hero's skull and sparkles in
+; Step a dying hero's sparkles and skull, or a returning hero's skull and sparkles in
 ; reverse, at the cell where they fell. move_heroes calls this each frame, in the hero's
 ; turn, for a hero out of play (direction 0) unless nobody plays them (step &63). While
 ; out of play the hero's offset bytes are reused: hero_offset_y is a two-frame timer and
 ; hero_offset_x the step through the sequence (+1 or -1), both set by lose_health_point
 ; for a death and by collect_objects for a Cross of Resurrection.
 ;
-; Every other frame, plot hero_appearance_sprites entry hero_frame at the hero's cell,
-; with no pixel offset, then step hero_frame by hero_offset_x: forwards (+1) for a hero
-; dying, stopping at the skull (entry 8), which is then redrawn every other frame until a
-; Cross brings the hero back; backwards (-1) for a hero returning through a Cross of
-; Resurrection, from entry 8. A dying hero starts from their walking frame (0 or 1),
-; which lose_health_point does not reset, so the first sparkle may be skipped. A
-; returning hero is put back in play as hero_frame reaches 0, so entry 0 is never shown
-; on the way back: they come back in the cell where they fell, facing down, standing
-; squarely in it, with health 32 (set to 33 and drawn by taking a point). move_heroes
-; draws them on their next turn.
+; Every other frame, step hero_frame, the hero's place in hero_appearance_sprites, by
+; hero_offset_x: forwards (+1) for a hero dying, stopping at the skull (entry 8);
+; backwards (-1) for a hero returning through a Cross of Resurrection, from entry 8. A
+; dying hero starts from their walking frame (0 or 1), which lose_health_point does not
+; reset, so the first sparkle may be skipped. A returning hero is put back in play as
+; hero_frame reaches 0, so entry 0 is never shown on the way back: they come back in the
+; cell where they fell, facing down, standing squarely in it, with health 32 (set to 33
+; and drawn by taking a point). move_heroes draws them on their next turn.
+;
+; Nothing is drawn here: draw_absent_heroes plots entry hero_frame at the start of every
+; frame, under the heroes in play. The 1987 release plotted it here, every other frame,
+; so it flickered with whatever else was drawn on its cell every frame (a trapdoor, a key,
+; a hero in play standing on it), and showed each sprite a frame later than now.
 ;
 ; On Entry:
 ;     X: hero number (0-3)
@@ -34,19 +37,6 @@
 .absent_frame_due
     lda #2                              ; Restart the two-frame timer...
     sta hero_offset_y,x                 ; ...which an absent hero keeps in hero_offset_y
-    jsr get_hero_cell                   ; Plot the current appearance sprite at the hero's cell
-    lda #0                              ; No pixel offsets (those bytes hold timer and step)...
-    sta plot_offset_x                   ; ...none across...
-    sta plot_offset_y                   ; ...and none down
-    lda hero_frame,x                    ; The hero's place in the appearance sequence...
-    tay                                 ; ...as an index...
-    lda hero_appearance_sprites,y       ; ...picks the sparkle or skull to show
-    sta sprite_number                   ; ...as the sprite to plot
-    txa                                 ; Keep the hero number...
-    pha                                 ; ...on the stack: plot_at_cell changes X
-    jsr plot_at_cell                    ; Plot it in every view that shows the hero
-    pla                                 ; Recover the hero number...
-    tax                                 ; ...back in X
 ; Step to the next place, holding a dying hero at the skull (place 8).
     clc                                 ; Step to the next (+1 dying, -1 returning), stopping at 8
     lda hero_frame,x                    ; Current place in the sequence...

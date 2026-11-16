@@ -13,7 +13,9 @@ exceptions for fixes that change what is drawn:
 - the trapdoors' cells are left out of the screen comparison, because the
   revised game redraws trapdoors at the start of a frame, not part way
   through, so a trapdoor something has just left is still blank at the
-  frame's start.
+  frame's start; and so are the cells of heroes out of play, whose
+  sparkles and skull the revised game draws every frame, under the heroes
+  in play, each sprite a frame sooner.
 """
 
 from __future__ import annotations
@@ -167,13 +169,11 @@ SCREEN_START = 0x3000
 CELL_BYTES, CELL_ROWS = 4, 12
 
 
-def trapdoor_screen_offsets(state):
-    """The screen offsets (from SCREEN_START) of every trapdoor cell on show."""
+def cell_screen_offsets(state, cells):
+    """The screen offsets (from SCREEN_START) of the given map cells, where on show."""
     offsets = set()
-    if "trapdoor_x" not in state:
-        return offsets
     view_rooms = [state["scratch+1"][VIEW_ROOM_OFFSET + 2 * view] for view in range(4)]
-    for x, y in zip(state["trapdoor_x"], state["trapdoor_y"]):
+    for x, y in cells:
         room = (y & 0xF8) * 4 + (x & 0xF8)
         for view_room, (column, row) in zip(view_rooms, VIEW_CORNERS):
             if view_room != room:
@@ -183,6 +183,18 @@ def trapdoor_screen_offsets(state):
                 for byte in range(plot_x, plot_x + CELL_BYTES):
                     offsets.add((line >> 3) * 640 + (line & 7) + byte * 8)
     return offsets
+
+
+def masked_cells(state):
+    """The cells whose drawing the revised game changes on purpose: the
+    trapdoors, redrawn at the start of a frame, not part way through; and the
+    heroes out of play, whose sparkles and skull are drawn every frame, under
+    the heroes in play, each sprite a frame sooner."""
+    if "trapdoor_x" not in state:
+        return []
+    s = state["scratch+1"]
+    absent = [(s[HERO_X + h], s[HERO_Y + h]) for h in range(HEROES) if s[HERO_DIRECTION + h] == 0]
+    return list(zip(state["trapdoor_x"], state["trapdoor_y"])) + absent
 
 
 def masked_screen(state, offsets):
@@ -197,7 +209,7 @@ def first_difference(original, revised):
         if a.keys() != b.keys():
             return f"frame {frame}: {'game over' if 'game over' in b else 'play'} revised, the other originally"
         if "screen" in a:
-            offsets = trapdoor_screen_offsets(a)
+            offsets = cell_screen_offsets(a, masked_cells(a))
             a, b = masked_screen(a, offsets), masked_screen(b, offsets)
         for name in a:
             if a[name] != b[name]:

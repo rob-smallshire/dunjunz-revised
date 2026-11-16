@@ -7,7 +7,10 @@
 ;
 ; 0. read_controls: the sticks are read into control_bits, if any stick plays (see
 ;    asm/defs/joystick.asm); otherwise it is an RTS.
-; 1. draw_trapdoors: the eight trapdoors are redrawn, under everything drawn after.
+; 1. draw_trapdoors: the eight trapdoors are redrawn, under everything drawn after, then
+;    draw_absent_heroes: every hero dying, dead or returning, over the trapdoors and
+;    under the heroes in play. Everything on show is drawn every frame, back to front,
+;    so whatever is in front stays in front.
 ; 2. move_heroes: each hero in play walks, fires or casts magic, is redrawn, and picks up
 ;    any object in their cell. It records in hero_door_x/y the cell each hero stepped or
 ;    tried to step into.
@@ -21,14 +24,15 @@
 ; 4. Keys (draw_keys): every key on the floor is redrawn, then each hero is checked. A
 ;    dead hero whose death animation has finished drops their key on a free cell beside
 ;    the skull (find_open_neighbour), where it shows and the others can reach it; with
-;    none free it stays under the skull, undrawn, as a key dropped in a swap is. In the
-;    1987 release it always lay under the skull, which flickered with it: the key is
-;    drawn every frame, the skull every other frame. A hero in play, or still dying,
+;    none free it lies in the skull's cell, drawn over the skull. In the 1987 release it
+;    always lay in the skull's cell, and the two flickered: the key was drawn every
+;    frame, the skull every other frame. A hero in play, or still dying,
 ;    who stands on a key picks it up and leaves the key they carried, if any, in its
 ;    place. hero_key_dropped remembers the key left there, and the hero picks up no key
 ;    until they are off it, so a swap happens once, on arrival. draw_keys leaves that
 ;    key undrawn meanwhile, or it would be drawn over the hero on every frame. Once the
-;    key is no longer in the hero's cell (still_on_dropped_key), it is forgotten.
+;    key is no longer in the hero's cell (still_on_dropped_key), or the hero is out of
+;    play with no key, it is forgotten.
 ;    In the 1987 release it was a flag that held off only the next frame, so a hero who
 ;    stayed on the cell swapped back and forth every other frame.
 ; 5. draw_objects: the objects are replotted, repairing any cell a moving sprite has
@@ -45,7 +49,7 @@
 ;     Y: corrupted
 .update_game
     jsr read_controls                   ; Read the sticks, if any play (otherwise an RTS)
-    jsr draw_trapdoors                  ; Redraw the trapdoors first, under everything else
+    jsr draw_trapdoors                  ; Redraw the trapdoors and skulls, under everything else
     jsr move_heroes                     ; Move the heroes: steps, shots, magic, pick-ups
 ; Doors: for each hero, find a door at the cell they last stepped or tried to step into, and open it if they carry its key.
     ldx #0                              ; For each hero, 0-3...
@@ -219,18 +223,17 @@
     bne check_key_swap                  ; Yes: look for a key to pick up
     lda hero_key,x                      ; Out of play: dead, dying or gone. Holding a key?
     bne check_death_finished            ; Yes: see whether the death has played out
-    jsr still_on_dropped_key            ; No key: forget a dropped key no longer under them
+    lda #0                              ; No key: forget any key dropped in a swap...
+    sta hero_key_dropped,x              ; ...so draw_keys shows it, over the skull
     jmp next_hero_keys                  ; Nothing more to do for this hero
 .check_death_finished
     lda hero_frame,x                    ; Has the death animation reached its end?
     cmp #8                              ; ...frame 8 is the last of the death
     bne check_key_swap                  ; Still dying: key checks go on as if in play
-; A dead hero's death animation has ended: put their key down beside the skull, where it shows and the other heroes can reach it, or, if no cell beside it is free, under the skull, left undrawn there so the skull does not flicker with it.
+; A dead hero's death animation has ended: put their key down beside the skull, where the other heroes can see and reach it, or, if no cell beside it is free, in the skull's cell, where it is drawn over the skull.
     jsr find_open_neighbour             ; A free cell beside the skull? Carry clear if so
     bcc drop_dead_key                   ; Yes: cell_x, cell_y are on it
-    lda hero_key,x                      ; None: the key stays under the skull...
-    sta hero_key_dropped,x              ; ...undrawn while it lies there, as after a swap...
-    jsr get_hero_cell                   ; ...in the skull's cell, into cell_x, cell_y
+    jsr get_hero_cell                   ; None: the skull's cell, into cell_x, cell_y
 .drop_dead_key
     jsr drop_key_here                   ; Put the key there and erase its panel icon
     jmp next_hero_keys                  ; Key dropped: on to the next hero
@@ -522,10 +525,10 @@
 ; ***************************************************************************************
 ; Is a hero still on the key they dropped?
 ;
-; Say whether the key hero X left behind (hero_key_dropped: in a swap, or under their
-; skull when no cell beside it was free) still lies in the hero's cell, and forget it if
-; not: it has been picked up, or the hero has moved off it. While it is remembered,
-; draw_keys leaves it undrawn and the hero does not pick it up again.
+; Say whether the key hero X left behind in a swap (hero_key_dropped) still lies in the
+; hero's cell, and forget it if not: it has been picked up, or the hero has moved off it.
+; While it is remembered, draw_keys leaves it undrawn and the hero does not pick it up
+; again.
 ;
 ; On Entry:
 ;     X: hero number (0-3)
