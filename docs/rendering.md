@@ -102,3 +102,24 @@ steps two 16-bit pointers for every byte.
    only the cells holding something: drawing the view blanks the rest.
 5. The exit's animation and the Chalice, which draw on their own terms.
 6. A dead hero's key left in the skull's cell.
+
+## Where it stands (2026-11-18)
+
+Steps 1-3 are done, on the `render` branch. Step 4 is written but parked on
+`render-wip`, because it does not fit. `render.asm` (marking, the growing of
+the marks, the floor and creature passes, and marking everything when a view
+comes on show) assembles to 939 bytes; taking out the old per-frame floor
+drawing (`draw_floor`, `draw_trapdoors`, `draw_absent_heroes`,
+`draw_objects`, `draw_floor_keys`) and the plots it replaces gives back about
+150, and the regions have about 400 free between them. Tightening the code
+might save 200 more. That leaves it some 300-500 bytes short.
+
+Places to find them, largest first:
+
+| Where | Saves | What it takes |
+|---|---|---|
+| The game's font and its WRCHV handler (`font.asm`, `wrch.asm`) | ~400 | Nothing prints text in play (checked): only the hero menu, before play, and the ending. The ending could carry its own copy, and Setup could copy play code over the resident one at each level, after the menu. But Setup and the ending share a file, loaded whole by `load_ending`, and it would no longer fit above the stash: the ending would have to be read on its own (OSGBPB from an offset). Or the hero menu could print in the MOS's font, and the font live only in the ending: simpler, but the menu would look different. |
+| The sprite size tables (`sprite_widths`, `sprite_heights`) | ~170 | All but about 25 sprites are 4 x 12, so the size can be worked out. The exit animation shrinks the leaving hero by changing these tables, so that moves into the plotter; the state comparisons, `test_plot.py` and `dr-sprites` read the tables. |
+| `render.asm` itself | ~200 | Simpler marking for a view coming on show (all its open cells, rather than everything in it), one routine for the cell a step reaches into. |
+| Sprites packed two bits a pixel | ~1,000 | Slower plotting, which the frame cannot afford. |
+
