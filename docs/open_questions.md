@@ -53,11 +53,11 @@ milestone 6). Still open:
 
 ## Machines
 
-- **Master 128:** untested. Beebium has no Master. The acornaeology
-  repository's `tools/master_probe.py` runs beebjit; the next step is a
-  Master boot test there. On the Master the filing system's workspace isn't
-  in &0E00-&16FF, so the borrowing is harmless; page &0D and the MOS 3.20
-  details need checking.
+- **Master 128:** works from both the DFS and the ADFS disc on a real
+  Master 128 (ABug South, November 2026), as does a real Master Compact.
+  Not covered by the tests: beebium has no Master. The acornaeology
+  repository's `tools/master_probe.py` runs beebjit, which could give an
+  automated Master boot test.
 - **MMFS2:** untested. Beebium can't emulate it.
 - **A second processor raises the I/O processor's OSHWM** from &1900 to
   &1F00 with DFS 2.26 in beebium, though DFS's private workspace stays at

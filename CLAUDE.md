@@ -37,7 +37,9 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
 - The title picture, `Screen`, is the 1987 one changed by the build
   (`tools/dunjunz_revised/title_picture.py`): "Press any key" in yellow and
   the version drawn in on the bottom row, from `_version.py`. The build also
-  renders it to `docs/title-screen.png`, which the README shows.
+  renders it to `docs/title-screen.png`. The README shows
+  `docs/title-screen.gif` instead, a capture of the title's twinkling
+  stars made by hand, which shows the version it was captured from.
 - Joysticks (`docs/plan.md`, milestone 6): every key goes through `test_key`
   (`asm/core/test_key.asm`), which also takes the hero's stick bits from
   `control_bits`. The hero menu (`asm/start/joysticks.asm`) detects SPItFIRE

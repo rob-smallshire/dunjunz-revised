@@ -1,6 +1,6 @@
 # Dunjunz Revised
 
-![The Dunjunz Revised title screen](docs/title-screen.png)
+![The Dunjunz Revised title screen](docs/title-screen.gif)
 
 **Dunjunz Revised**: a revised version of *Dunjunz*, the
 four-player dungeon game by Julian Avis, published by Bug-Byte for the BBC
