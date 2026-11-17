@@ -1,15 +1,17 @@
 ; ***************************************************************************************
-; Is a hero standing on a trapdoor?
+; Is a hero on a trapdoor?
 ;
-; Called by monster_reappears, so that a monster does not emerge from a trapdoor a hero in
-; play stands on. Heroes out of play (dead, dying or gone, hero_direction 0) are not
-; counted, so a skull does not shut a trapdoor for good.
+; Called by monster_reappears, so that a monster does not emerge from a trapdoor a hero
+; stands on. Every hero counts, in play or out of it: a hero who dies on a trapdoor shuts
+; it, as one standing on it does, until a Cross brings them back and they walk off. A
+; hero who has gone down the exit is off the map, and one nobody plays is at x &1F, where
+; no level has a trapdoor. The 1987 release did not look for heroes here at all.
 ;
 ; On Entry:
 ;     Y: trapdoor, 0-7
 ;
 ; On Exit:
-;     C: set if a hero in play is in the trapdoor's cell
+;     C: set if a hero is in the trapdoor's cell
 ;     A: corrupted
 ;     X: preserved
 ;     Y: preserved
@@ -18,8 +20,6 @@
     pha                                 ; ...on the stack while X counts the heroes
     ldx #3                              ; Heroes 3 to 0...
 .check_hero_on_trapdoor
-    lda hero_direction,x                ; ...in play (a direction set)?
-    beq next_hero_on_trapdoor           ; No: out of play, not counted
     lda hero_x,x                        ; The hero's x...
     cmp trapdoor_x,y                    ; ...the trapdoor's?
     bne next_hero_on_trapdoor           ; No: not on it

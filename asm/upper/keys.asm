@@ -1,7 +1,7 @@
 ; The monster comes back facing up on the next trapdoor in turn, with the hit points the
-; kill gave it back. It is not drawn until next frame. A trapdoor that a hero in play
-; stands on stays shut: the monster waits, off the map at its last sparkle, and tries the
-; next trapdoor on the next frame. Monsters may emerge onto each other.
+; kill gave it back. It is not drawn until next frame. A trapdoor that a hero stands on,
+; or lies on as a skull, stays shut: the monster waits, off the map at its last sparkle,
+; and tries the next trapdoor on the next frame. Monsters may emerge onto each other.
 ;
 ; In the 1987 release the creature test here read cell_x and cell_y as plot_at_cell had
 ; left them, not the trapdoor's cell, so it missed a creature on the trapdoor, hurt a hero
@@ -16,7 +16,7 @@
     sta next_trapdoor                   ; ...for this monster and the next
 .emerge_at_trapdoor
     ldy next_trapdoor                   ; Y = the trapdoor to emerge from
-    jsr hero_on_trapdoor                ; Carry set if a hero in play stands on it
+    jsr hero_on_trapdoor                ; Carry set if a hero or a skull is on it
     bcs trapdoor_shut                   ; Yes: the trapdoor stays shut
     lda trapdoor_x,y                    ; Put the monster on it, facing up, with no step
     sta monster_x,x                     ; ...the trapdoor's x as the monster's

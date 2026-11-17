@@ -8,11 +8,15 @@ exceptions for fixes that change what is drawn:
 - the comparison stops at the first fixed case the original meets
   (FIXED_CASES): a swap of one key for another, after which the revised game
   draws and swaps keys differently; a missile stopping at a skull; a Cross
-  taken with nobody to bring back; a potion leaving 00 health;
+  taken with nobody to bring back; a potion leaving 00 health; a dead
+  hero's key dropped under the skull, where the revised game puts it beside;
 - the trapdoors' cells are left out of the screen comparison, because the
   revised game redraws trapdoors at the start of a frame, not part way
   through, so a trapdoor something has just left is still blank at the
-  frame's start.
+  frame's start; and so are the cells of heroes out of play, whose
+  sparkles and skull the revised game draws every frame, under the heroes
+  in play, each sprite a frame sooner, and of keys and objects on or beside
+  a hero, which are drawn under the heroes at the start of a frame.
 """
 
 from __future__ import annotations
@@ -114,6 +118,15 @@ def a_potion_gives_00(before, after):
         a[HERO_HEALTH_TENS + h] == a[HERO_HEALTH_UNITS + h] == SPR_DIGIT_0 for h in range(HEROES))
 
 
+def a_dead_hero_drops_a_key(before, after):
+    """A dead hero's key is dropped under their skull; the revised game puts
+    it beside the skull. (A hero leaving by the exit, whose key is dropped
+    beside it in both, is moved off the map.)"""
+    a = after["scratch+1"]
+    return any(held and not now and a[HERO_DIRECTION + h] == 0 and a[HERO_X + h] != OFF_MAP
+               for h, (held, now) in enumerate(zip(before["hero_key"], after["hero_key"])))
+
+
 # (test, states to keep after the frame in which the test is first true): the
 # fixed cases the comparisons stop at, up to and including the state that still
 # matches.
@@ -122,6 +135,7 @@ FIXED_CASES = (
     (a_missile_stops_at_a_skull, 0),
     (a_cross_is_wasted, 0),
     (a_potion_gives_00, 0),
+    (a_dead_hero_drops_a_key, 0),
 )
 
 
@@ -156,13 +170,11 @@ SCREEN_START = 0x3000
 CELL_BYTES, CELL_ROWS = 4, 12
 
 
-def trapdoor_screen_offsets(state):
-    """The screen offsets (from SCREEN_START) of every trapdoor cell on show."""
+def cell_screen_offsets(state, cells):
+    """The screen offsets (from SCREEN_START) of the given map cells, where on show."""
     offsets = set()
-    if "trapdoor_x" not in state:
-        return offsets
     view_rooms = [state["scratch+1"][VIEW_ROOM_OFFSET + 2 * view] for view in range(4)]
-    for x, y in zip(state["trapdoor_x"], state["trapdoor_y"]):
+    for x, y in cells:
         room = (y & 0xF8) * 4 + (x & 0xF8)
         for view_room, (column, row) in zip(view_rooms, VIEW_CORNERS):
             if view_room != room:
@@ -172,6 +184,26 @@ def trapdoor_screen_offsets(state):
                 for byte in range(plot_x, plot_x + CELL_BYTES):
                     offsets.add((line >> 3) * 640 + (line & 7) + byte * 8)
     return offsets
+
+
+def masked_cells(state):
+    """The cells whose drawing the revised game changes on purpose: the
+    trapdoors, redrawn at the start of a frame, not part way through; the
+    heroes out of play, whose sparkles and skull are drawn every frame, under
+    the heroes in play, each sprite a frame sooner; and keys and objects on or
+    beside a hero, now drawn under the heroes at the start of a frame, so a
+    hero on one covers it, and one a hero has just left is still blank."""
+    if "trapdoor_x" not in state:
+        return []
+    s = state["scratch+1"]
+    absent = [(s[HERO_X + h], s[HERO_Y + h]) for h in range(HEROES) if s[HERO_DIRECTION + h] == 0]
+    heroes = [(s[HERO_X + h], s[HERO_Y + h]) for h in range(HEROES)]
+    objects = state["object_x"]
+    things = list(zip(state["key_x+1"], state["key_y+1"])) + list(
+        zip(objects[OBJECT_X:OBJECT_X + OBJECTS], objects[OBJECT_Y:OBJECT_Y + OBJECTS]))
+    near = [(x, y) for x, y in things
+            if any(abs(x - hx) <= 1 and abs(y - hy) <= 1 for hx, hy in heroes)]
+    return list(zip(state["trapdoor_x"], state["trapdoor_y"])) + absent + near
 
 
 def masked_screen(state, offsets):
@@ -186,7 +218,7 @@ def first_difference(original, revised):
         if a.keys() != b.keys():
             return f"frame {frame}: {'game over' if 'game over' in b else 'play'} revised, the other originally"
         if "screen" in a:
-            offsets = trapdoor_screen_offsets(a)
+            offsets = cell_screen_offsets(a, masked_cells(a))
             a, b = masked_screen(a, offsets), masked_screen(b, offsets)
         for name in a:
             if a[name] != b[name]:

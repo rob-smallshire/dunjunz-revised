@@ -5,10 +5,11 @@
 ; blanked its cell. update_game calls it first in each frame, so every hero, missile and
 ; monster is drawn over them. The 1987 release drew them at the start of update_monsters,
 ; after the heroes and missiles, so a hero or missile on a trapdoor flickered with it.
+; draw_absent_heroes follows, so a skull on a trapdoor is drawn over it too.
 ;
 ; On Exit:
 ;     A: corrupted
-;     X: 0
+;     X: &FF
 ;     Y: corrupted
 .draw_trapdoors
     ldx #8                              ; Redraw trapdoors 8 to 1 (sprite &2C)...
@@ -28,8 +29,44 @@
     pla                                 ; Recover the trapdoor number...
     tax                                 ; ...back in X
     dex                                 ; Next trapdoor down
-    bne draw_trapdoor                   ; Until trapdoor 1 is drawn
-    rts                                 ; Return with every trapdoor drawn
+    bne draw_trapdoor                   ; Until trapdoor 1 is drawn, then on to the skulls
+; ***************************************************************************************
+; Draw the heroes out of play
+;
+; Plot every hero who is dying, dead (a skull) or returning through a Cross with entry
+; hero_frame of hero_appearance_sprites, squarely in their cell. Reached from
+; draw_trapdoors, at the start of every frame, so these are drawn over the trapdoors and
+; under everything drawn after: a hero in play standing on a skull, a key, an object, a
+; missile, a monster. animate_absent_hero steps hero_frame in the hero's turn. A hero
+; nobody plays, or one gone down the exit (step &63), is not drawn. A hero who has just
+; died shows entry hero_frame from the next frame: their walking frame, 0 or 1, both
+; sparkles, which lose_health_point leaves as it is.
+;
+; On Exit:
+;     A: corrupted
+;     X: &FF
+;     Y: corrupted
+.draw_absent_heroes
+    ldx #3                              ; Heroes 3 to 0...
+.draw_absent_hero
+    lda hero_direction,x                ; ...out of play (no direction)?
+    bne absent_hero_drawn               ; No: in play, drawn by move_heroes
+    lda hero_step,x                     ; ...and played (not step &63)?
+    cmp #step_out_of_play               ; Nobody plays them, or they have gone down the exit?
+    beq absent_hero_drawn               ; Yes: nothing to draw
+    jsr get_hero_cell                   ; Their cell, in cell_x and cell_y
+    ldy hero_frame,x                    ; Their place in the appearance sequence...
+    lda hero_appearance_sprites,y       ; ...picks the sparkle or skull to show
+    sta sprite_number                   ; ...as the sprite to plot (offsets still 0)
+    txa                                 ; Keep the hero number...
+    pha                                 ; ...on the stack: plot_at_cell changes X
+    jsr plot_at_cell                    ; Plot it in every view that shows the hero
+    pla                                 ; Recover the hero number...
+    tax                                 ; ...back in X
+.absent_hero_drawn
+    dex                                 ; Next hero down
+    bpl draw_absent_hero                ; More heroes: draw the next
+    rts                                 ; Return with the trapdoors and absent heroes drawn
 ; ***************************************************************************************
 ; Move the monsters
 ;

@@ -122,12 +122,13 @@
 ;
 ; Leave hero X's key behind beside the exit, so the heroes still playing can use it.
 ; Called by play_level's check_exit as the hero steps onto the exit, before they are
-; taken out of play.
+; taken out of play. check_keys enters at drop_key_here with cell_x, cell_y set, to put a
+; dead hero's key down.
 ;
 ; find_open_neighbour picks the first of the cells above, right of, below and left of the
-; hero that has no wall and no key in it. The key's key_x/key_y are set to that cell, so
-; update_game's draw_keys shows it from the next frame; hero_key is cleared and the key
-; icon erased from the hero's panel section. If all four are walls or hold keys, the key
+; hero that is free (no wall, key, object or hero). The key's key_x/key_y are set to that
+; cell, so draw_floor_keys shows it from the next frame; hero_key is cleared and
+; the key icon erased from the hero's panel section. If none of the four is free, the key
 ; is put off the map: lost for this level, as it would have been in a wall. A hero with
 ; no key moves key entry 0, which is never drawn or picked up.
 ;
@@ -166,13 +167,17 @@
     jsr plot_sprite                     ; Plot the blank icon over the key icon
     pla                                 ; Recover the hero number...
     tax                                 ; ...into X, preserved for check_exit
-    rts                                 ; Return with the key on the floor beside the exit
+    rts                                 ; Return with the key on the floor
 ; ***************************************************************************************
 ; Find a free cell next to a hero
 ;
-; Find where drop_key, its only caller, can put down a key next to the exit: the first of
-; the cells above, to the right of, below and to the left of hero X, in that order, with
-; no wall (test_wall) and no key (key_in_cell). Objects and creatures are not tested.
+; Find where a key can be put down next to hero X: beside the exit (drop_key), or beside
+; a dead hero's skull (check_keys). The first of the cells above, to the right of, below
+; and to the left of the hero, in that order, with no wall or closed door (test_wall), no
+; key (key_in_cell), no object (test_object_free: a cell that held one at the start of
+; the level counts, as the map is not updated when one is taken) and no hero, in play or
+; a skull (object_or_hero_in_cell). A key on an object would be hidden by draw_objects, and one on
+; a skull would flicker with it. Monsters are not tested: they only pass over a key.
 ; neighbour_dx and neighbour_dy hold the four offsets, indexed 3 (above) down to 0 (left).
 ;
 ; On Entry:
@@ -204,6 +209,8 @@
     sec                                 ; Carry set: taken, unless found free below
     bne neighbour_tested                ; Wall: taken
     jsr key_in_cell                     ; Open: a key there? Carry set if so
+    bcs neighbour_tested                ; A key: taken
+    jsr object_or_hero_in_cell          ; An object, a hero or a skull? Carry set if so
 .neighbour_tested
     pla                                 ; Recover the neighbour number...
     tay                                 ; ...into Y...

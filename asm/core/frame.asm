@@ -7,7 +7,13 @@
 ;
 ; 0. read_controls: the sticks are read into control_bits, if any stick plays (see
 ;    asm/defs/joystick.asm); otherwise it is an RTS.
-; 1. draw_trapdoors: the eight trapdoors are redrawn, under everything drawn after.
+; 1. draw_floor: the floor, drawn every frame, back to front, under the heroes in play:
+;    the eight trapdoors (draw_trapdoors), every hero dying, dead or returning
+;    (draw_absent_heroes), the objects (draw_objects) and the keys (draw_floor_keys).
+;    A view that changes room in move_heroes draws its floor at once, the same way.
+;    Whatever is in front stays in front, so nothing flickers by being drawn in turns.
+;    The one exception is kept on purpose: an energy drainer is drawn again over a hero
+;    standing on it (collect_objects), so that hero flickers.
 ; 2. move_heroes: each hero in play walks, fires or casts magic, is redrawn, and picks up
 ;    any object in their cell. It records in hero_door_x/y the cell each hero stepped or
 ;    tried to step into.
@@ -18,17 +24,21 @@
 ;    its wall bit in room_walls is cleared, its entry in door_x/door_y is moved off the
 ;    map, and the key is used up and its panel icon erased. At most one door opens per
 ;    hero per frame. Every hero is tested, in play or not.
-; 4. Keys (draw_keys): every key on the floor is redrawn, then each hero is checked. A
-;    dead hero whose death animation has finished drops their key where they fell. A hero
-;    in play, or still dying, who stands on a key picks it up and leaves the key they
-;    carried, if any, in its place. hero_key_dropped remembers the key left there, and
-;    the hero picks up no key until they are off it, so a swap happens once, on arrival.
-;    draw_keys leaves that key undrawn meanwhile, or it would be drawn over the hero on
-;    every frame. A hero out of play with no key forgets it.
-;    In the 1987 release it was a flag that held off only the next frame, so a hero who
-;    stayed on the cell swapped back and forth every other frame.
-; 5. draw_objects: the objects are replotted, repairing any cell a moving sprite has
-;    crossed.
+; 4. Keys (check_keys): each hero is checked. A dead hero whose death animation has
+;    finished drops their key on a free cell beside the skull (find_open_neighbour),
+;    where it shows and the others can reach it; with none free it lies in the skull's
+;    cell, drawn over the skull. In the 1987 release it always lay in the skull's cell,
+;    and the two flickered: the key was drawn every frame, the skull every other frame.
+;    A hero in play, or still dying, who stands on a key picks it up and leaves the key
+;    they carried, if any, in its place. hero_key_dropped remembers the key left there,
+;    and the hero picks up no key until they are off it, so a swap happens once, on
+;    arrival. Once the key is no longer in the hero's cell (still_on_dropped_key), or
+;    the hero is out of play with no key, it is forgotten. In the 1987 release it was a
+;    flag that held off only the next frame, so a hero who stayed on the cell swapped
+;    back and forth every other frame; and the keys were drawn here, after the heroes,
+;    so a key under a hero covered them.
+; 5. (The objects were drawn here in the 1987 release, after the heroes, so a hero on
+;    one, such as a Cross nobody was waiting for, was covered by it.)
 ; 6. move_missiles: each missile in flight moves one cell and hits what it meets.
 ; 7. update_monsters: the monsters move.
 ; 8. The pause key: if it is held, the game freezes here until it is pressed again.
@@ -41,7 +51,7 @@
 ;     Y: corrupted
 .update_game
     jsr read_controls                   ; Read the sticks, if any play (otherwise an RTS)
-    jsr draw_trapdoors                  ; Redraw the trapdoors first, under everything else
+    jsr draw_floor                      ; Redraw the floor, under the heroes in play
     jsr move_heroes                     ; Move the heroes: steps, shots, magic, pick-ups
 ; Doors: for each hero, find a door at the cell they last stepped or tried to step into, and open it if they carry its key.
     ldx #0                              ; For each hero, 0-3...
@@ -179,36 +189,10 @@
 .next_hero_doors
     inx                                 ; Next hero, 0 to 3
     cpx #4                              ; All four heroes done?
-    beq draw_keys                       ; Yes: on to the keys
+    beq check_keys                      ; Yes: on to the keys
     jmp check_doors                     ; No: check this hero against the doors
-; Keys. Redraw the keys on the floor, then for each hero: drop a dead hero's key where they fell, or pick up the key at the hero's cell, leaving any key carried in its place. The swap flag only skips the frame after a swap, so a hero who stays on the cell swaps back on the frame after that.
-.draw_keys
-    lda #0                              ; Redraw every key lying on the floor, 20 to 1
-    sta plot_offset_x                   ; ...on their cells: no pixel offset...
-    sta plot_offset_y                   ; ...across or down: keys sit squarely in cells
-    lda #spr_key                        ; ...in the key sprite...
-    sta sprite_number                   ; ...as the sprite to plot
-    ldx #max_key                        ; ...counting keys down from 20; entry 0 is never drawn
-.draw_each_key
-    txa                                 ; Is this key under the hero who dropped it?
-    ldy #3                              ; ...each hero, 3 to 0...
-.check_key_under_hero
-    cmp hero_key_dropped,y              ; ...dropped this key and is still on it?
-    beq draw_next_key                   ; Yes: leave it undrawn, so the hero shows
-    dey                                 ; Next hero down
-    bpl check_key_under_hero            ; More heroes: check the next
-    lda key_x,x                         ; The key's x...
-    sta cell_x                          ; ...is the column to plot at...
-    lda key_y,x                         ; ...and y (off the map if it is carried)...
-    sta cell_y                          ; ...the row: plot_at_cell needs both each time
-    txa                                 ; Keep the key number...
-    pha                                 ; ...on the stack across plot_at_cell
-    jsr plot_at_cell                    ; Plot it in every view showing its cell
-    pla                                 ; Recover the key number...
-    tax                                 ; ...into X, counting down the keys
-.draw_next_key
-    dex                                 ; Next key down
-    bne draw_each_key                   ; More keys: draw the next
+; Keys. For each hero: put a dead hero's key down beside the skull, or pick up the key at the hero's cell, leaving any key carried in its place. The keys on the floor were drawn at the start of the frame (draw_floor_keys).
+.check_keys
     ldx #0                              ; For each hero, from hero 0...
 .check_hero_keys
     lda hero_direction,x                ; Still in play (a direction set)?
@@ -216,47 +200,23 @@
     lda hero_key,x                      ; Out of play: dead, dying or gone. Holding a key?
     bne check_death_finished            ; Yes: see whether the death has played out
     lda #0                              ; No key: forget any key dropped in a swap...
-    sta hero_key_dropped,x              ; ...so draw_keys shows it again
+    sta hero_key_dropped,x              ; ...so it can be picked up again
     jmp next_hero_keys                  ; Nothing more to do for this hero
 .check_death_finished
     lda hero_frame,x                    ; Has the death animation reached its end?
     cmp #8                              ; ...frame 8 is the last of the death
     bne check_key_swap                  ; Still dying: key checks go on as if in play
-; A dead hero's death animation has ended: leave their key on the cell where they fell and erase its icon.
-    ldy hero_key,x                      ; Yes: drop the key where the hero fell
-    lda hero_x,x                        ; ...at the hero's x...
-    sta key_x,y                         ; ...as the key's x...
-    lda hero_y,x                        ; ...and the hero's y...
-    sta key_y,y                         ; ...as the key's y
-    lda #0                              ; The dead hero carries no key now...
-    sta hero_key,x                      ; ...so this is done only once
-    lda #spr_blank_key_icon             ; Erase the key icon from the hero's panel
-    sta sprite_number                   ; ...as the sprite to plot
-    lda hero_panel_y,x                  ; ...using the hero's panel row...
-    sec                                 ; ...set carry to subtract
-    sbc #&0d                            ; ...less 13: the key icon's row...
-    sta plot_y                          ; ...as plot_y, the icon's screen row
-    lda #panel_left + 5                 ; ...in panel column panel_left + 5...
-    sta plot_x                          ; ...as plot_x, the icon's column
-    txa                                 ; Keep the hero number...
-    pha                                 ; ...on the stack across plot_sprite
-    jsr plot_sprite                     ; Plot the blank icon over the key icon
-    pla                                 ; Recover the hero number...
-    tax                                 ; ...into X, for next_hero_keys
+; A dead hero's death animation has ended: put their key down beside the skull, where the other heroes can see and reach it, or, if no cell beside it is free, in the skull's cell, where it is drawn over the skull.
+    jsr find_open_neighbour             ; A free cell beside the skull? Carry clear if so
+    bcc drop_dead_key                   ; Yes: cell_x, cell_y are on it
+    jsr get_hero_cell                   ; None: the skull's cell, into cell_x, cell_y
+.drop_dead_key
+    jsr drop_key_here                   ; Put the key there and erase its panel icon
     jmp next_hero_keys                  ; Key dropped: on to the next hero
 .check_key_swap
-    ldy hero_key_dropped,x              ; The key this hero dropped in a swap, if any
-    beq check_key_cell                  ; None: look for a key at the hero's cell
-    lda key_x,y                         ; Is the hero still on it? Its x...
-    cmp hero_x,x                        ; ...at the hero's x?
-    bne left_dropped_key                ; No: the hero has left it
-    lda key_y,y                         ; ...and its y...
-    cmp hero_y,x                        ; ...at the hero's y?
-    bne left_dropped_key                ; No: the hero has left it
-    jmp next_hero_keys                  ; Still on it: no swap back; on to the next hero
-.left_dropped_key
-    lda #0                              ; Off the dropped key (or it was taken): forget it
-    sta hero_key_dropped,x              ; ...and look for a key here as usual
+    jsr still_on_dropped_key            ; Still on the key dropped in a swap? Carry set if so
+    bcc check_key_cell                  ; No: look for a key at the hero's cell
+    jmp next_hero_keys                  ; Yes: no swap back; on to the next hero
 ; Look for a key at the hero's cell, keys 20 to 1; the first found is picked up.
 .check_key_cell
     lda hero_x,x                        ; Is there a key at the hero's cell? Its x...
@@ -317,7 +277,7 @@
     tax                                 ; ...into X, and in A to carry
     sta hero_key,y                      ; ...and carry the new one
     lda #off_map                        ; Take the new key off the floor
-    sta key_x,x                         ; ...x off the map, so draw_keys skips it...
+    sta key_x,x                         ; ...x off the map, where no view shows it...
     sta key_y,x                         ; ...and y off the map
     ldx #<(key_envelope)                ; Sound the pickup: ENVELOPE key_envelope low...
     ldy #>(key_envelope)                ; ...and high: the pickup's envelope block
@@ -342,9 +302,8 @@
     cpx #4                              ; All four heroes done?
     beq update_rest                     ; Yes: on with the rest of the frame
     jmp check_hero_keys                 ; No: check this hero's keys
-; The rest of the frame: objects, missiles, monsters, then the pause key.
+; The rest of the frame: missiles, monsters, then the pause key.
 .update_rest
-    jsr draw_objects                    ; Draw the objects over the floor
     jsr move_missiles                   ; Move the missiles a cell each
     jsr update_monsters                 ; Move the monsters
 ; The pause key, last in each frame's update: P, read with test_keyboard, which sees it
@@ -538,3 +497,122 @@
     clc                                 ; Shrink sprites base + 1 to + 7: a byte narrower...
     lda hero_sprites,x                  ; ...the hero's sprite base...
     jmp exit_shrink_continues           ; ...continued in exit.asm (the 1987 code fell through to &1C00)
+; ***************************************************************************************
+; Is a hero still on the key they dropped?
+;
+; Say whether the key hero X left behind in a swap (hero_key_dropped) still lies in the
+; hero's cell, and forget it if not: it has been picked up, or the hero has moved off it.
+; While it is remembered, the hero does not pick it up again.
+;
+; On Entry:
+;     X: hero number (0-3)
+;
+; On Exit:
+;     C: set if the hero is still on the key they dropped
+;     A: corrupted
+;     X: preserved
+;     Y: the key dropped (0 if none)
+.still_on_dropped_key
+    ldy hero_key_dropped,x              ; The key this hero dropped, if any
+    beq not_on_dropped_key              ; None: carry clear
+    lda key_x,y                         ; Is the hero still on it? Its x...
+    cmp hero_x,x                        ; ...at the hero's x?
+    bne left_dropped_key                ; No: the hero has left it
+    lda key_y,y                         ; ...and its y...
+    cmp hero_y,x                        ; ...at the hero's y? Equal sets carry
+    beq on_dropped_key                  ; Yes: return with carry set
+.left_dropped_key
+    lda #0                              ; Off the dropped key (or it was taken): forget it
+    sta hero_key_dropped,x              ; ...so it can be picked up again
+.not_on_dropped_key
+    clc                                 ; Not on it: carry clear
+.on_dropped_key
+    rts                                 ; Return, carry set if still on the key
+; ***************************************************************************************
+; Is there an object or a hero in a cell?
+;
+; Say whether an object may lie at cell_x, cell_y (test_object_free: a cell that held one
+; at the start of the level counts), or any hero stands there, in play or out of it (a
+; skull, or dying or returning). Called by find_open_neighbour, so that a key is not put
+; down where draw_objects would hide it, or under a hero or a skull. A hero who has gone
+; down the exit is off the map.
+;
+; On Entry:
+;     CELL_X: map x
+;     CELL_Y: map y
+;
+; On Exit:
+;     C: set if an object or a hero is there
+;     A: corrupted
+;     X: corrupted
+;     Y: corrupted
+.object_or_hero_in_cell
+    jsr test_object_free                ; An object there? Z set if one may lie there
+    sec                                 ; Carry set: taken
+    beq object_or_hero_done             ; An object: return with carry set
+    ldx #3                              ; Heroes 3 to 0...
+.try_hero_in_cell
+    lda hero_x,x                        ; This hero's x...
+    cmp cell_x                          ; ...the cell's?
+    bne next_hero_in_cell               ; No: not here
+    lda hero_y,x                        ; ...and their y...
+    cmp cell_y                          ; ...the cell's? Equal sets carry
+    beq object_or_hero_done             ; Yes: return with carry set
+.next_hero_in_cell
+    dex                                 ; Next hero down
+    bpl try_hero_in_cell                ; More heroes: check the next
+    clc                                 ; Nothing here: carry clear
+.object_or_hero_done
+    rts                                 ; Return, carry set if an object or hero is there
+; ***************************************************************************************
+; Draw the floor
+;
+; Draw everything that lies under the heroes in play, back to front: the trapdoors and
+; the heroes out of play (draw_trapdoors, which runs on into draw_absent_heroes), the
+; objects and the keys. update_game calls it at the start of every frame, and
+; show_hero_room when a view changes room, so a room comes up with its floor at once.
+;
+; On Exit:
+;     A: corrupted
+;     X: 0
+;     Y: corrupted
+.draw_floor
+    jsr draw_trapdoors                  ; The trapdoors and the heroes out of play...
+    jsr draw_objects                    ; ...the objects...
+    jmp draw_floor_keys                 ; ...and the keys, returning from there
+; ***************************************************************************************
+; Draw the keys on the floor
+;
+; Plot every key lying on the floor, 20 to 1, squarely in its cell. draw_floor runs it
+; after the trapdoors, the heroes out of play and the objects, so a key lies over a skull
+; and under a hero in play standing on it. A key
+; carried is off the map, which no view shows. Key 0 is never drawn.
+;
+; In the 1987 release the keys were drawn after the heroes moved, so a hero standing on a
+; key was covered by it; it was picked up at once, except that a key dropped in a swap
+; then lay under its hero.
+;
+; On Exit:
+;     A: corrupted
+;     X: 0
+;     Y: corrupted
+.draw_floor_keys
+    lda #0                              ; Keys sit squarely in their cells:
+    sta plot_offset_x                   ; ...no pixel offset across...
+    sta plot_offset_y                   ; ...or down
+    lda #spr_key                        ; The key sprite...
+    sta sprite_number                   ; ...the same for every key
+    ldx #max_key                        ; Keys 20 to 1
+.draw_floor_key
+    lda key_x,x                         ; The key's x...
+    sta cell_x                          ; ...is the column to plot at...
+    lda key_y,x                         ; ...and y (off the map if it is carried)...
+    sta cell_y                          ; ...the row
+    txa                                 ; Keep the key number...
+    pha                                 ; ...on the stack across plot_at_cell
+    jsr plot_at_cell                    ; Plot it in every view showing its cell
+    pla                                 ; Recover the key number...
+    tax                                 ; ...into X, counting down the keys
+    dex                                 ; Next key down
+    bne draw_floor_key                  ; More keys: draw the next
+    rts                                 ; Return with the keys drawn

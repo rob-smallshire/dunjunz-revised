@@ -140,6 +140,7 @@ ASSERT low_end <= WORKSPACE
 INCLUDE "asm/core/plot.asm"
 INCLUDE "asm/core/row_offsets.asm"
 INCLUDE "asm/core/room_walls.asm"
+INCLUDE "asm/core/hero_cell.asm"
 .page9_end
 ASSERT page9_end <= PAGE9_END
     copyblock PAGE9_START, page9_end, PAGE9_STORE
