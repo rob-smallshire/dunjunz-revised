@@ -73,11 +73,9 @@ OBJECTS = 31
 # Offsets in the "scratch+1" state block, the same in both builds.
 HERO_X, HERO_Y, HERO_DIRECTION = 0x0F, 0x14, 0x19
 MISSILE_X, MISSILE_Y, MISSILE_DIRECTION = 0x3F, 0x4B, 0x57
-HERO_HEALTH_TENS, HERO_HEALTH_UNITS = 0x8F, 0x94
 # Offsets in the "object_x" state block: x, y, then type.
 OBJECT_X, OBJECT_Y, OBJECT_TYPE = 0, OBJECTS, 2 * OBJECTS
 OFF_MAP = 0xFF
-SPR_DIGIT_0, SPR_CROSS, SPR_POTION = 0x1E, 0x2A, 0x61
 
 
 def states_to_key_swap(before, after):
@@ -85,37 +83,6 @@ def states_to_key_swap(before, after):
     differs from the next frame: it leaves the dropped key undrawn while the
     hero is on it, and never swaps it back (test_fixes.py)."""
     return any(held and now and held != now for held, now in zip(before["hero_key"], after["hero_key"]))
-
-
-def a_missile_stops_at_a_skull(before, after):
-    """A missile stops in the cell of a hero out of play, where the revised
-    game lets it fly on: one in flight, or one fired into it this frame."""
-    b, a = before["scratch+1"], after["scratch+1"]
-    skulls = {(a[HERO_X + h], a[HERO_Y + h]) for h in range(HEROES) if a[HERO_DIRECTION + h] == 0}
-    for slot in range(MISSILES):
-        cell = a[MISSILE_X + slot], a[MISSILE_Y + slot]
-        moved = b[MISSILE_DIRECTION + slot] or cell != (b[MISSILE_X + slot], b[MISSILE_Y + slot])
-        if moved and not a[MISSILE_DIRECTION + slot] and cell in skulls:
-            return True
-    return False
-
-
-def taken(before, after, object_type):
-    b, a = before["object_x"], after["object_x"]
-    return any(a[OBJECT_TYPE + n] == object_type and b[OBJECT_X + n] != OFF_MAP and a[OBJECT_X + n] == OFF_MAP
-               for n in range(OBJECTS))
-
-
-def a_cross_is_wasted(before, after):
-    """A Cross is taken with nobody waiting; the revised game leaves it."""
-    return taken(before, after, SPR_CROSS) and not any(1 <= entry <= HEROES for entry in before["returning_hero_queue"])
-
-
-def a_potion_gives_00(before, after):
-    """A potion is drunk and a hero is left on 00; the revised game gives 11."""
-    a = after["scratch+1"]
-    return taken(before, after, SPR_POTION) and any(
-        a[HERO_HEALTH_TENS + h] == a[HERO_HEALTH_UNITS + h] == SPR_DIGIT_0 for h in range(HEROES))
 
 
 def a_dead_hero_drops_a_key(before, after):
@@ -132,9 +99,6 @@ def a_dead_hero_drops_a_key(before, after):
 # matches.
 FIXED_CASES = (
     (states_to_key_swap, 1),
-    (a_missile_stops_at_a_skull, 0),
-    (a_cross_is_wasted, 0),
-    (a_potion_gives_00, 0),
     (a_dead_hero_drops_a_key, 0),
 )
 
@@ -230,9 +194,7 @@ def first_difference(original, revised):
     return None
 
 
-# Seed 2, used before, has heroes die early: a missile is fired into a skull
-# at frame 193, after which the revised game differs by design.
-@pytest.mark.parametrize("seed", [1, 6])
+@pytest.mark.parametrize("seed", [1, 2, 6])
 def test_revised_plays_as_the_original(disc_filepaths, seed):
     script = Script(seed=seed, magic=0)
     original = record(ORIGINAL_DISC_FILEPATH, read_labels(ORIGINAL_BUILD_DIRPATH, "game"),

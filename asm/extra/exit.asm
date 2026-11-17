@@ -126,11 +126,12 @@
 ; dead hero's key down.
 ;
 ; find_open_neighbour picks the first of the cells above, right of, below and left of the
-; hero that is free (no wall, key, object or hero). The key's key_x/key_y are set to that
-; cell, so draw_floor_keys shows it from the next frame; hero_key is cleared and
-; the key icon erased from the hero's panel section. If none of the four is free, the key
-; is put off the map: lost for this level, as it would have been in a wall. A hero with
-; no key moves key entry 0, which is never drawn or picked up.
+; hero that is free (no wall, key, object or hero); if none is, the first that is open (no
+; wall), and the key is stacked on whatever lies there, as keys can lie on one another.
+; The key's key_x/key_y are set to that cell, so draw_floor_keys shows it from the next
+; frame; hero_key is cleared and the key icon erased from the hero's panel section. Only
+; with walls on all four sides is the key put off the map, lost for this level. A hero
+; with no key moves key entry 0, which is never drawn or picked up.
 ;
 ; In the 1987 release the cell to the left was taken, untested, when the other three were
 ; walls, so a key could land in a wall; and no cell was tested for a key already there.
@@ -141,9 +142,13 @@
 ; On Exit:
 ;     X: preserved
 .drop_key
-    jsr find_open_neighbour             ; A free cell beside the hero? Carry clear if so
+    clc                                 ; A free cell beside the hero?
+    jsr find_open_neighbour             ; ...carry clear if so
     bcc drop_key_here                   ; Yes: cell_x, cell_y are on it
-    lda #off_map                        ; None: the key goes off the map, lost...
+    sec                                 ; No: any open cell, the key stacked on what is there
+    jsr find_open_neighbour             ; ...carry clear if one
+    bcc drop_key_here                   ; Yes: cell_x, cell_y are on it
+    lda #off_map                        ; Walls all round: the key goes off the map, lost...
     sta cell_x                          ; ...its x...
     sta cell_y                          ; ...and its y
 .drop_key_here
@@ -168,59 +173,6 @@
     pla                                 ; Recover the hero number...
     tax                                 ; ...into X, preserved for check_exit
     rts                                 ; Return with the key on the floor
-; ***************************************************************************************
-; Find a free cell next to a hero
-;
-; Find where a key can be put down next to hero X: beside the exit (drop_key), or beside
-; a dead hero's skull (check_keys). The first of the cells above, to the right of, below
-; and to the left of the hero, in that order, with no wall or closed door (test_wall), no
-; key (key_in_cell), no object (test_object_free: a cell that held one at the start of
-; the level counts, as the map is not updated when one is taken) and no hero, in play or
-; a skull (object_or_hero_in_cell). A key on an object would be hidden by draw_objects, and one on
-; a skull would flicker with it. Monsters are not tested: they only pass over a key.
-; neighbour_dx and neighbour_dy hold the four offsets, indexed 3 (above) down to 0 (left).
-;
-; On Entry:
-;     X: hero number (0-3)
-;
-; On Exit:
-;     C: clear if a free cell was found, set if none
-;     CELL_X: the free cell's x (the last tried if none)
-;     CELL_Y: its y
-;     A: corrupted
-;     X: preserved
-;     Y: corrupted
-.find_open_neighbour
-    ldy #3                              ; Neighbours 3 to 0: above, right, below, left
-.try_neighbour
-    clc                                 ; This neighbour's cell: the hero's x...
-    lda hero_x,x                        ; ...
-    adc neighbour_dx,y                  ; ...plus its x offset...
-    sta cell_x                          ; ...as cell_x
-    clc                                 ; ...and the hero's y...
-    lda hero_y,x                        ; ...
-    adc neighbour_dy,y                  ; ...plus its y offset...
-    sta cell_y                          ; ...as cell_y
-    txa                                 ; Keep the hero number...
-    pha                                 ; ...and the neighbour number...
-    tya                                 ; ...on the stack...
-    pha                                 ; ...across the tests
-    jsr test_wall                       ; A wall there? Z set if open
-    sec                                 ; Carry set: taken, unless found free below
-    bne neighbour_tested                ; Wall: taken
-    jsr key_in_cell                     ; Open: a key there? Carry set if so
-    bcs neighbour_tested                ; A key: taken
-    jsr object_or_hero_in_cell          ; An object, a hero or a skull? Carry set if so
-.neighbour_tested
-    pla                                 ; Recover the neighbour number...
-    tay                                 ; ...into Y...
-    pla                                 ; ...and the hero number...
-    tax                                 ; ...into X (the carry is kept)
-    bcc neighbour_found                 ; Free: return with carry clear
-    dey                                 ; Taken: the next neighbour
-    bpl try_neighbour                   ; More to try: try it
-.neighbour_found
-    rts                                 ; Return, carry set if all four were taken
     ALIGN &100                          ; Page-aligned: pointers into it are its high byte and an offset
 ; Map of the cells that cannot hold an object, in the same layout as room_walls, from the level file: a bit is clear where an object lies (and on a few other cells), so the object list need only be searched when a hero steps onto a clear bit.
 .object_free_map

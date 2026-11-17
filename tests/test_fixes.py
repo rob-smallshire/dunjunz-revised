@@ -321,8 +321,13 @@ def test_a_key_with_nowhere_to_go_is_lost_not_put_in_a_wall(disc_filepaths):
     assert landed == (OFF_MAP, OFF_MAP)
     cells, _, landed = drop_key_at_exit(original(), walls_all_round=True)
     assert landed == cells[3]                       # in the wall to the left
+
+
+def test_a_key_with_no_free_cell_at_the_exit_is_stacked(disc_filepaths):
+    """With a key on every open cell beside the exit, the key goes on the
+    first open cell, on top of the key there, rather than being lost."""
     _, open_cells, landed = drop_key_at_exit(revised(), keys_beside=4)
-    assert landed == (OFF_MAP, OFF_MAP)
+    assert landed == open_cells[0]
 
 
 def stack_pointers_after_an_exit(build, frames=6):
@@ -389,11 +394,12 @@ def missile_at_a_skull(build):
         return byte(run, "missile_direction"), (byte(run, "missile_x"), byte(run, "missile_y")), (x, y)
 
 
-def test_a_missile_flies_through_a_skull(disc_filepaths):
-    direction, at, skull = missile_at_a_skull(revised())
-    assert direction and at == skull
-    direction, at, skull = missile_at_a_skull(original())
-    assert direction == 0
+def test_a_missile_stops_at_a_skull_as_in_1987(disc_filepaths):
+    """Kept from 1987 (after a fix was tried and players objected): a skull
+    stops a missile, a shield on the hardest levels."""
+    for build in (revised(), original()):
+        direction, at, skull = missile_at_a_skull(build)
+        assert direction == 0
 
 
 def ranger_on_a_cross(run, object_type=SPR_CROSS):
@@ -411,26 +417,19 @@ def score(run, hero):
             for digit in ("thousands", "hundreds", "tens", "units")]
 
 
-def test_a_cross_with_nobody_to_bring_back_stays(disc_filepaths):
-    disc_filepath, labels, ranges = revised()
-    with game_run(disc_filepath, labels, ranges) as run:
-        cross = ranger_on_a_cross(run)
-        for _ in range(3):
-            run.next_frame(set())
-        assert byte(run, f"object_x+{cross}") != OFF_MAP
-        assert score(run, RANGER) == [0, 0, 0, 0]
-        take_out_of_play(run, FIGHTER)                      # the Fighter falls...
-        set_byte(run, "returning_hero_queue", FIGHTER + 1)  # ...and waits for a Cross
-        run.next_frame(set())
-        assert byte(run, f"object_x+{cross}") == OFF_MAP
-        assert score(run, RANGER) == [0, 0, 1, 0]
-        assert byte(run, f"hero_offset_x+{FIGHTER}") == 0xFF    # coming back
-    disc_filepath, labels, ranges = original()
+def cross_with_nobody_waiting(build):
+    disc_filepath, labels, ranges = build
     with game_run(disc_filepath, labels, ranges) as run:
         cross = ranger_on_a_cross(run)
         run.next_frame(set())
-        assert byte(run, f"object_x+{cross}") == OFF_MAP     # wasted
-        assert score(run, RANGER) == [0, 0, 1, 0]
+        return byte(run, f"object_x+{cross}"), score(run, RANGER)
+
+
+def test_a_cross_with_nobody_waiting_is_wasted_as_in_1987(disc_filepaths):
+    """Kept from 1987 (after a fix was tried and players objected): a Cross
+    is taken, and scores 10, even with nobody to bring back."""
+    for build in (revised(), original()):
+        assert cross_with_nobody_waiting(build) == (OFF_MAP, [0, 0, 1, 0])
 
 
 def health_from_a_potion(build):
@@ -442,9 +441,11 @@ def health_from_a_potion(build):
         return byte(run, "hero_health_tens") - SPR_DIGIT_0, byte(run, "hero_health_units") - SPR_DIGIT_0
 
 
-def test_a_potion_never_leaves_00_health(disc_filepaths):
-    assert health_from_a_potion(revised()) == (1, 1)
-    assert health_from_a_potion(original()) == (0, 0)
+def test_a_potion_can_leave_00_health_as_in_1987(disc_filepaths):
+    """Kept from 1987 (after a fix was tried and players objected): health is
+    the score's units digit twice, as documented, so a score ending in 0 gives
+    00."""
+    assert health_from_a_potion(revised()) == health_from_a_potion(original()) == (0, 0)
 
 
 def cast_with_health_too_low(build):
@@ -686,20 +687,6 @@ def test_a_hero_in_play_is_drawn_over_a_skull(disc_filepaths):
 
 
 SPR_DRAINER = 0x53
-
-
-def test_a_hero_on_a_cross_is_drawn_over_it(disc_filepaths):
-    """A Cross nobody is waiting for stays where it is (see above), so a hero
-    can stand on it. The objects are drawn under the heroes, so the Ranger is
-    the last thing plotted there every frame, rather than the Cross."""
-    disc_filepath, labels, ranges = revised()
-    with game_run(disc_filepath, labels, ranges) as run:
-        ranger_on_a_cross(run)
-        cell = byte(run, "hero_x"), byte(run, "hero_y")
-        for _ in range(2):
-            run.next_frame(set())
-        for frame in cell_plots_per_frame(run, 4):
-            assert last_plotted_at(frame, cell) == RANGER_STANDING
 
 
 def test_a_hero_on_an_energy_drainer_still_flickers(disc_filepaths):

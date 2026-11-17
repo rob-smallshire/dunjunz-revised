@@ -193,3 +193,67 @@
     lda #0                              ; Nothing there: return A = Y = 0...
     ldy #0                              ; ...the cell is free of creatures
     rts                                 ; Return with Z set: nothing in the cell
+; ***************************************************************************************
+; Find a cell next to a hero for a key
+;
+; Find where a key can be put down next to hero X: beside the exit (drop_key), or beside
+; a dead hero's skull (check_keys). The first of the cells above, to the right of, below
+; and to the left of the hero, in that order, that is open (no wall or closed door:
+; test_wall) and, with the carry clear on entry, also free: no key (key_in_cell), no
+; object (test_object_free: a cell that held one at the start of the level counts, as the
+; map is not updated when one is taken) and no hero, in play or a skull
+; (object_or_hero_in_cell). With the carry set on entry, any open cell will do, so the
+; key is stacked on whatever is there: drop_key asks for that when no cell is free, as
+; keys can lie on one another. Monsters are not tested: they only pass over a key.
+; neighbour_dx and neighbour_dy hold the four offsets, indexed 3 (above) down to 0 (left).
+;
+; On Entry:
+;     X: hero number (0-3)
+;     C: clear for a free cell, set for any open cell
+;
+; On Exit:
+;     C: clear if a cell was found, set if none
+;     CELL_X: the cell's x (the last tried if none)
+;     CELL_Y: its y
+;     A: corrupted
+;     X: preserved
+;     Y: corrupted
+.find_open_neighbour
+    ror any_open_neighbour              ; The carry, into bit 7: any open cell will do?
+    ldy #3                              ; Neighbours 3 to 0: above, right, below, left
+.try_neighbour
+    clc                                 ; This neighbour's cell: the hero's x...
+    lda hero_x,x                        ; ...
+    adc neighbour_dx,y                  ; ...plus its x offset...
+    sta cell_x                          ; ...as cell_x
+    clc                                 ; ...and the hero's y...
+    lda hero_y,x                        ; ...
+    adc neighbour_dy,y                  ; ...plus its y offset...
+    sta cell_y                          ; ...as cell_y
+    txa                                 ; Keep the hero number...
+    pha                                 ; ...and the neighbour number...
+    tya                                 ; ...on the stack...
+    pha                                 ; ...across the tests
+    jsr test_wall                       ; A wall there? Z set if open
+    sec                                 ; Carry set: taken, unless found free below
+    bne neighbour_tested                ; Wall: taken
+    clc                                 ; Open: carry clear, found...
+    bit any_open_neighbour              ; ...if any open cell will do
+    bmi neighbour_tested                ; It will: this one
+    jsr key_in_cell                     ; A key there? Carry set if so
+    bcs neighbour_tested                ; A key: taken
+    jsr object_or_hero_in_cell          ; An object, a hero or a skull? Carry set if so
+.neighbour_tested
+    pla                                 ; Recover the neighbour number...
+    tay                                 ; ...into Y...
+    pla                                 ; ...and the hero number...
+    tax                                 ; ...into X (the carry is kept)
+    bcc neighbour_found                 ; Free: return with carry clear
+    dey                                 ; Taken: the next neighbour
+    bpl try_neighbour                   ; More to try: try it
+.neighbour_found
+    rts                                 ; Return, carry set if all four were taken
+; Bit 7 set while find_open_neighbour takes any open cell, clear while it takes only a
+; free one.
+.any_open_neighbour
+    equb 0

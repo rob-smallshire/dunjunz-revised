@@ -207,7 +207,8 @@
     cmp #8                              ; ...frame 8 is the last of the death
     bne check_key_swap                  ; Still dying: key checks go on as if in play
 ; A dead hero's death animation has ended: put their key down beside the skull, where the other heroes can see and reach it, or, if no cell beside it is free, in the skull's cell, where it is drawn over the skull.
-    jsr find_open_neighbour             ; A free cell beside the skull? Carry clear if so
+    clc                                 ; A free cell beside the skull?
+    jsr find_open_neighbour             ; ...carry clear if so
     bcc drop_dead_key                   ; Yes: cell_x, cell_y are on it
     jsr get_hero_cell                   ; None: the skull's cell, into cell_x, cell_y
 .drop_dead_key
