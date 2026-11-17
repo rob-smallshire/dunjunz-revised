@@ -73,3 +73,36 @@ def test_cycles_per_cell_sprite(image):
     cycles = plot(image, 1, 1, 1)
     print(f"plot_sprite, a 4 x 12 sprite: {cycles} cycles")
     assert cycles > 0
+
+
+def see_through(screen, width, height, data, column, line):
+    for row in range(height):
+        for byte in range(width):
+            offset = screen_offset(column + byte, line + row)
+            sprite_byte = data[row * width + byte]
+            screen[offset] = sum((sprite_byte & mask) if sprite_byte & mask else (screen[offset] & mask)
+                                 for mask in (0xAA, 0x55))
+
+
+@pytest.mark.parametrize("place", PLACES)
+def test_every_sprite_is_plotted_see_through(image, place):
+    """Four bytes wide: black is see-through. Any other width: solid."""
+    column, line = place
+    for number in range(SPRITE_COUNT):
+        width, height, data = sprite(image, number)
+        if column + width > 80 or line + height > 200:
+            continue
+        expected = patterned_screen(image, number)
+        image.poke(PLOT_X, bytes([column, line]))
+        image.poke(SPRITE_NUMBER, bytes([number]))
+        image.call("plot_see_through")
+        (see_through if width == 4 else solid)(expected, width, height, data, column, line)
+        assert image.peek(SCREEN_START, SCREEN_END - SCREEN_START) == bytes(expected), f"sprite &{number:02X}"
+
+
+def test_cycles_see_through(image):
+    image.poke(PLOT_X, bytes([1, 1]))
+    image.poke(SPRITE_NUMBER, bytes([1]))
+    cycles = image.call("plot_see_through")
+    print(f"plot_see_through, a 4 x 12 sprite: {cycles} cycles")
+    assert cycles > 0

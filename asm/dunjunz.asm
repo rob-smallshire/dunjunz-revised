@@ -158,6 +158,7 @@ INCLUDE "asm/core/font.asm"
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
 INCLUDE "asm/core/test_key.asm"
+INCLUDE "asm/core/plot_see_through.asm"
 .ws_end
 ASSERT ws_end <= WS_END
     copyblock WS_START, ws_end, WS_STORE
