@@ -4,6 +4,8 @@ Each machine boots BASIC, selects the disc filing system and runs the title;
 the game starts level 1, then moves on to level 2 (as if a hero survived),
 which loads Setup and Level2 again with the game's workspace handed back to
 the filing system and claimed again. Level 2's wall map must be the file's.
+Then every hero dies: the end of the game is loaded (load_ending, Setup again,
+over the code for play) and the game-over message must be printed.
 """
 
 from __future__ import annotations
@@ -59,6 +61,9 @@ def test_levels_load(disc_filepaths, machine_key):
         expected = level2[LEVEL_WALLS_OFFSET:LEVEL_WALLS_OFFSET + MAP_BYTES]
         # The first eight bytes double as character 128's definition, which text overwrites.
         assert walls[8:] == expected[8:]
+        bbc.cpu.pc = labels["game_over"]
+        assert run_to(bbc, labels["wait_vsync_game_over"], 60), \
+            f"game-over message not printed; PC &{bbc.cpu.pc:04X}"
 
 
 def test_refuses_a_page_too_high(disc_filepaths):

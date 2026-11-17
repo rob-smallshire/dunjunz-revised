@@ -65,29 +65,10 @@
     lda count                           ; Any hero survived?
     cmp #4                              ; ...fewer than four dead?
     bne next_level                      ; Yes: on to the next level
-; Every hero is dead: print the game-over message over the views, then wait for a key, or for the time limit, before starting again. The MOS goes on counting the vsync counter down at every vertical sync, so if it has passed 0 by the time the message is printed, the wait for it to reach 0 lasts until it comes round, up to 256 vsyncs (about 5 s), and only then are keys flushed and read.
+; Every hero is dead: load the end of the game and show the game-over message.
 .game_over
-    ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
-    jsr send_vdu                        ; ...cleared
-    ldx #0                              ; Print from the message's start
-.print_game_over
-    lda game_over_message,x             ; Print game_over_message from its start (X = 0)...
-    jsr osasci                          ; ...through OSASCI, so each CR starts a new line
-    inx                                 ; Step to the message's next character
-    cmp #0                              ; ...up to its zero byte
-    bne print_game_over                 ; Not the end: next
-.wait_vsync_game_over
-    lda os_vsync_counter                ; Wait for the vsync counter, still running, to run out
-    beq vsync_game_over_done            ; 0: done
-    bpl wait_vsync_game_over            ; Still counting down: keep waiting
-.vsync_game_over_done
-    lda #osbyte_flush_buffer_class      ; Flush the input buffers
-    jsr osbyte                          ; Discard keys pressed during play  Flush selected class of buffer
-    ldx #&46 ; 'F'                      ; Game over: wait up to &246 cs (5.8 s) for a key...
-    ldy #2                              ; ...Y = &02: the time limit's high byte
-    lda #osbyte_inkey                   ; ...OSBYTE &81: INKEY with a time limit
-    jsr osbyte                          ; Read a key, waiting up to 582 centiseconds
-    jmp restart_game                    ; ...then load the title and the game afresh
+    jsr load_ending                     ; Load the end of the game over the code for play
+    jmp ending_game_over                ; ...and show the game-over message
 ; ***************************************************************************************
 ; Counters
 ;

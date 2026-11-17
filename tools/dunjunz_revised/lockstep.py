@@ -98,8 +98,11 @@ HERO_KEYS = (
     (0xAC, 0x9B, 0xDA, 0xCA, 0xC9),         # Fighter: G B I U O
 )
 # The number of `lda system_via_t1c_l` in the game: two in update_monsters,
-# one in dissolve_chalice.
+# one in dissolve_chalice. In the revised game dissolve_chalice is part of the
+# end of the game, which is loaded only once play is over, so a run that gets
+# there pins its randomness again after load_ending.
 VIA_TIMER_READS = 3
+ENDING_VIA_TIMER_READS = 1
 
 
 def inkey_to_matrix(inkey: int) -> tuple[int, int]:
@@ -276,6 +279,7 @@ def game_run(
             raise RuntimeError(f"never reached play; PC &{bbc.cpu.pc:04X}")
         run = GameRun(bbc, labels, game_ranges)
         patched = run.pin_randomness()
-        if patched != VIA_TIMER_READS:
-            raise RuntimeError(f"found {patched} System VIA timer reads to pin, not {VIA_TIMER_READS}")
+        expected = VIA_TIMER_READS - (ENDING_VIA_TIMER_READS if "load_ending" in labels else 0)
+        if patched != expected:
+            raise RuntimeError(f"found {patched} System VIA timer reads to pin, not {expected}")
         yield run

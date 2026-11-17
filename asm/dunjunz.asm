@@ -102,6 +102,10 @@ STASH = &3000
 STARTUP = &6980                         ; Rows 23-24, which the hero menu leaves alone
 JOYSTICK_STORE = WS_STORE + STATIC_WORKSPACE_PAGES * 256  ; The joystick code's stored copies, which find_sticks copies out before the hero menu clears the screen
 SETUP_ADDRESS = &5000                   ; Setup, loaded with each level, clear of STASH and LEVEL_FILE
+; Once play is over, load_ending loads Setup again high in memory, over the code for play:
+; the stash, then the file, whose end of the game lands at ENDING_ADDRESS.
+ENDING_STASH = &7100                    ; After the code the end of the game still uses
+ENDING_FILE_ADDRESS = ENDING_STASH + STATIC_WORKSPACE_PAGES * 256
 
 INCLUDE "asm/defs/joystick.asm"
 INCLUDE "asm/defs/workspace.asm"
@@ -153,7 +157,6 @@ INCLUDE "asm/core/status_panel.asm"
 INCLUDE "asm/core/font.asm"
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
-INCLUDE "asm/core/game_over_text.asm"
 INCLUDE "asm/core/test_key.asm"
 .ws_end
 ASSERT ws_end <= WS_END
@@ -208,27 +211,28 @@ ASSERT analogue_driver_image + analogue_driver_end - analogue_driver <= SETUP_AD
 .setup_start
 INCLUDE "asm/setup/setup.asm"
 .setup_end
-ASSERT setup_end <= LEVEL_FILE
-save "Setup", setup_start, setup_end, setup_level, SETUP_ADDRESS
-    clear setup_start, setup_end
+; Saved with the end of the game after it, once that is assembled below.
 
 ; ***************************************************************************************
 ; &6E80-&7FFF: loaded in place
+; The code the end of the game still uses comes first; the code for play after it is
+; overwritten by load_ending once play is over.
     org UP_START
+INCLUDE "asm/upper/views.asm"
+INCLUDE "asm/upper/wrch.asm"
+.up_kept_end
+ASSERT up_kept_end <= ENDING_STASH
 INCLUDE "asm/upper/move_heroes.asm"
 INCLUDE "asm/upper/scoring.asm"
 INCLUDE "asm/upper/objects.asm"
 INCLUDE "asm/upper/hero_room.asm"
 INCLUDE "asm/upper/magic.asm"
 INCLUDE "asm/upper/hero_animation.asm"
-INCLUDE "asm/upper/views.asm"
 INCLUDE "asm/upper/map_tests.asm"
 INCLUDE "asm/upper/monsters.asm"
 INCLUDE "asm/upper/steps.asm"
 INCLUDE "asm/upper/keys.asm"
 INCLUDE "asm/upper/workspace.asm"
-INCLUDE "asm/upper/wrch.asm"
-INCLUDE "asm/core/victory_sequence.asm"
 .game_file_end
 ASSERT game_file_end <= UP_END
 
@@ -237,3 +241,19 @@ ASSERT LO(room_walls) = 0               ; test_wall, draw_room and update_game p
 ASSERT LO(object_free_map) = 0          ; test_object_free likewise
 
 save "GAME", game_file_start, game_file_end, startup, MID_START
+
+; ***************************************************************************************
+; The end of the game: assembled where load_ending puts it, over the code for play, and
+; stored at the end of Setup (asm/ending/ending.asm)
+    clear UP_START, UP_END
+ENDING_ADDRESS = ENDING_FILE_ADDRESS + setup_end - setup_start
+    org ENDING_ADDRESS
+.ending_start
+INCLUDE "asm/ending/ending.asm"
+.ending_end
+ASSERT ending_end <= UP_END
+ASSERT LO(ENDING_STASH) = 0 AND LO(ENDING_FILE_ADDRESS) = 0 AND LO(SETUP_ADDRESS) = 0  ; load_ending changes only high bytes
+setup_file_end = setup_end + ending_end - ending_start
+ASSERT setup_file_end <= LEVEL_FILE
+    copyblock ending_start, ending_end, setup_end
+save "Setup", setup_start, setup_file_end, setup_level, SETUP_ADDRESS

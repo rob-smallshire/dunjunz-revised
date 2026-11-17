@@ -29,11 +29,14 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   SAVEs go into a scratch disc image that the build reads back. It saves
   `GAME` (loaded at &1C00; its startup, game_entry and the hero menu run once
   from screen memory and copy the regions below &1C00 into place) and
-  `Setup` (loaded with each level and run in screen memory).
+  `Setup` (loaded with each level and run in screen memory). The end of the
+  game (`asm/ending/`: game over and victory) is stored after Setup in its
+  file and loaded over the code for play only once play is over
+  (`load_ending`; see `docs/memory.md`).
 - Module groups: `defs/` (constants, addresses, the workspace and level file
   layouts as label blocks), `low/` and `core/` (most of it, whichever region
   it now lives in), `extra/` (&1C00 up), `upper/` (&6E80 up), `start/`
-  (run once), `setup/` (Setup). `asm/title.asm` is DUNJUNZ, the title.
+  (run once), `setup/` (Setup), `ending/` (the end of the game). `asm/title.asm` is DUNJUNZ, the title.
 - The title picture, `Screen`, is the 1987 one changed by the build
   (`tools/dunjunz_revised/title_picture.py`): "Press any key" in yellow and
   the version drawn in on the bottom row, from `_version.py`. The build also

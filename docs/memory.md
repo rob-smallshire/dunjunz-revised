@@ -85,7 +85,7 @@ from its real private page, which its table entry doesn't give.
 | &1700-&1BFF | **Untouched**: private workspace (PAGE at most &1C00) |
 | &1C00-&2FFF | The exit animation, doors and keys, sprites, the frame, the Chalice |
 | &3000-&6E7F | Screen (25 rows) |
-| &6E80-&7FFF | Heroes, missiles, objects, monsters, views, the font handler, the victory sequence |
+| &6E80-&7FFF | The views and the font handler, then heroes, missiles, objects and monsters; once play is over, the end of the game is loaded over the latter (see below) |
 
 `uv run dr-sizes` gives each module's place and size; `asm/dunjunz.asm`
 assembles the regions and asserts each fits.
@@ -104,7 +104,8 @@ original MMFS, at &1D00, does not fit.
   menu, also from screen memory, so neither stays resident.
 - `Setup`, loaded with every level at &5000 and run there: it unpacks the
   level, refreshes the workspace from its template and resets the monsters,
-  before the screen is cleared and drawn.
+  before the screen is cleared and drawn. After it in the file comes the
+  end of the game (`asm/ending/`), which is not needed then.
 - `Level1`-`Level25`, unencrypted, loaded at &6B00.
 
 ### Loading a level
@@ -126,6 +127,29 @@ system and `*RUN DUNJUNZ`.
 The 6845 set-ups go through the MOS's WRCHV, saved in `saved_wrchv`:
 `wrch_handler` would print a letter or digit among the parameters (80 is
 "P") as character 128.
+
+### Loading the end of the game
+
+Game over and victory end the game for good: the title and the game are
+loaded afresh after them. Their code and text (the victory sequence, the
+game-over message, and the code that prints the messages and waits for a
+key, about 560 bytes) are therefore not resident. `load_ending` loads
+`Setup` again, at `ENDING_FILE_ADDRESS` (&7900) instead of &5000, so that
+the end of the game, stored after the set-up code, lands at
+`ENDING_ADDRESS`, where it was assembled. The stash moves from the screen
+to `ENDING_STASH` (&7100-&78FF). Both lie over the code for play, which is
+finished with; the screen stays on show, untouched, and the display is not
+blanked. `load_ending` changes the stash address in `load_file` and the
+load address in `setup_osfile_block` for good, as play never resumes.
+
+So the upper region starts with the only modules the end still uses, the
+views (`plot_at_cell`) and the font handler; everything above them, up to
+&7FFF, may be overwritten. The end also uses the plotter, the font, the
+sprite tables and the sprites, the loader, the level maps (level 25's
+ending text) and `level_number`, all in other regions.
+
+The end is not a file of its own because a DFS catalogue holds 31 files
+and the disc has 31 (see `tools/dunjunz_revised/disc_files.py`).
 
 ## Closing the boot file
 
@@ -165,4 +189,7 @@ Found by searching the modules (`asm/dunjunz.asm` ASSERTs the first three):
   `test_sprites_match_the_original` reads all 120 sprites through the
   tables in both builds.
 - `sprite_blank` (three sprites) is a run of zeros in the &0400 image.
+- Nothing the end of the game uses may lie in the upper region above
+  `up_kept_end` (`views.asm` and `wrch.asm` lie below it), and the stash,
+  Setup and the end must fit above it (ASSERTed).
 - Module sizes and places: `uv run dr-sizes`.

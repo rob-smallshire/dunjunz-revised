@@ -16,10 +16,9 @@
 ; left of the Chalice's sprite, replot it black, and wait 255 vertical syncs, about five
 ; seconds. The Chalice's sprite data stays cleared, as the game starts afresh next.
 ;
-; OSBYTEs &D4 and &D5 set (old AND Y) EOR X, and Y is never set for them: the bell's
-; envelope byte takes Y left over from the frame, and the first pitch takes the Y that
-; OSBYTE &D4 returns; later passes have Y = 0 from the wait loop, so the pitch is exactly
-; victory_pitch.
+; OSBYTEs &D4 and &D5 set (old AND Y) EOR X, so each is called with Y = 0 to replace the
+; setting with X. In the 1987 release Y was never set for them: the bell's envelope byte
+; took Y left over from the frame, and the first pitch the Y that OSBYTE &D4 returned.
 ;
 ; On Exit:
 ;     A: 0

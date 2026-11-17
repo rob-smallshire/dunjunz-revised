@@ -60,10 +60,33 @@
 .mos_wrch
     jmp (saved_wrchv)                   ; The MOS's WRCH routine returns to the caller
 ; ***************************************************************************************
+; Load the end of the game
+;
+; Load Setup again, with the end of the game stored after it (asm/ending/ending.asm), at
+; ENDING_FILE_ADDRESS instead of SETUP_ADDRESS, so that the end of the game lands at
+; ENDING_ADDRESS, over the code for play, which is finished with. The stash moves there
+; too, to ENDING_STASH, so that the screen stays on show and untouched throughout. Play
+; never resumes, so neither change is undone. Only the high bytes change: both pairs of
+; addresses are page-aligned.
+;
+; On Exit:
+;     A: corrupted
+;     X: corrupted
+;     Y: corrupted
+.load_ending
+    lda #>(ENDING_STASH)                ; The stash, among the code for play...
+    sta stash_out_page + 1              ; ...for the copy out...
+    sta stash_back_page + 1             ; ...and the copy back
+    lda #>(ENDING_FILE_ADDRESS)         ; Setup's load address, now high in memory...
+    sta setup_osfile_block + 3          ; ...its high byte (the low bytes are both 0)
+    ldx #<(setup_osfile_block)          ; Load Setup and the end of the game...
+    ldy #>(setup_osfile_block)          ; ...with setup_osfile_block
+                                        ; ...and return: fall into load_file
+; ***************************************************************************************
 ; Load a file while the game owns the filing system's workspace
 ;
 ; Copy the game's contents of STATIC_WORKSPACE to STASH, in screen memory, which must not
-; be on show; reselect the filing system, which rebuilds its workspace from its private
+; be on show (or to ENDING_STASH, once load_ending has moved it); reselect the filing system, which rebuilds its workspace from its private
 ; workspace; load the file with OSFILE &FF; claim the workspace again with service call
 ; &0A; and copy the game's contents back. VDU output is disabled meanwhile, so nothing the
 ; filing system prints reaches the screen (wrch_handler would print it with a font that is
@@ -82,7 +105,8 @@
     lda #&15                            ; VDU 21: disable VDU output
     jsr oswrch                          ; ...during the load
     lda #>(STATIC_WORKSPACE)            ; Copy the game's workspace pages...
-    ldy #>(STASH)                       ; ...to the stash
+.stash_out_page
+    ldy #>(STASH)                       ; ...to the stash (load_ending moves it)
     jsr copy_static_workspace           ; ...out of the filing system's way
     jsr reselect_filing_system          ; The filing system takes its workspace back
     lda #osfile_load                    ; OSFILE &FF: load the file...
@@ -90,7 +114,8 @@
     ldy load_file_block + 1             ; ...(X, Y)
     jsr osfile                          ; Load it
     jsr claim_static_workspace          ; Take the workspace for the game again
-    lda #>(STASH)                       ; Copy the game's pages back...
+.stash_back_page
+    lda #>(STASH)                       ; Copy the game's pages back... (load_ending moves it)
     ldy #>(STATIC_WORKSPACE)            ; ...from the stash to the workspace
     jsr copy_static_workspace           ; ...the game is whole again
     lda #6                              ; VDU 6: enable VDU output

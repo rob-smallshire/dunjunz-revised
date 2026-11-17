@@ -6,16 +6,9 @@
 ; test each hero's hero_door_x, hero_door_y, the cell move_heroes recorded as the one
 ; they last stepped or tried to step into (kept even when a wall stops them, so walking
 ; into the Chalice is enough). If it is one of the Chalice's four cells, x &1A-&1B and y
-; 4-5, the game is won: play victory_sequence, set a text window over the views (columns
-; 0-16, rows 0-24, leaving the status panel), clear it, print the ending text, flush the
-; keyboard buffer, wait for a key and load the title and the game afresh (restart_game),
-; so this never returns.
-;
-; The ending text is not part of the program: it is the 140 bytes at room_walls + &3A
-; followed by the zero-terminated string at object_free_map + &3A, which on level 25 hold
-; text instead of map data. Both lie clear of &0C00-&0C07, the definition of character
-; 128 that wrch_handler rewrites for every letter or digit it prints. The Chalice's cells
-; are fixed here, not read from the level's objects.
+; 4-5, the game is won: load the end of the game (load_ending) and jump to ending_victory,
+; which plays the victory sequence, prints the ending text and starts afresh, so this
+; never returns. The Chalice's cells are fixed here, not read from the level's objects.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -46,27 +39,5 @@
     beq start_victory                   ; Yes: the Chalice is found
     bne next_hero_victory               ; No: next hero
 .start_victory
-    jsr victory_sequence                ; Sparkles, rising tone, the Chalice dissolves
-; The game is won. Over the views, print the ending text that level 25's maps hold, wait for a key, and start afresh.
-    ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
-    jsr send_vdu                        ; ...cleared
-; Print the ending text: 140 bytes of level 25's wall map, then its object-free map up to a zero.
-    ldx #0                              ; The ending text: 140 bytes from room_walls + &3A...
-.print_victory_text
-    lda room_walls + 58,x               ; Next byte of level 25's wall map, which is text
-    jsr osasci                          ; Print it in the game's font
-    inx                                 ; On through the 140 bytes
-    cpx #&8c                            ; All 140 printed?
-    bne print_victory_text              ; No: print the next
-    ldx #0                              ; ...then the ending message, at object_free_map + &3A
-.print_ending_message
-    lda object_free_map + 58,x          ; Next character of the ending message
-    jsr osasci                          ; Print it, the zero included
-    inx                                 ; On along the message (X stays non-zero)
-    cmp #0                              ; The zero that ends the message?
-    bne print_ending_message            ; No: print the next
-; Wait for a fresh key press, then load the title and the game afresh.
-    lda #osbyte_flush_buffer_class      ; OSBYTE &0F, X non-zero: flush the input buffer...
-    jsr osbyte                          ; ...so keys pressed in the sequence cannot skip the text  Flush selected class of buffer
-    jsr osrdch                          ; Wait for a key once the ending text has been read
-    jmp restart_game                    ; ...then load the title and the game afresh
+    jsr load_ending                     ; Load the end of the game over the code for play
+    jmp ending_victory                  ; ...and play the victory sequence and the ending

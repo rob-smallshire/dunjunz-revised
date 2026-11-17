@@ -6,7 +6,8 @@ with oaknut-disc, readable by everyone). The server runs in one beebium,
 reaching "Ready", and a client station on AUN logs on as SYST, selects the
 directory and runs the title. The game starts level 1 and moves on to level
 2, which it loads over the network with the game's workspace handed back to
-the network filing system and claimed again.
+the network filing system and claimed again; then every hero dies, and the
+end of the game (load_ending) is loaded over the network too.
 """
 
 from __future__ import annotations
@@ -113,3 +114,6 @@ def test_levels_load_over_econet(file_server_preset_filepath, client_key):
             walls = bytes(bbc.memory.address.peek[labels["room_walls"]:labels["room_walls"] + MAP_BYTES])
             level2 = (REVISED_BUILD_DIRPATH / "Level2").read_bytes()
             assert walls[8:] == level2[LEVEL_WALLS_OFFSET + 8:LEVEL_WALLS_OFFSET + MAP_BYTES]
+            bbc.cpu.pc = labels["game_over"]
+            assert run_to(bbc, labels["wait_vsync_game_over"], 60), \
+                f"game-over message not printed; {screens(bbc, server)}"
