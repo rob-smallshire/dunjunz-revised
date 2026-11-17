@@ -16,6 +16,7 @@ uv run pytest                                     # tests (beebium)
 uv run dr-machines                                # PAGE per machine configuration
 uv run dr-sizes                                   # address range and size of each game module
 uv run dr-sprites [--original]                    # every sprite as an HTML table: build/sprites-*.html
+uv run dr-frame-time [--frames N] [--seed S]      # cycles per frame of scripted play, 1987 and revised
 uv run python -m dunjunz_revised.coverage 1500 1 2 3   # instructions never run in scripted play
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
@@ -78,6 +79,19 @@ alone. A state block that is rearranged needs its own entry in
 the comparison fail from the first frame it affects. Such a change is
 tested on its own, and the comparison is then made against the fixed
 behaviour or restricted around it.
+
+## Pace and drawing
+
+`play_level` starts a frame every three vsyncs (120,000 cycles). In 1987 a
+frame with four heroes usually takes longer (a median of about 133,000
+cycles, 69% of it in `plot_sprite`), so busy rooms play slower. The
+revision's plotter has a faster loop for sprites four bytes wide, so most
+frames now fit the three vsyncs and the game keeps a steady pace. A change
+to the drawing or the frame must not make frames slower: compare `uv run
+dr-frame-time` before and after. Routines can be run on their own in py65
+(`tools/dunjunz_revised/sixtyfive.py`), as `tests/test_plot.py` runs the
+plotter, which is much quicker for working on them than beebium. The plan
+for drawing, play apart from rendering, is in `docs/rendering.md`.
 
 ## The 1987 release
 

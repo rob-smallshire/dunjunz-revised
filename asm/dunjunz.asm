@@ -232,6 +232,7 @@ INCLUDE "asm/upper/map_tests.asm"
 INCLUDE "asm/upper/monsters.asm"
 INCLUDE "asm/upper/steps.asm"
 INCLUDE "asm/upper/keys.asm"
+INCLUDE "asm/upper/object_sprites.asm"
 INCLUDE "asm/upper/workspace.asm"
 .game_file_end
 ASSERT game_file_end <= UP_END

@@ -13,6 +13,7 @@ dr-build = "dunjunz_revised.build:main"
 dr-sizes = "dunjunz_revised.sizes:main"
 dr-machines = "dunjunz_revised.machines:main"
 dr-sprites = "dunjunz_revised.sprite_sheet:main"
+dr-frame-time = "dunjunz_revised.frame_time:main"
 
 [dependency-groups]
 test = [

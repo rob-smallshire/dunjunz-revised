@@ -35,6 +35,9 @@
     lda sprite_heights,x                ; Pixel rows in the sprite...
     sta sprite_height                   ; ...counted down the sprite
     jsr screen_address                  ; screen_ptr = address of the top-left byte
+    lda sprite_width                    ; Four bytes wide, as most sprites are?
+    cmp #4                              ; ...
+    beq plot_four_wide                  ; Yes: the faster loop
     ldy #0                              ; Index stays 0: the pointers themselves advance
     ldx sprite_height                   ; X counts the pixel rows still to plot
 .plot_sprite_row
@@ -84,6 +87,102 @@
     dex                                 ; One pixel row fewer to plot
     bne plot_sprite_row                 ; More rows: plot the next
     rts                                 ; Return: the sprite is on the screen
+; ***************************************************************************************
+; Plot a sprite four bytes wide
+;
+; plot_sprite's loop for a sprite four bytes wide, which most are (a cell is four bytes by
+; twelve rows), with sprite_data_ptr, sprite_height and screen_ptr set. Y steps through
+; the sprite's data and X through the pixel rows of a character row, and the four
+; columns, eight bytes apart on the screen, are stored by four STA abs,X whose addresses
+; are set at each character row (set_four_wide_columns): about 60 cycles a row, where the
+; general loop takes about 230. The data is read with (sprite_data_ptr),Y, so a sprite may
+; have at most 63 rows.
+;
+; On Exit:
+;     A: corrupted
+;     X: 0
+;     Y: 0
+.plot_four_wide
+    lda sprite_height                   ; The data's length: rows x 4...
+    asl a                               ; ...x 2...
+    asl a                               ; ...x 4...
+    sta four_wide_end + 1               ; ...where the row loop stops
+    lda screen_ptr                      ; The pixel row within the character row...
+    and #7                              ; ...(the address's low three bits)...
+    tax                                 ; ...in X
+    eor screen_ptr                      ; The character row's top at this column...
+    ldy screen_ptr_hi                   ; ...(low byte with those bits cleared, and high)...
+    jsr set_four_wide_columns           ; ...and the three columns after it, into the stores
+    ldy #0                              ; From the sprite's first byte
+.four_wide_row
+    lda (sprite_data_ptr),y             ; First column...
+.four_wide_store_0
+    sta &ffff,x                         ; ...stored at the row in this character row
+    iny                                 ; Next byte
+    lda (sprite_data_ptr),y             ; Second column...
+.four_wide_store_1
+    sta &ffff,x                         ; ...eight bytes on
+    iny                                 ; Next byte
+    lda (sprite_data_ptr),y             ; Third column...
+.four_wide_store_2
+    sta &ffff,x                         ; ...sixteen bytes on
+    iny                                 ; Next byte
+    lda (sprite_data_ptr),y             ; Fourth column...
+.four_wide_store_3
+    sta &ffff,x                         ; ...twenty-four bytes on
+    iny                                 ; Next byte
+.four_wide_end
+    cpy #&ff                            ; All the rows plotted? (rows x 4, set above)
+    beq four_wide_done                  ; Yes: done
+    inx                                 ; Next pixel row...
+    cpx #8                              ; ...still in this character row?
+    bne four_wide_row                   ; Yes: plot it
+    tya                                 ; No: keep the data index...
+    pha                                 ; ...on the stack
+    clc                                 ; The character row below, 640 bytes on...
+    lda four_wide_store_0 + 1           ; ...from the first column's top: low byte...
+    adc #&80                            ; ...+ &80...
+    pha                                 ; ...kept...
+    lda four_wide_store_0 + 2           ; ...and the high byte...
+    adc #2                              ; ...+ 2 and the carry (640 = &280)...
+    tay                                 ; ...in Y
+    pla                                 ; The low byte in A
+    ldx #0                              ; From the character row's top row
+    jsr set_four_wide_columns           ; Set the four stores there
+    pla                                 ; Recover the data index...
+    tay                                 ; ...into Y (never 0 here)
+    bne four_wide_row                   ; ...and plot on (always taken)
+.four_wide_done
+    ldx #0                              ; Leave X and Y 0, as plot_sprite does
+    ldy #0                              ; ...
+    rts                                 ; Return: the sprite is on the screen
+; Set the four stores of plot_four_wide to the character row whose first column's top is
+; at A (low) and Y (high), and the next three columns, 8, 16 and 24 bytes on.
+.set_four_wide_columns
+    sta four_wide_store_0 + 1           ; First column: low byte...
+    sty four_wide_store_0 + 2           ; ...and high byte
+    clc                                 ; Second column: 8 bytes on...
+    adc #8                              ; ...
+    bcc set_four_wide_column_1          ; No carry: the same page
+    iny                                 ; Carry: the next page
+.set_four_wide_column_1
+    sta four_wide_store_1 + 1           ; ...low byte...
+    sty four_wide_store_1 + 2           ; ...and high byte
+    clc                                 ; Third column: 8 bytes on again...
+    adc #8                              ; ...
+    bcc set_four_wide_column_2          ; No carry: the same page
+    iny                                 ; Carry: the next page
+.set_four_wide_column_2
+    sta four_wide_store_2 + 1           ; ...low byte...
+    sty four_wide_store_2 + 2           ; ...and high byte
+    clc                                 ; Fourth column: 8 bytes on again...
+    adc #8                              ; ...
+    bcc set_four_wide_column_3          ; No carry: the same page
+    iny                                 ; Carry: the next page
+.set_four_wide_column_3
+    sta four_wide_store_3 + 1           ; ...low byte...
+    sty four_wide_store_3 + 2           ; ...and high byte
+    rts                                 ; Return with the stores set
 ; ***************************************************************************************
 ; Calculate a screen address
 ;
@@ -186,48 +285,6 @@
 ; The hero whose sprites are shrunk, or &FF.
 .shrunk_hero
     equb &ff
-; Data of sprite &5F: 4 bytes x 12 rows.
-.sprite_boots
-    equb &00, &00, &00, &00
-    equb &00, &00, &00, &15
-    equb &00, &00, &00, &3f
-    equb &00, &00, &00, &3f
-    equb &00, &01, &13, &2a
-    equb &00, &01, &13, &2a
-    equb &00, &01, &13, &00
-    equb &00, &03, &13, &00
-    equb &03, &03, &33, &00
-    equb &03, &03, &33, &00
-    equb &03, &03, &33, &00
-    equb &00, &00, &00, &00
-; Data of sprite &60: 4 bytes x 12 rows.
-.sprite_helmet
-    equb &00, &00, &00, &00
-    equb &00, &00, &00, &00
-    equb &2a, &3c, &22, &2a
-    equb &2a, &3c, &22, &2a
-    equb &2a, &3c, &22, &2a
-    equb &14, &14, &11, &00
-    equb &14, &00, &11, &00
-    equb &14, &28, &39, &00
-    equb &14, &3c, &33, &00
-    equb &14, &3c, &33, &00
-    equb &00, &00, &00, &00
-    equb &00, &00, &00, &00
-; Data of sprite &61: 4 bytes x 12 rows.
-.sprite_potion
-    equb &00, &00, &00, &00
-    equb &00, &01, &02, &00
-    equb &00, &15, &2a, &00
-    equb &00, &05, &02, &00
-    equb &00, &05, &02, &00
-    equb &00, &05, &02, &00
-    equb &00, &05, &02, &00
-    equb &00, &0f, &03, &00
-    equb &05, &0f, &0b, &02
-    equb &05, &0f, &0b, &02
-    equb &05, &0f, &03, &02
-    equb &00, &0f, &03, &00
 ; Data of sprite &63: 4 bytes x 12 rows.
 .sprite_magic_sword
     equb &00, &00, &00, &00
