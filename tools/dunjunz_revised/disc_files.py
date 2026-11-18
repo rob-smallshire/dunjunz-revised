@@ -91,7 +91,8 @@ def url_lines(url: str = PROJECT_URL, width: int = README_WIDTH) -> list[str]:
 def key_name(inkey_name: str) -> str:
     """A key's name as on the keyboard, from its inkey_key_ constant's:
     caps_lock is CAPS LOCK, right is the cursor key."""
-    words = inkey_name.replace("full_stop", ".").replace("comma", ",").replace("slash", "/")
+    words = (inkey_name.replace("full_stop", ".").replace("semicolon", ";")
+             .replace("comma", ",").replace("slash", "/"))
     if words in ("up", "down", "left", "right"):
         return f"CURSOR {words.upper()}"
     return words.replace("_", " ").upper()

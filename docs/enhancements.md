@@ -116,8 +116,23 @@ The 1-player layout (decided 2026-11-18) is two-handed, ZXMKL with SPACE:
 |---|---|---|---|---|---|---|
 | 1 | K | M | Z | X | L | SPACE |
 
-The layouts for 2 and 3 players are still to be chosen; until they are,
-the layout for N players is the first N sets of the 4-player one.
+The 2-player layout (decided 2026-11-18) has one set each side:
+
+| Set | Up | Down | Left | Right | Fire | Magic |
+|---|---|---|---|---|---|---|
+| 1 | R | D | A | S | T | C |
+| 2 | K | M | B | N | ; | SPACE |
+
+Set 2's fire was to be L, but A, S, K and L are the corners of a rectangle
+in the keyboard matrix (rows 4-5, columns 1 and 6), so player 1 holding
+left (A) while player 2 moved up and fired (K, L) would make player 1's
+right (S) read as held too, if the keyboard ghosts; ; breaks the
+rectangle. With it, no combination of each player holding a direction and
+fire, or one casting while the other moves and fires, makes a phantom of
+any key the game reads.
+
+The layout for 3 players is still to be chosen; until it is, it is the
+first three sets of the 4-player one.
 
 ### Where the code goes
 
