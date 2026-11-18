@@ -40,8 +40,11 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   it now lives in), `extra/` (&1C00 up), `upper/` (&6E80 up), `start/`
   (run once), `setup/` (Setup), `ending/` (the end of the game). `asm/title.asm` is DUNJUNZ, the title.
 - The title picture, `Screen`, is the 1987 one changed by the build
-  (`tools/dunjunz_revised/title_picture.py`): "Press any key" in yellow and
-  the version drawn in on the bottom row, from `_version.py`. The build also
+  (`tools/dunjunz_revised/title_picture.py`): "Press any key" replaced by
+  the choice of keyboard players, in yellow, and the version drawn in on the
+  bottom row, from `_version.py`. After the choice the title shows that
+  layout's keys in MODE 7 before loading the game. The end of a game offers
+  R to play again with the same choices (`asm/ending/ending.asm`). The build also
   renders it to `docs/title-screen.png`. The README shows
   `docs/title-screen.gif` instead, which `uv run dr-title-gif`
   (`tools/dunjunz_revised/title_animation.py`) makes after a build by
