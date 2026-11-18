@@ -6,18 +6,19 @@
 ; starting attributes and before the first level. Set a text window the full width of
 ; the screen (MODE 2's 20 columns) and clear it, having first found the joysticks
 ; (find_sticks, which copies their driver out of the screen memory the clear wipes), print
-; the menu (print_menu) and read keys and sticks until SPACE.
+; the menu (print_menu) and read keys and sticks until RETURN.
 ;
-; Keys 1-4 toggle a hero between playing on the keyboard (KEYS) and not playing (NO), by
-; flipping their hero_absent flag; either way the hero leaves any stick. Pressing fire on
-; a stick gives it the first hero, from the one it plays now, that no other stick plays,
-; and that hero plays (JOY1-JOY4); each further press moves it on, switching off the hero
-; it leaves, and past the Fighter it plays nobody. Every hero starts off (the title sets
-; hero_absent), so one player can choose a hero without switching the others off. A stick nobody presses fire on
-; plays nobody, so an empty port does no harm. Keys 5 and 6 switch the sound on and off
-; with OSBYTE &D2, and the sound line shows which in yellow. After each change the whole menu is reprinted. SPACE returns, so the
-; game starts, only if at least one hero is playing, and "SPACE TO PLAY" is shown in
-; yellow only then, in black (unseen) otherwise; if no stick plays, read_controls
+; Every player joins the same way, by pressing fire: on a stick, or the fire key of one of
+; the keyboard's sets of keys (as many as the keyboard_players chosen on the title, from
+; that layout: poll_key_sets). A press gives the stick or set the first hero, from the one
+; it plays now, that nobody plays, and that hero plays (JOY1-JOY4, KEY1-KEY4); each
+; further press moves it on, switching off the hero it leaves, and past the Fighter it
+; plays nobody. Every hero starts off (the title sets hero_absent). A stick nobody presses
+; fire on plays nobody, so an empty port does no harm. Keys 5 and 6 switch the sound on
+; and off with OSBYTE &D2, and the sound line shows which in yellow. After each change the
+; whole menu is reprinted. RETURN (no layout's fire key) returns, so the game starts,
+; only if at least one hero is playing, and "RETURN TO PLAY" is shown in yellow only
+; then, in black (unseen) otherwise; if no stick plays, read_controls
 ; becomes an RTS. Before each key is read, the keyboard buffer is flushed and CAPS LOCK is
 ; forced on with SHIFT LOCK off.
 ;
@@ -69,12 +70,12 @@
 ;     X: corrupted
 ;     Y: corrupted
 .print_menu
-    jsr show_hero_entries               ; Each hero's KEYS, NO or JOYn
+    jsr show_hero_entries               ; Each hero's NO, KEYn or JOYn
     jsr any_hero_playing                ; Anyone playing?
-    lda #menu_highlight_colour          ; Yes: SPACE TO PLAY in yellow...
+    lda #menu_highlight_colour          ; Yes: RETURN TO PLAY in yellow...
     inx                                 ; (X = 0 now if nobody)
     bne space_colour_chosen
-    lda #0                              ; ...no: in black, unseen, as SPACE does nothing
+    lda #0                              ; ...no: in black, unseen, as RETURN does nothing
 .space_colour_chosen
     sta menu_space_colour               ; The colour in its VDU 17
     ldy #0                              ; Y walks through menu_text from its start
@@ -116,7 +117,7 @@
 ; Show how each hero plays
 ;
 ; Write each hero's entry in menu_text from hero_absent and hero_stick: "NO  " if the
-; hero is not playing, "JOYn" if stick n-1 plays them, otherwise "KEYS". A hero who plays
+; hero is not playing, "JOYn" if stick n-1 plays them, "KEYn" if key set n-1 does. A hero who plays
 ; has their whole line in yellow; one who does not, in the menu's green.
 ;
 ; On Exit:
@@ -137,15 +138,16 @@
 .hero_entry_playing
     lda #menu_highlight_colour          ; Playing: the line in yellow
     sta menu_text + HERO_LINE_COLOUR - HERO_LINE_ENTRY,y
-    lda hero_stick,x                    ; On a stick?
-    bmi hero_entry_keys                 ; No: "KEYS"
-    clc                                 ; Stick 0-3...
+    lda hero_stick,x                    ; A stick (0-3) or a key set (&80-&83)?
+    ldx #entry_joy - entry_words        ; A stick: "JOYn"
+    cmp #key_set_0                      ; ...below key_set_0
+    bcc hero_entry_digit
+    ldx #entry_key - entry_words        ; A key set: "KEYn"
+.hero_entry_digit
+    and #3                              ; Stick or set 0-3...
+    clc
     adc #'1'                            ; ...as the digit 1-4...
-    sta entry_joy + 3                   ; ...after "JOY"
-    ldx #entry_joy - entry_words        ; "JOYn"
-    bne copy_hero_entry                 ; Always
-.hero_entry_keys
-    ldx #entry_keys - entry_words       ; "KEYS"
+    sta entry_words + 3,x               ; ...after "JOY" or "KEY"
 .copy_hero_entry
     lda #4                              ; Four characters
     sta plot_y                          ; ...counted in plot_y
@@ -160,14 +162,14 @@
     dex                                 ; Next hero down
     bpl show_hero_entry                 ; Until hero 0 is done
     rts
-; The words a hero's entry can show, four characters each; "KEYS" first, at offset 0.
+; The words a hero's entry can show, four characters each.
 .entry_words
-.entry_keys
-    equs "KEYS"
+.entry_key
+    equs "KEY?"                         ; The digit is filled in for each hero
 .entry_no
     equs "NO  "
 .entry_joy
-    equs "JOY?"                         ; The digit is filled in for each hero
+    equs "JOY?"                         ; Likewise
 ; The offset in menu_text of each hero's entry.
 .menu_hero_entry_offsets
     equb menu_hero_lines + HERO_LINE_ENTRY - menu_text
@@ -207,6 +209,7 @@
 ;     Y: corrupted
 .menu_read_key
     jsr poll_sticks                     ; Let a stick join, or move on
+    jsr poll_key_sets                   ; ...or a key set
     lda #osbyte_inkey                   ; OSBYTE &81: INKEY(2)...
     ldx #2                              ; ...X = 2: wait up to two centiseconds...
     ldy #0                              ; ...Y = 0
@@ -246,14 +249,70 @@
     bpl poll_stick                      ; Until stick 0 is done
     rts
 ; ***************************************************************************************
-; Move a stick on to its next hero
+; Let a key set join, or move it on
 ;
-; Take stick Y from the hero it plays, if any (who then plays no more), and
-; give it the next hero after them that no other stick plays, who then plays; past the
-; Fighter the stick plays nobody. Reprint the menu.
+; Look for a fresh press of the fire key of each of the keyboard_players sets in the
+; layout the title chose (menu_fire_keys), against key_fire_before. A press moves the set
+; on to its next hero (advance_stick), as a stick's fire does.
+;
+; On Exit:
+;     A: corrupted
+;     X: corrupted
+;     Y: &FF
+.poll_key_sets
+    ldy keyboard_players                ; Sets N-1 to 0
+.poll_key_set
+    dey                                 ; The next set down
+    bmi poll_key_sets_done              ; All done
+    tya                                 ; Its fire key in this layout: menu_fire_keys...
+    asl a                               ; ...+ 4 x set...
+    asl a                               ; ...(carry clear: set 0-3)
+    adc keyboard_players                ; ...+ players - 1
+    tax
+    lda menu_fire_keys - 1,x            ; The fire key's INKEY number
+    tax                                 ; ...in X, for OSBYTE &81
+    tya                                 ; Keep the set
+    pha
+    lda #osbyte_inkey                   ; OSBYTE &81 with Y = &FF: scan the one key
+    ldy #&ff
+    jsr osbyte                          ; X = &FF if held, 0 if not
+    pla                                 ; The set again
+    tay
+    txa                                 ; Held...
+    and #1                              ; ...1 if so
+    tax
+    eor key_fire_before,y               ; Changed since the last poll?
+    beq poll_key_set                    ; No: nothing to do
+    txa                                 ; Yes: remember it...
+    sta key_fire_before,y               ; ...for the next poll
+    beq poll_key_set                    ; Released: nothing more
+    tya                                 ; Pressed: the set as a controller...
+    ora #key_set_0                      ; ...key_set_0 + set
+    tay
+    jsr advance_stick                   ; Move it on to its next hero
+    tya                                 ; The set again
+    and #3
+    tay
+    bpl poll_key_set                    ; Always
+.poll_key_sets_done
+    rts
+; The fire key of each set, by layout: set S of the layout for N players at
+; menu_fire_keys + 4 S + N - 1. Until the layouts for 1-3 players are chosen, each uses the
+; first N sets of the 1987 layout.
+.menu_fire_keys
+    equb inkey_key_tab, inkey_key_tab, inkey_key_tab, inkey_key_tab      ; Set 0, for 1-4 players
+    equb 0, inkey_key_down, inkey_key_down, inkey_key_down              ; Set 1, for 2-4
+    equb 0, 0, inkey_key_space, inkey_key_space                         ; Set 2, for 3-4
+    equb 0, 0, 0, inkey_key_o                                           ; Set 3, for 4
+; ***************************************************************************************
+; Move a stick or key set on to its next hero
+;
+; Take stick or key set Y from the hero it plays, if any (who then plays no more), and
+; give it the next hero after them that nobody plays, who then plays; past the Fighter it
+; plays nobody. Reprint the menu.
 ;
 ; On Entry:
-;     Y: the stick, 0-3
+;     Y: the stick, 0-3, or the key set, key_set_0 + 0-3
 ;
 ; On Exit:
 ;     A: corrupted
@@ -280,8 +339,8 @@
     inx                                 ; The next hero
     cpx #4                              ; Past the Fighter?
     bcs advance_stick_done              ; Yes: the stick plays nobody
-    lda hero_stick,x                    ; Another stick plays this hero?
-    bpl next_stick_hero                 ; Yes: try the next
+    lda hero_absent,x                   ; Somebody plays this hero?
+    beq next_stick_hero                 ; Yes: try the next
     tya                                 ; No: the stick plays them...
     sta hero_stick,x
     lda #0                              ; ...and they play
@@ -291,7 +350,7 @@
     pla                                 ; The stick again
     tay
     rts
-; Read one key and act on it, then come back for the next, until SPACE starts the game.
+; Read one key and act on it, then come back for the next, until RETURN starts the game.
 .menu_key_loop
     lda #osbyte_flush_buffer_class      ; Flush the input buffers
     jsr osbyte                          ; Discard any keys already waiting  Flush selected class of buffer
@@ -299,33 +358,23 @@
     ldx #&20 ; ' '                      ; X = &20: CAPS LOCK on, SHIFT LOCK off
     ldy #0                              ; Y = 0: replace the status with X
     jsr osbyte                          ; Set it, whatever the Ranger's lock keys left  osbyte: kbd status
-    jsr menu_read_key                   ; Wait for a key, letting sticks join meanwhile
-    cmp #' '                            ; SPACE, to start the game?
+    jsr menu_read_key                   ; Wait for a key, letting sticks and key sets join meanwhile
+    cmp #&0d                            ; RETURN, to start the game?
     beq menu_space                      ; Yes: start, if anyone is playing
-    cmp #'1'                            ; Ignore anything but 1-6
-    bcc menu_key_loop                   ; Below '1': ignore it
-    cmp #'7'                            ; ...or above '6' (at or past '7')?
-    bcs menu_key_loop                   ; Yes: ignore it
-    sec                                 ; Key number 0-5 = key - '1'...
-    sbc #'1'                            ; ...so keys '1'-'6' become 0-5...
-    tax                                 ; ...in X: a hero 0-3, or 4-5 for the sound
-    cmp #4                              ; Key 5 or 6?
-    bcs menu_sound_key                  ; Yes: the sound switch
-; Keys 1-4: switch hero X between playing on the keyboard and absent; either way, off any stick.
-    lda hero_absent,x                   ; Toggle the hero between playing and absent...
-    eor #1                              ; ...by flipping the absent flag
-    sta hero_absent,x                   ; ...the hero's new absent flag
-    lda #no_stick                       ; Off any stick: on the keyboard, or not playing
-    sta hero_stick,x
+    cmp #'6'                            ; Key 6?
+    beq menu_sound_off                  ; Yes: sound off
+    cmp #'5'                            ; Key 5?
+    beq menu_sound_on                   ; Yes: sound on
+    jmp menu_key_loop                   ; Anything else: ignore it
 .menu_reprint
     jsr print_menu                      ; Reprint the menu with the change
     jmp menu_key_loop                   ; Wait for the next key
-; SPACE: return, so the game starts, if at least one hero is playing; otherwise ignore it.
+; RETURN: return, so the game starts, if at least one hero is playing; otherwise ignore it.
 .menu_space
-    jsr any_hero_playing                ; SPACE: is any hero playing?
+    jsr any_hero_playing                ; RETURN: is any hero playing?
     inx                                 ; X = 0 if nobody
     bne menu_done                       ; Someone: return, and the game starts
-    jmp menu_key_loop                   ; Nobody playing: ignore SPACE
+    jmp menu_key_loop                   ; Nobody playing: ignore RETURN
 .menu_done
     jmp sticks_for_play                 ; Leave the sticks ready for play, and return
 ; ***************************************************************************************
@@ -343,9 +392,7 @@
 .hero_playing_found
     rts
 ; Keys 5 and 6: sound on or off, through OSBYTE &D2, and the sound line's highlight to match.
-.menu_sound_key
-    cmp #5                              ; Key 6 (A = key - "1")?
-    beq menu_sound_off                  ; Yes: sound off
+.menu_sound_on
     jsr set_menu_on                     ; Key 5: ON highlighted...
     ldx #0                              ; ...with X = 0 to enable the sound
     beq menu_set_sound                  ; Always: set the sound
@@ -365,8 +412,8 @@
 ; rows and run together otherwise), up to the &FF at the end. The four heroes' lines (from
 ; menu_hero_lines, HERO_LINE_BYTES apart) have their entries and colours rewritten by
 ; show_hero_entries, the colours of
-; the sound line's ON(5) and OFF(6) by set_menu_on and set_menu_off, the colour of SPACE TO
-; PLAY by print_menu, and the SPItFIRE line by find_sticks,
+; the sound line's ON(5) and OFF(6) by set_menu_on and set_menu_off, the colour of RETURN
+; TO PLAY by print_menu, and the SPItFIRE line by find_sticks,
 ; so the table holds the players' choices as well as showing them.
 .menu_text
     equb &06, &00                       ; Column 6, row 0
@@ -380,28 +427,28 @@
 .menu_hero_lines
     equb &00, &04                       ; Column 0, row 4
     equb &11, menu_colour               ; The line's colour (yellow while the hero plays)
-    equs "1 RANGER      "
-    equs "NO  "                         ; The entry: KEYS, NO or JOYn
+    equs "RANGER        "
+    equs "NO  "                         ; The entry: NO, KEYn or JOYn
     equb &11, menu_colour, &0d          ; Back to green
     equb &00, &06                       ; Column 0, row 6
     equb &11, menu_colour
-    equs "2 MAGIC-USER  "
+    equs "MAGIC-USER    "
     equs "NO  "
     equb &11, menu_colour, &0d
     equb &00, &08                       ; Column 0, row 8
     equb &11, menu_colour
-    equs "3 BARBARIAN   "
+    equs "BARBARIAN     "
     equs "NO  "
     equb &11, menu_colour, &0d
     equb &00, &0a                       ; Column 0, row 10
     equb &11, menu_colour
-    equs "4 FIGHTER     "
+    equs "FIGHTER       "
     equs "NO  "
     equb &11, menu_colour, &0d
 .menu_hero_lines_end
 ASSERT menu_hero_lines_end - menu_hero_lines = 4 * HERO_LINE_BYTES
     equb &00, &0c                       ; Column 0, row 12 (the full width: the cursor wraps)
-    equs "KEYBOARD: 1234 JOINS", &0d
+    equs "KEYBOARD: FIRE JOINS", &0d
     equb &00, &0e                       ; Column 0, row 14
     equs "JOYSTICK: FIRE JOINS", &0d
     equb &00, &11                       ; Column 0, row 17
@@ -418,10 +465,10 @@ ASSERT menu_hero_lines_end - menu_hero_lines = 4 * HERO_LINE_BYTES
     equb &00, &14                       ; Column 0, row 20
 .menu_spitfire_line
     equs "                   ", &0d     ; Blank, or what find_sticks found of SPItFIRE
-    equb &03, &16                       ; Column 3, row 22, the window's last
+    equb &02, &16                       ; Column 2, row 22, the window's last
     equb &11                            ; VDU 17: text colour...
 .menu_space_colour
     equb menu_highlight_colour          ; ...yellow, or black when nobody plays (print_menu)
-    equs "SPACE TO PLAY"
+    equs "RETURN TO PLAY"
     equb &11, menu_colour, &0d          ; Back to the menu's green
     equb &ff                            ; The end

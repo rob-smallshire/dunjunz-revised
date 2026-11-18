@@ -40,6 +40,7 @@
     sta stick_switch,x                  ; Nothing read yet
     lda #switch_fire                    ; Fire taken as held, so joining needs a fresh press
     sta stick_fire_before,x
+    sta key_fire_before,x               ; ...a key set's fire too, so a key held from the title does not join
     dex                                 ; Next down
     bpl reset_stick                     ; Until 0 is done
     ldx #map_controls_end - map_controls - 1  ; Copy map_controls into the printer buffer
@@ -199,6 +200,9 @@
     equs "SPITFIRE: *FX16,4  "          ; Flag 3: *FX16,0 stopped the updates
 ; Each stick's fire at the last poll (switch_fire, or 0), for poll_sticks.
 .stick_fire_before
+    skip max_sticks
+; Each key set's fire key at the last poll (1 held, or 0), for poll_key_sets.
+.key_fire_before
     skip max_sticks
 ; 1 for each stick a player can join with.
 .stick_usable

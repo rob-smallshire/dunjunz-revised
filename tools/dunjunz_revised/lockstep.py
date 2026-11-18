@@ -222,7 +222,12 @@ def hold_key(bbc, row: int, column: int, seconds: float = 0.1) -> None:
 
 
 SPACE = inkey_to_matrix(0x9D)
-HERO_SWITCHES = tuple(inkey_to_matrix(inkey) for inkey in (0xCF, 0xCE, 0xEE, 0xED))   # keys 1-4
+RETURN = inkey_to_matrix(0xB6)
+# The fire keys of the 1987 layout's four sets, the Ranger's to the Fighter's: TAB,
+# cursor down, SPACE and O. Pressed in this order on the hero menu, with four keyboard
+# players chosen on the title, each set joins its own hero, as in 1987.
+FIRE_KEYS = tuple(inkey_to_matrix(inkey) for inkey in (0x9F, 0xD6, 0x9D, 0xC9))
+HERO_ABSENT = 0x08B4            # hero_absent: 0 while the hero plays
 
 
 def run_to_pressing_space(bbc, address: int, seconds: float) -> bool:
@@ -245,15 +250,30 @@ def run_to_pressing_space(bbc, address: int, seconds: float) -> bool:
 
 def switch_on_heroes(bbc, labels: dict[str, int], seconds: float = 120) -> None:
     """The revised game's heroes start off: run to its hero menu (SPACE leaves
-    the title, and does nothing on the menu while nobody plays) and switch on
-    all four with keys 1-4, as players would. The 1987 release's start on."""
+    the title, choosing four keyboard players, the 1987 keys) and have each set
+    of keys join its own hero by pressing its fire key, in hero order, as
+    players would. The 1987 release's heroes start on."""
     if "find_sticks" not in labels:
         return
     if not run_to_pressing_space(bbc, labels["menu_read_key"], seconds):   # the menu's poll, every 2 cs
         raise RuntimeError(f"never reached the hero menu; PC &{bbc.cpu.pc:04X}")
     bbc.debugger.run()
-    for key in HERO_SWITCHES:
-        hold_key(bbc, *key)
+    # A fire key held as the menu starts counts as held, and joins only once
+    # released and pressed again, so let the menu read the keys up first.
+    bbc.run_for_emulated_seconds(0.3)
+    # The menu reads a set's fire key between reprints of the whole menu, so a
+    # short tap can fall inside one and be missed: hold each until its hero plays.
+    for hero, key in enumerate(FIRE_KEYS):
+        bbc.keyboard.matrix_down(*key)
+        try:
+            for _ in range(30):
+                bbc.run_for_emulated_seconds(0.1)
+                if bbc.memory.address.peek[HERO_ABSENT + hero] == 0:
+                    break
+            else:
+                raise RuntimeError(f"hero {hero} never joined the menu")
+        finally:
+            bbc.keyboard.matrix_up(*key)
         bbc.run_for_emulated_seconds(0.3)
 
 
@@ -269,15 +289,17 @@ def game_run(
     with launched(machine) as bbc:
         bbc.boot_disc(disc_filepath)
         switch_on_heroes(bbc, labels, boot_seconds)
-        # Hold SPACE from the title to the first frame: it leaves the title, and
-        # its auto-repeat answers the hero menu (which flushes the keyboard
-        # buffer first). run_to stops exactly at the first update_game, so every
-        # run starts at the same frame.
-        bbc.keyboard.matrix_down(*SPACE)
+        # Hold the menu's start key to the first frame: its auto-repeat answers
+        # the menu (which flushes the keyboard buffer first). The 1987 menu
+        # starts with SPACE, which also leaves its title; the revised one with
+        # RETURN. run_to stops exactly at the first update_game, so every run
+        # starts at the same frame.
+        start_key = RETURN if "find_sticks" in labels else SPACE
+        bbc.keyboard.matrix_down(*start_key)
         try:
             bbc.debugger.run_to(labels[UPDATE_GAME], timeout=boot_seconds)
         finally:
-            bbc.keyboard.matrix_up(*SPACE)
+            bbc.keyboard.matrix_up(*start_key)
         if bbc.cpu.pc != labels[UPDATE_GAME]:
             raise RuntimeError(f"never reached play; PC &{bbc.cpu.pc:04X}")
         run = GameRun(bbc, labels, game_ranges)

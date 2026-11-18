@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 
 from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
-from dunjunz_revised.lockstep import HERO_SWITCHES, SPACE, UPDATE_GAME, hold_key
+from dunjunz_revised.lockstep import FIRE_KEYS, RETURN, SPACE, UPDATE_GAME, hold_key
 from dunjunz_revised.machines import MACHINES, launched
 from fake_spitfire import DOWN, FIRE, RIGHT, Fake, machine_with_fake, twin_twins
 
@@ -43,7 +43,7 @@ def to_menu(bbc, labels, before_menu=None):
 
 
 def entries(bbc, labels) -> list[bytes]:
-    """Each hero's entry on the menu: KEYS, NO or JOYn."""
+    """Each hero's entry on the menu: NO, KEYn or JOYn."""
     start = labels["menu_hero_lines"] + 18                  # each line's entry, 25 bytes apart
     return [bytes(bbc.memory.address.peek[start + 25 * hero:start + 25 * hero + 4]) for hero in range(4)]
 
@@ -64,7 +64,7 @@ def press_fire(fake: Fake, stick: int, sticks: int = 4) -> None:
 
 
 def start_play(bbc, labels) -> None:
-    hold_key(bbc, *SPACE)
+    hold_key(bbc, *RETURN)
     bbc.debugger.run_to(labels[UPDATE_GAME], timeout=120)
 
 
@@ -188,7 +188,7 @@ def test_analogue_sticks_without_spitfire(labels):
 def test_keyboard_play_reads_no_sticks(labels):
     with launched(MACHINES["dfs226"]) as bbc:
         to_menu(bbc, labels)
-        hold_key(bbc, *HERO_SWITCHES[0])         # the Ranger plays, on the keyboard
+        hold_key(bbc, *FIRE_KEYS[0])             # key set 1 (TAB) takes the Ranger
         bbc.run_for_emulated_seconds(0.3)
         start_play(bbc, labels)
         assert bbc.memory.address.peek[labels["read_controls"]] == RTS

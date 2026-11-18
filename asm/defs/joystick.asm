@@ -24,7 +24,8 @@ switch_right                         = &80
 switch_directions                    = &f0
 
 max_sticks                           = 4    ; SPItFIRE's joysticks 1-4, as sticks 0-3
-no_stick                             = &ff  ; In hero_stick: the hero plays on the keyboard
+no_stick                             = &ff  ; In hero_stick: no stick or key set plays the hero
+key_set_0                            = &80  ; In hero_stick: key set 0 of the keyboard layout plays the hero; &81-&83 sets 1-3 (negative, so map_controls reads no stick)
 magic_hold_frames                    = 8    ; Fire and a direction held this long cast magic (about half a second)
 osbyte_read_os_version               = &00  ; OSBYTE 0, X = 1: the machine, in X
 os_version_master_compact            = 5    ; ...5 for a Master Compact (MOS 5)
