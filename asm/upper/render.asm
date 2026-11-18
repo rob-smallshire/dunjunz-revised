@@ -218,6 +218,18 @@
     stx render_view                     ; This view...
     lda view_room,x                     ; ...its room
     sta render_room                     ; ...
+    txa                                 ; Is a view searched before it (a higher one) showing
+.render_view_seen                       ; ...the same room? (Only when everything is marked:
+    clc                                 ; ...otherwise marks are made in that view only)
+    adc #2                              ; ...the next view up, by view_room offset
+    cmp #8                              ; ...past view 3?
+    bcs render_view_rows                ; Yes: none; this view's marks stand
+    tay                                 ; ...
+    lda view_room,y                     ; ...that view's room...
+    cmp render_room                     ; ...the same?
+    beq render_next_view                ; Yes: drawn with that view, through plot_at_cell
+    tya                                 ; No: look further up
+    bpl render_view_seen                ; (always taken)
 .render_view_rows
     lda render_view                     ; The view's eight row bytes: view x 8 = offset x 4
     asl a                               ; ...
@@ -304,7 +316,8 @@
 ; its room, bit &80 for column 0. hero_drawn_*: each hero as move_heroes last drew them:
 ; sprite (0 for none), cell and offsets. hero_drainer: the energy drainer under each hero,
 ; its sprite, or 0. render_frames counts frames drawn; render_all is non-zero when a view
-; has come on show.
+; has come on show, with bit 7 set at a level's start, when every view has just been drawn
+; and a blank floor need not be plotted again (draw_floor_cell).
 .dirty_cells
     skip 32
 .hero_drawn_sprite

@@ -38,11 +38,14 @@
 .next_floor_trapdoor
     dey                                 ; The next trapdoor down
     bpl floor_trapdoor                  ; Until trapdoor 0
-    lda #spr_blank                      ; Neither: the blank
+    bit render_all                      ; Neither. A level's start (bit 7)? Every view has just
+    bmi floor_overlays                  ; ...been drawn, its floor blank: no need to plot it
+    lda #spr_blank                      ; Otherwise the blank
 .floor_base
     sta sprite_number                   ; The base, solid
     lda #0                              ; ...
     jsr plot_floor                      ; ...
+.floor_overlays
     ldx #3                              ; Heroes 3 to 0: one out of play here?
 .floor_absent_hero
     lda hero_direction,x                ; Out of play (direction 0)?

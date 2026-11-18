@@ -60,3 +60,34 @@
     jmp mark_cells                      ; ...and return
 .monster_marked
     rts                                 ; Return
+; ***************************************************************************************
+; Mark a room for drawing
+;
+; Mark every cell of the room whose offset (as view_room holds it) is in A, in the first
+; view showing it, so that render draws it afresh: show_hero_room calls it once a view has
+; changed room, its walls and doors drawn and its floor blank. render leaves the walls as
+; they are. The other views need only what play marks.
+;
+; On Exit:
+;     A, X, Y: corrupted
+.mark_room
+    ldy #6                              ; Views 3 to 0: the first showing the room
+.find_room_view
+    cmp view_room,y                     ; ...this one?
+    beq mark_room_view                  ; Yes: mark its cells
+    dey                                 ; No: the next view down
+    dey                                 ; ...
+    bpl find_room_view                  ; (one shows it: the view just changed)
+.mark_room_view
+    tya                                 ; Its eight bytes: view x 8 = offset x 4...
+    asl a                               ; ...
+    asl a                               ; ...
+    tay                                 ; ...
+    lda #&ff                            ; ...every bit set
+    ldx #8                              ; ...
+.mark_room_row
+    sta dirty_cells,y                   ; ...
+    iny                                 ; ...
+    dex                                 ; ...
+    bne mark_room_row                   ; ...
+    rts                                 ; Return
