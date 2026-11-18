@@ -110,8 +110,14 @@ added for the Barbarian's and the Fighter's sets, which had none:
 | 3 (1987 Barbarian) | K | , | . | / | SPACE | L |
 | 4 (1987 Fighter) | G | B | U | I | O | P |
 
-The layouts for 1-3 players are still to be chosen; until they are, the
-layout for N players is the first N sets of this one.
+The 1-player layout (decided 2026-11-18) is two-handed, ZXMKL with SPACE:
+
+| Set | Up | Down | Left | Right | Fire | Magic |
+|---|---|---|---|---|---|---|
+| 1 | K | M | Z | X | L | SPACE |
+
+The layouts for 2 and 3 players are still to be chosen; until they are,
+the layout for N players is the first N sets of the 4-player one.
 
 ### Where the code goes
 
