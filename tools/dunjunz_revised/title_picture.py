@@ -2,11 +2,14 @@
 
 The 1987 picture is changed at build time, not on the BBC:
 
-- "Press any key" is recoloured from red to yellow, so it stands out from
-  the credits above it.
-- "Revised" and the version are drawn in red on the bottom row, in a small
-  font in the style of the picture's own lettering (its 1, e, i, s and v
-  are copied from it). The 1987 file stops short of the bottom row, so the
+- "Press any key" is replaced by the choice of keyboard players, in two
+  lines of yellow, so it stands out from the credits above it: "Press 1-4
+  for keyboard players" and "or fire for joysticks only" (the title also
+  takes any other key as 4, the 1987 keys).
+- "Revised" and the version are drawn in red on the bottom row.
+- Both are drawn in a small font in the style of the picture's own
+  lettering: its 1, a, c, e, i, k, n, P, r, s, t, v and y are copied from
+  it, and the other letters drawn to match. The 1987 file stops short of the bottom row, so the
   revised one is longer, running to the end of screen memory.
 
 title_png renders the picture as the README shows it (without the stars,
@@ -26,18 +29,38 @@ BYTES_PER_CHARACTER_ROW = 640
 
 RED, YELLOW = 1, 3
 
-# The lines of "Press any key", descenders included.
+# The lines of "Press any key", descenders included, which the prompt replaces.
 PRESS_ANY_KEY_LINES = range(230, 239)
+# The prompt: the top line of each of its lines, which have descenders two
+# lines below the glyphs' six, so they end at 246, clear of the version.
+PROMPT = ("Press 1-4 for keyboard players", "or fire for joysticks only")
+PROMPT_TOP_LINES = (229, 239)
 # The centre of the credits ("By", "Julian Avis", "(c) Bug Byte 1987" and
 # "Press any key"), in MODE 2 pixels, which the version line shares.
 CREDITS_CENTRE_X = 87
 VERSION_TOP_LINE = 249          # six lines, on the bottom character row (248-255)
 
-# Glyphs six lines high, "#" for a pixel. Lower case has a four-line x-height.
+# Glyphs six lines high, "#" for a pixel. Lower case has a four-line x-height;
+# descenders add two lines below.
 GLYPHS = {
     "R": ("##.", "#.#", "#.#", "##.", "#.#", "#.#"),
     "d": ("..#", "..#", ".##", "#.#", "#.#", ".##"),
     "e": ("...", "...", ".#.", "###", "#..", ".##"),
+    "P": ("##.", "#.#", "#.#", "##.", "#..", "#.."),
+    "a": ("...", "...", ".##", "#.#", "#.#", "###"),
+    "b": ("#..", "#..", "##.", "#.#", "#.#", "##."),
+    "c": ("..", "..", ".#", "#.", "#.", ".#"),
+    "f": (".#", "#.", "##", "#.", "#.", "#."),
+    "j": (".#", "..", ".#", ".#", ".#", ".#", ".#", "#."),
+    "k": ("#..", "#..", "#.#", "##.", "#.#", "#.#"),
+    "l": ("#", "#", "#", "#", "#", "#"),
+    "n": ("...", "...", "#..", "##.", "#.#", "#.#"),
+    "o": ("...", "...", ".#.", "#.#", "#.#", ".#."),
+    "p": ("...", "...", "##.", "#.#", "#.#", "##.", "#..", "#.."),
+    "r": ("..", "..", ".#", "#.", "#.", "#."),
+    "t": ("#.", "##", "#.", "#.", "#.", "#."),
+    "y": ("...", "...", "#.#", "#.#", "#.#", ".##", "..#", ".#."),
+    "-": ("..", "..", "..", "##", "..", ".."),
     "i": ("#", ".", "#", "#", "#", "#"),
     "s": ("...", "...", ".##", "#..", ".#.", "##."),
     "v": ("...", "...", "#.#", "#.#", ".#.", ".#."),
@@ -105,7 +128,7 @@ def version_line(version: str) -> str:
 
 
 def revised_picture(original: bytes, version: str) -> bytes:
-    """The 1987 Screen file, recoloured and with the version, to load at
+    """The 1987 Screen file with the prompt and the version, to load at
     PICTURE_ADDRESS and run to SCREEN_END."""
     screen = bytearray(SCREEN_END - SCREEN_START)
     start = PICTURE_ADDRESS - SCREEN_START
@@ -115,14 +138,19 @@ def revised_picture(original: bytes, version: str) -> bytes:
         for x in range(SCREEN_WIDTH):
             colour = get_pixel(screen, x, line)
             assert colour in (0, RED), f"unexpected colour {colour} at ({x}, {line})"
-            if colour == RED:
-                set_pixel(screen, x, line, YELLOW)
+            set_pixel(screen, x, line, 0)
+    for text, top in zip(PROMPT, PROMPT_TOP_LINES):
+        draw_centred(screen, text, top, YELLOW)
 
-    text = version_line(version)
+    draw_centred(screen, version_line(version), VERSION_TOP_LINE, RED)
+    return bytes(screen[start:])
+
+
+def draw_centred(screen: bytearray, text: str, top: int, colour: int) -> None:
+    """Draw text centred under the credits."""
     left = CREDITS_CENTRE_X - text_width(text) // 2
     assert left >= 0 and left + text_width(text) <= SCREEN_WIDTH, text
-    draw_text(screen, text, left, VERSION_TOP_LINE, RED)
-    return bytes(screen[start:])
+    draw_text(screen, text, left, top, colour)
 
 
 def title_png(picture: bytes) -> bytes:

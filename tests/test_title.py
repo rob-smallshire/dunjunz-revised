@@ -8,8 +8,9 @@ the bytes before its frame: a band of code above a misplaced star. The
 pointers are now computed from star_frame_data; this checks they still point
 at the original frames.
 
-The picture is the 1987 one with "Press any key" in yellow and the version
-drawn in on the bottom row (title_picture.py).
+The picture is the 1987 one with "Press any key" replaced by the choice of
+keyboard players, in yellow, and the version drawn in on the bottom row
+(title_picture.py).
 """
 
 from __future__ import annotations
@@ -26,6 +27,8 @@ from dunjunz_revised.title_picture import (
     GLYPHS,
     PICTURE_ADDRESS,
     PRESS_ANY_KEY_LINES,
+    PROMPT,
+    PROMPT_TOP_LINES,
     RED,
     SCREEN_START,
     SCREEN_WIDTH,
@@ -76,15 +79,26 @@ def line_colours(screen, line):
     return [get_pixel(screen, x, line) for x in range(SCREEN_WIDTH)]
 
 
-def test_the_picture_is_the_original_with_press_any_key_yellow(disc_filepaths):
+PROMPT_LINES = range(PROMPT_TOP_LINES[0], PROMPT_TOP_LINES[-1] + 8)   # descenders included
+
+
+def test_the_picture_is_the_original_with_the_prompt_for_press_any_key(disc_filepaths):
     original, revised = screens()
+    for line in PRESS_ANY_KEY_LINES:
+        assert RED in line_colours(original, line)
     for line in range(VERSION_TOP_LINE):
         before, after = line_colours(original, line), line_colours(revised, line)
-        if line in PRESS_ANY_KEY_LINES:
-            assert RED in before
-            assert after == [YELLOW if colour == RED else colour for colour in before], line
+        if line in PROMPT_LINES:
+            assert set(after) <= {0, YELLOW}, line
         else:
             assert after == before, line
+
+
+def test_the_picture_shows_the_prompt_in_yellow(disc_filepaths):
+    _, revised = screens()
+    lit = sum(row.count("#") for text in PROMPT for c in text for row in GLYPHS[c])
+    colours = [c for line in PROMPT_LINES for c in line_colours(revised, line)]
+    assert colours.count(YELLOW) == lit
 
 
 def test_the_picture_shows_the_version_in_red(disc_filepaths):
