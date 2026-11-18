@@ -131,8 +131,27 @@ rectangle. With it, no combination of each player holding a direction and
 fire, or one casting while the other moves and fires, makes a phantom of
 any key the game reads.
 
-The layout for 3 players is still to be chosen; until it is, it is the
-first three sets of the 4-player one.
+The 3-player layout (decided 2026-11-18) is the 4-player one without the
+Ranger's set: the keys three players of the 1987 game without the Ranger
+already know, and no lock keys.
+
+| Set | Up | Down | Left | Right | Fire | Magic |
+|---|---|---|---|---|---|---|
+| 1 (1987 Magic-User) | → | ↑ | DELETE | COPY | ↓ | RETURN |
+| 2 (1987 Barbarian) | K | , | . | / | SPACE | L |
+| 3 (1987 Fighter) | G | B | U | I | O | P |
+
+Whether the keyboard ghosts is not known; it matters only on a real BBC
+Micro (an emulator reads the host's keys). The 1987 sets are prone to it if
+it does: every key of the Magic-User's set is in column 9 of the matrix, so
+that player holding a direction and fire, with any key in the same row as
+either, would make a fourth key read as held (the Magic-User moving down
+and firing while the Fighter moves left would read the Fighter's right
+too). The check finds 10 such combinations of three keys in play for 3
+players, and many more in the 1987 4-player layout, which was played on
+real machines for years; the 1-player and 2-player layouts have none. To
+test on a real BBC Micro: hold the Magic-User's ↑ and ↓ and the Fighter's U,
+and see whether `INKEY(-38)` (I) is TRUE.
 
 ### Where the code goes
 
