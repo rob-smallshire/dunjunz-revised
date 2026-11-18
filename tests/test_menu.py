@@ -18,6 +18,7 @@ from dunjunz_revised.machines import MACHINES, launched
 
 TAB, CURSOR_DOWN = FIRE_KEYS[0], FIRE_KEYS[1]      # the fire keys of key sets 1 and 2
 KEY_2 = inkey_to_matrix(0xCE)                         # on the title: two keyboard players
+INKEY_SEMICOLON = 0xA8
 GREEN, YELLOW, BLACK = 2, 3, 0
 HERO_LINE_COLOUR, HERO_LINE_ENTRY, HERO_LINE_BYTES = 3, 18, 25   # in each hero's line on the menu
 
@@ -72,8 +73,9 @@ def test_menu_answers_tapped_keys(disc_filepaths, machine_key):
 
 
 def test_only_the_chosen_number_of_key_sets_can_join(disc_filepaths):
-    """With two keyboard players chosen on the title, a third set's fire key
-    (SPACE, in the 1987 layout) joins nobody."""
+    """With two keyboard players chosen on the title, the 4-player layout's
+    third fire key (SPACE) joins nobody, and the 2-player layout's second set
+    joins with its own fire key."""
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
     with launched(MACHINES["dfs226"]) as bbc:
         def tap(key):
@@ -83,7 +85,7 @@ def test_only_the_chosen_number_of_key_sets_can_join(disc_filepaths):
         to_the_menu(bbc, labels, KEY_2)
         tap(SPACE)
         assert entries(bbc, labels) == ["NO  "] * 4
-        tap(CURSOR_DOWN)
+        tap(inkey_to_matrix(INKEY_SEMICOLON))      # set 2's fire, for two players
         assert entries(bbc, labels) == ["KEY2", "NO  ", "NO  ", "NO  "]
 
 

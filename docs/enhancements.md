@@ -108,7 +108,12 @@ added for the Barbarian's and the Fighter's sets, which had none:
 | 1 (1987 Ranger) | CAPS LOCK | SHIFT LOCK | SHIFT | Z | TAB | CTRL |
 | 2 (1987 Magic-User) | → | ↑ | DELETE | COPY | ↓ | RETURN |
 | 3 (1987 Barbarian) | K | , | . | / | SPACE | L |
-| 4 (1987 Fighter) | G | B | U | I | O | P |
+| 4 (1987 Fighter) | G | B | U | I | O | J |
+
+Set 4's magic was to be P, but P pauses the game in play, so casting would
+pause it; J, under the right hand beside the Fighter's U and I, replaced it.
+No set may use P or ESCAPE (held to end the game), and no fire key may be
+RETURN, 5 or 6, which the hero menu reads.
 
 The 1-player layout (decided 2026-11-18) is two-handed, ZXMKL with SPACE:
 
@@ -139,7 +144,7 @@ already know, and no lock keys.
 |---|---|---|---|---|---|---|
 | 1 (1987 Magic-User) | → | ↑ | DELETE | COPY | ↓ | RETURN |
 | 2 (1987 Barbarian) | K | , | . | / | SPACE | L |
-| 3 (1987 Fighter) | G | B | U | I | O | P |
+| 3 (1987 Fighter) | G | B | U | I | O | J |
 
 Whether the keyboard ghosts is not known; it matters only on a real BBC
 Micro (an emulator reads the host's keys). The 1987 sets are prone to it if

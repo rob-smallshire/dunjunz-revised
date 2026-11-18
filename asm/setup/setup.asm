@@ -86,7 +86,69 @@
     sta exit_offset_y_1                 ; ...for y offset 1
     lda #3                              ; ...and at shrink 2: 3
     sta exit_offset_y_2                 ; ...for y offset 2
+    tya                                 ; Keep Y, for start_level...
+    pha
+    jsr apply_key_sets                  ; ...and give each hero their set of keys
+    pla
+    tay
     rts                                 ; Return to start_level
+; ***************************************************************************************
+; Give each hero the keys of the set that plays them
+;
+; The template has just given every hero their 1987 keys. A hero a set of keys joined on
+; the hero menu (hero_stick key_set_0 + S) gets set S of the layout for the
+; keyboard_players chosen on the title instead: its up, down, right, left and fire keys
+; in their slots in the per-level workspace, and for the Ranger and the Magic-User its
+; magic key in hero_magic_key. A hero on a stick keeps the template's keys, which
+; test_key does not read for them. Called by reset_workspace at every level, as the
+; template is copied at every level; hero_stick and keyboard_players last the game.
+;
+; On Exit:
+;     A: corrupted
+;     X: &FF
+;     Y: corrupted
+.apply_key_sets
+    ldx #3                              ; Heroes 3 to 0
+.apply_hero_keys
+    lda hero_stick,x                    ; A stick (0-3)?
+    bpl next_key_hero                   ; Yes: no keys
+    cmp #no_stick                       ; Nothing plays them?
+    beq next_key_hero                   ; Yes: no keys
+    and #3                              ; The set, 0-3
+    sta key_set_offset                  ; ...kept while its place is worked out
+    lda keyboard_players                ; Players N, 1-4...
+    asl a                               ; ...x 4
+    asl a                               ; ...(carry clear: N is at most 4)
+    adc key_set_offset                  ; ...+ S: 4 N + S, at most 19
+    asl a                               ; x 2
+    sta key_set_offset
+    asl a                               ; x 4...
+    adc key_set_offset                  ; ...+ x 2: 6 (4 N + S), its place from layout 0
+    tay
+    lda key_layout_sets - 4 * KEY_SET_BYTES,y      ; Up
+    sta hero_key_up,x
+    lda key_layout_sets - 4 * KEY_SET_BYTES + 1,y  ; Down
+    sta hero_key_down,x
+    lda key_layout_sets - 4 * KEY_SET_BYTES + 2,y  ; Right
+    sta hero_key_right,x
+    lda key_layout_sets - 4 * KEY_SET_BYTES + 3,y  ; Left
+    sta hero_key_left,x
+    lda key_layout_sets - 4 * KEY_SET_BYTES + 4,y  ; Fire
+    sta hero_key_fire,x
+    cpx #2                              ; The Ranger or the Magic-User?
+    bcs next_key_hero                   ; No: no magic
+    lda key_layout_sets - 4 * KEY_SET_BYTES + 5,y  ; Magic
+    sta hero_magic_key,x
+.next_key_hero
+    dex                                 ; Next hero down
+    bpl apply_hero_keys                 ; Until hero 0 is done
+    rts
+; The layouts' sets of keys (asm/defs/key_layouts.asm).
+.key_layout_sets
+    KEY_LAYOUT_SETS
+; 6 (4 N + S) while apply_key_sets works it out.
+.key_set_offset
+    equb 0
 ; ***************************************************************************************
 ; Copy the loaded level into the game's tables
 ;

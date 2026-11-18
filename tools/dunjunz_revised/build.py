@@ -45,6 +45,7 @@ from dunjunz_revised.disc_files import (
     key_name,
     readme_text,
 )
+from dunjunz_revised.key_layouts import write_layouts_asm
 from dunjunz_revised.title_picture import PICTURE_ADDRESS, revised_picture, title_png
 
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
@@ -259,6 +260,7 @@ def write_revised_levels(output_dirpath: Path) -> list[DiscFile]:
 
 def build_revised() -> Path:
     """Assemble the revised game and write its disc."""
+    write_layouts_asm()
     if REVISED_BUILD_DIRPATH.exists():
         shutil.rmtree(REVISED_BUILD_DIRPATH)
     for source_filename, saved_filenames in REVISED_SOURCES.items():

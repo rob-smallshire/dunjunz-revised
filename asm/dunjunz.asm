@@ -70,6 +70,7 @@
 
 INCLUDE "asm/defs/constants.asm"
 INCLUDE "asm/defs/addresses.asm"
+INCLUDE "asm/defs/key_layouts.asm"
 
 ; ***************************************************************************************
 ; Memory regions

@@ -297,13 +297,9 @@
 .poll_key_sets_done
     rts
 ; The fire key of each set, by layout: set S of the layout for N players at
-; menu_fire_keys + 4 S + N - 1. Until the layouts for 1-3 players are chosen, each uses the
-; first N sets of the 1987 layout.
+; menu_fire_keys + 4 S + N - 1 (asm/defs/key_layouts.asm).
 .menu_fire_keys
-    equb inkey_key_tab, inkey_key_tab, inkey_key_tab, inkey_key_tab      ; Set 0, for 1-4 players
-    equb 0, inkey_key_down, inkey_key_down, inkey_key_down              ; Set 1, for 2-4
-    equb 0, 0, inkey_key_space, inkey_key_space                         ; Set 2, for 3-4
-    equb 0, 0, 0, inkey_key_o                                           ; Set 3, for 4
+    KEY_LAYOUT_FIRE_KEYS
 ; ***************************************************************************************
 ; Move a stick or key set on to its next hero
 ;
