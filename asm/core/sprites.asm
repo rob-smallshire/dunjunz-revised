@@ -364,37 +364,59 @@
     equb >sprite_small_digit_3, >sprite_small_digit_4, >sprite_small_digit_5, >sprite_small_digit_6
     equb >sprite_small_digit_7, >sprite_small_digit_8, >sprite_small_digit_9, >sprite_chalice
     equb >sprite_missile_icon, >sprite_boots_icon, >sprite_blank, >sprite_blank
-; Sprite widths in screen bytes, indexed by sprite number.
-.sprite_widths
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &02, &04, &04, &04, &02, &02
-    equb &02, &02, &02, &02, &02, &02, &02, &02
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &02, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &04, &04, &04, &04, &04, &04, &04
-    equb &04, &03, &01, &01, &01, &01, &01, &01
-    equb &01, &01, &01, &08, &04, &02, &0c, &02
-; Sprite heights in pixel rows, indexed by sprite number.
-.sprite_heights
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &03, &0c, &0c, &0c, &0a, &0a
-    equb &0a, &0a, &0a, &0a, &0a, &0a, &0a, &0a
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &03, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &0c, &0c, &0c, &0c, &0c, &0c
-    equb &0c, &0c, &05, &05, &05, &05, &05, &05
-    equb &05, &05, &05, &18, &03, &06, &08, &06
+; ***************************************************************************************
+; A sprite's size
+;
+; Set sprite_width (bytes) and sprite_height (pixel rows) for sprite X. Nearly every
+; sprite is a cell, 4 bytes by 12 rows; sprite_size_first lists, in order, the sprite
+; numbers where the size changes, with the size from there on (sprite_size_width,
+; sprite_size_height). The hero going down the exit shrinks: their sprites from
+; shrink_first, up to but not including the last (left frame 1, as in 1987, which spins
+; through frame 0 only), are shrink_steps bytes narrower and shrink_rows rows shorter. In
+; the 1987 release both sizes were tables of 120 bytes, and the exit animation changed
+; the hero's entries.
+;
+; On Entry:
+;     X: sprite number
+;
+; On Exit:
+;     A, Y: corrupted
+;     X: preserved
+.sprite_size
+    ldy #0                              ; From the first change up (the walking sprites,
+    txa                                 ; ...monsters and missiles come first)...
+.find_sprite_size
+    cmp sprite_size_first + 1,y         ; ...is the sprite below the next change?
+    bcc sprite_size_found               ; Yes: this change's size
+    iny                                 ; No: the next change
+    cpy #sprite_size_changes - 1        ; ...unless this is the last
+    bne find_sprite_size                ; ...
+.sprite_size_found
+    lda sprite_size_width,y             ; The width...
+    sta sprite_width                    ; ...
+    lda sprite_size_height,y            ; ...and the height
+    sta sprite_height                   ; ...
+    lda shrink_steps                    ; A hero shrinking down the exit?
+    beq sprite_size_done                ; No: done
+    txa                                 ; Yes: one of their sprites?
+    sec                                 ; ...sprite - shrink_first...
+    sbc shrink_first                    ; ...
+    cmp #7                              ; ...0 to 6: base + 1 to base + 7
+    bcs sprite_size_done                ; No: full size
+    lda sprite_width                    ; Narrower by a byte a shrink...
+    sec                                 ; ...
+    sbc shrink_steps                    ; ...
+    sta sprite_width                    ; ...
+    lda sprite_height                   ; ...and shorter by three rows a shrink
+    sbc shrink_rows                     ; ...(carry still set: no borrow)
+    sta sprite_height                   ; ...
+.sprite_size_done
+    rts                                 ; Return
+; The sprite numbers where the size changes, and the size from each on.
+.sprite_size_first
+    equb &00, &1a, &1b, &1e, &28, &52, &53, &69, &6a, &73, &74, &75, &76, &77
+.sprite_size_width
+    equb 4, 2, 4, 2, 4, 2, 4, 3, 1, 8, 4, 2, 12, 2
+.sprite_size_height
+    equb 12, 3, 12, 10, 12, 3, 12, 12, 5, 24, 3, 6, 8, 6
+sprite_size_changes = sprite_size_width - sprite_size_first

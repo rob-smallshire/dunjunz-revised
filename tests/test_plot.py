@@ -13,6 +13,7 @@ import random
 
 import pytest
 
+from dunjunz_revised.sprite_sizes import sprite_sizes
 from dunjunz_revised.sixtyfive import SCREEN_END, SCREEN_START, GameImage
 
 SPRITE_COUNT = 120
@@ -32,8 +33,7 @@ def screen_offset(column: int, line: int) -> int:
 def sprite(image, number):
     address = image.peek(image.address(f"sprite_addr_hi+{number}"))[0] << 8 | image.peek(
         image.address(f"sprite_addr_lo+{number}"))[0]
-    width = image.peek(image.address(f"sprite_widths+{number}"))[0]
-    height = image.peek(image.address(f"sprite_heights+{number}"))[0]
+    width, height = sprite_sizes(image.peek, image.labels)[number]
     return width, height, image.peek(address, width * height)
 
 

@@ -32,6 +32,7 @@ from dunjunz_revised.build import (
     REVISED_DISC_FILEPATH,
     read_labels,
 )
+from dunjunz_revised.sprite_sizes import sprite_sizes
 from dunjunz_revised.lockstep import Script, game_run
 
 FRAMES = 1500
@@ -219,12 +220,8 @@ def sprites(run):
     labels = run.labels
     lo = run.peek(labels["sprite_addr_lo"], 120)
     hi = run.peek(labels["sprite_addr_hi"], 120)
-    widths = run.peek(labels["sprite_widths"], 120)
-    heights = run.peek(labels["sprite_heights"], 120)
-    return [
-        (widths[n], heights[n], run.peek(hi[n] << 8 | lo[n], widths[n] * heights[n]))
-        for n in range(120)
-    ]
+    sizes = sprite_sizes(run.peek, labels)
+    return [(w, h, run.peek(hi[n] << 8 | lo[n], w * h)) for n, (w, h) in enumerate(sizes)]
 
 
 def test_sprites_match_the_original(disc_filepaths):

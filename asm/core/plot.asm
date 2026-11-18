@@ -30,10 +30,7 @@
     sta sprite_data_ptr                 ; ...its low byte from sprite_addr_lo
     lda sprite_addr_hi,x                ; ...high byte from its own table
     sta sprite_data_ptr_hi              ; ...so sprite_data_ptr walks through the data
-    lda sprite_widths,x                 ; Bytes in each sprite row...
-    sta sprite_width                    ; ...counted across each row
-    lda sprite_heights,x                ; Pixel rows in the sprite...
-    sta sprite_height                   ; ...counted down the sprite
+    jsr sprite_size                     ; Its width (bytes) and height (rows)
     jsr screen_address                  ; screen_ptr = address of the top-left byte
     lda sprite_width                    ; Four bytes wide, as most sprites are?
     cmp #4                              ; ...
@@ -285,6 +282,14 @@
 ; The hero whose sprites are shrunk, or &FF.
 .shrunk_hero
     equb &ff
+; The first sprite of the hero shrinking down the exit (their base + 1), how many times
+; they have shrunk (0-3), and three rows for each (sprite_size).
+.shrink_first
+    equb 0
+.shrink_steps
+    equb 0
+.shrink_rows
+    equb 0
 ; Data of sprite &63: 4 bytes x 12 rows.
 .sprite_magic_sword
     equb &00, &00, &00, &00

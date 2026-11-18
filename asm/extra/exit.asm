@@ -6,26 +6,12 @@
 ; must stay adjacent while the layout is the original's.
 .exit_shrink_continues
     adc #1                              ; ...+1: their first sprite...
-    tay                                 ; ...in Y, for the height loop...
-    tax                                 ; ...and in X, for the width loop
-    adc #7                              ; ...+7: stop before base + 8, left frame 1
-    sta scratch                         ; ...kept as the end
-.shrink_hero_width
-    dec sprite_widths,x                 ; One byte (two pixels) narrower
-    inx                                 ; Next of the hero's seven sprites
-    cpx scratch                         ; Reached the end?
-    bne shrink_hero_width               ; No: narrow the next
-    tya                                 ; Three rows shorter...
-    tax                                 ; ...from the first sprite again
-.shrink_hero_height
-    sec                                 ; ...set carry to subtract
-    lda sprite_heights,x                ; This sprite's height...
-    sbc #3                              ; ...less three rows...
-    sta sprite_heights,x                ; ...stored back in sprite_heights
-    inx                                 ; Next of the hero's seven sprites
-    cpx scratch                         ; Reached the end?
-    bne shrink_hero_height              ; No: shorten the next
-    jmp play_level                      ; ...three rows shorter. Next frame
+    sta shrink_first                    ; ...where sprite_size starts shrinking
+    inc shrink_steps                    ; One byte narrower...
+    lda shrink_rows                     ; ...and three rows shorter
+    adc #3                              ; ...(carry clear from the ADC above)
+    sta shrink_rows                     ; ...
+    jmp play_level                      ; Next frame
 ; The hero has gone: put the exit back.
 .restore_exit
     lda exit_saved_x                    ; Put the exit back where it was...
@@ -67,43 +53,22 @@
 ; ***************************************************************************************
 ; Restore a hero's sprite sizes
 ;
-; Give hero X back their full-size sprites after the exit animation has shrunk them. The
-; descent narrows sprites base + 1 to base + 7 (base from hero_sprites) by a byte and
-; shortens them by three rows after each of three turns, in sprite_widths and
-; sprite_heights themselves. This sets the seven back to a whole cell, 4 bytes wide and
-; 12 rows high, which is what every hero's walking sprites measure. Called by
-; hero_enters_exit, before the next hero's descent shrinks their own sprites, and by
-; play_level when the level ends, each time for shrunk_hero.
+; Give the hero shrunk going down the exit back their full-size sprites: no shrinking
+; (shrink_steps and shrink_rows 0), which sprite_size applies to sprites base + 1 to base
+; + 7 of that hero, a byte narrower and three rows shorter for each of the three turns.
+; Called by hero_enters_exit, before the next hero's descent, and by play_level when the
+; level ends, each time for shrunk_hero. (In 1987 the descent changed the sprite size
+; tables themselves, and this put the seven entries back.)
 ;
 ; On Entry:
-;     X: hero number (0-3)
+;     X: hero number (0-3), not needed
 ;
 ; On Exit:
-;     A: 12
-;     X: base + 1
-;     Y: base + 8
+;     A: 0
 .restore_hero_sprites
-    clc                                 ; The hero's sprites base + 1 to base + 7
-    lda hero_sprites,x                  ; ...the hero's sprite base...
-    adc #1                              ; ...+1: their first sprite...
-    tax                                 ; ...in X, kept to restart Y for the heights...
-    tay                                 ; ...and in Y, to walk the widths
-    adc #7                              ; ...+7: stop before base + 8, left frame 1
-    sta scratch                         ; ...kept as the end
-    lda #4                              ; Widths back to 4 bytes, a whole cell...
-.restore_sprite_widths
-    sta sprite_widths,y                 ; Sprite Y back to 4 bytes wide
-    iny                                 ; Next of the seven, base + 1 to base + 7
-    cpy scratch                         ; Reached the end?
-    bne restore_sprite_widths           ; No: widen the next
-    txa                                 ; ...from the first sprite again...
-    tay                                 ; ...in Y, to walk the heights
-    lda #&0c                            ; ...heights back to 12 rows, a whole cell
-.restore_sprite_heights
-    sta sprite_heights,y                ; Sprite Y back to 12 rows high
-    iny                                 ; Next of the seven
-    cpy scratch                         ; Reached the end?
-    bne restore_sprite_heights          ; No: restore the next
+    lda #0                              ; No shrinking: every sprite full size
+    sta shrink_steps                    ; ...
+    sta shrink_rows                     ; ...
     rts                                 ; Return with the hero's sprites full size again
 ; Set up the descent for the hero kept in scratch2.
 .start_hero_animation

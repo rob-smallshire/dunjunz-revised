@@ -4,8 +4,7 @@
     uv run dr-sprites --original      # the 1987 game: build/sprites-original.html
 
 Boots the built disc in beebium, starts a game, and reads the 120 sprites
-through the game's own tables (sprite_addr_lo/hi, sprite_widths,
-sprite_heights) at the first frame of level 1, so what is shown is exactly
+through the game's own tables (sprite_addr_lo/hi) and sizes (sprite_sizes.py) at the first frame of level 1, so what is shown is exactly
 what plot_sprite draws. A sprite's data is row by row, each byte two MODE 2
 pixels; it is drawn here in the default MODE 2 palette (the game never
 changes it), each pixel twice as wide as it is tall, as on the screen.
@@ -30,6 +29,7 @@ from dunjunz_revised.build import (
     read_labels,
 )
 from dunjunz_revised.lockstep import game_run
+from dunjunz_revised.sprite_sizes import sprite_sizes
 from dunjunz_revised.png import mode2_pixels, png
 
 SPRITE_COUNT = 120
@@ -45,12 +45,10 @@ def read_sprites(run) -> list[tuple[int, int, int, bytes]]:
     labels = run.labels
     lo = run.peek(labels["sprite_addr_lo"], SPRITE_COUNT)
     hi = run.peek(labels["sprite_addr_hi"], SPRITE_COUNT)
-    widths = run.peek(labels["sprite_widths"], SPRITE_COUNT)
-    heights = run.peek(labels["sprite_heights"], SPRITE_COUNT)
     sprites = []
-    for n in range(SPRITE_COUNT):
+    for n, (width, height) in enumerate(sprite_sizes(run.peek, labels)):
         address = hi[n] << 8 | lo[n]
-        sprites.append((address, widths[n], heights[n], run.peek(address, widths[n] * heights[n])))
+        sprites.append((address, width, height, run.peek(address, width * height)))
     return sprites
 
 

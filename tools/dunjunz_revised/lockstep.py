@@ -24,6 +24,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
+from dunjunz_revised.sprite_sizes import sprite_sizes
 from dunjunz_revised.machines import MACHINES, Machine, launched
 
 UPDATE_GAME = "update_game"
@@ -77,8 +78,6 @@ STATE_BLOCKS = (
     ("monster_offset_y+1", 30),      
     ("monster_step+1", 30),          
     ("object_x", 0x5D),              # objects and the exit: x, y and type, 31 entries each
-    ("sprite_widths", 0x78),         # changed by the exit animation
-    ("sprite_heights", 0x78),
     ("level_number", 1),
     ("monster_start_hit_points", 1),
 )
@@ -208,6 +207,10 @@ class GameRun:
 
     def state(self) -> dict[str, bytes]:
         state = {label: self.peek(self.address(label), length) for label, length in STATE_BLOCKS}
+        # The sprites' sizes, which the exit animation changes as a hero shrinks: tables
+        # in 1987, worked out in the revised game (sprite_sizes.py).
+        sizes = sprite_sizes(self.peek, self.labels)
+        state["sprite_sizes"] = bytes(w for w, _ in sizes) + bytes(h for _, h in sizes)
         state["screen"] = self.peek(SCREEN[0], SCREEN[1] - SCREEN[0])
         return state
 
