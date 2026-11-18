@@ -46,9 +46,12 @@ oswrch                   = &ffee
 osbyte                   = &fff4
 oscli                    = &fff7
 osasci                   = &ffe3
+osrdch                   = &ffe0
+text_ptr                 = &78  ; show_keys: the page of keys being printed (sprite_data_ptr, free once the stars are gone)
+text_ptr_hi              = &79
 
 
-    org &26c0
+    org &2000                           ; Low enough for the pages of keys below the screen, at or above &1C00, the highest PAGE
 
 .dasmos_start
 ; ***************************************************************************************
@@ -199,7 +202,8 @@ osasci                   = &ffe3
     sta title_plot_reversed             ; ...so title_plot_star steps right across a row
     lda #osbyte_flush_buffer            ; OSBYTE &15: flush the buffer X
     jsr osbyte                          ; ...X is whatever OSCLI left: buffer unknown  Flush specific buffer X
-    jsr twinkle_stars                   ; Twinkle stars until a key is pressed
+    jsr twinkle_stars                   ; Twinkle stars until the players choose
+    jsr show_keys                       ; Show the keyboard players their keys, and wait for a key
 ; Hand-over: a key was pressed, so select the game's display and run the gamer.
     ldx #<(tv_game_command)             ; *TV 252,1: vertical shift -4 lines, interlace off
     ldy #>(tv_game_command)             ; ...(X, Y) = the command line
@@ -854,6 +858,61 @@ NEXT
 FOR row, 0, 31
     equb HI(row * 640), LO(row * 640)
 NEXT
+; ***************************************************************************************
+; Show the keyboard players their keys
+;
+; After the choice on the title, and before the game loads over the screen: in MODE 7,
+; print the page of keys for the keyboard_players chosen (asm/defs/key_layout_texts.asm),
+; wait for every key to be let go, so the key that chose does not go on, then wait for a
+; fresh key. With joysticks only (keyboard_players 0) there are no keys to show. Called
+; once by title_start, which then selects the game's display.
+;
+; On Exit:
+;     A: corrupted
+;     X: corrupted
+;     Y: corrupted
+.show_keys
+    ldx keyboard_players                ; Players at the keyboard
+    beq show_keys_done                  ; None: nothing to show
+    lda key_layout_texts_lo - 1,x       ; Their page of keys...
+    sta text_ptr
+    lda key_layout_texts_hi - 1,x
+    sta text_ptr_hi
+    lda #22                             ; VDU 22, 7: MODE 7
+    jsr oswrch
+    lda #7
+    jsr oswrch
+    ldx #cursor_off_vdu_end - cursor_off_vdu_7 - 1  ; The cursor off
+.send_cursor_off_7
+    lda cursor_off_vdu_7,x              ; VDU 23, 1, 0; 0; 0; 0;, sent last byte first...
+    jsr oswrch
+    dex
+    bpl send_cursor_off_7
+    ldy #0                              ; Print the page...
+.print_keys
+    lda (text_ptr),y                    ; ...the next byte...
+    beq keys_printed                    ; ...up to the zero
+    jsr osasci                          ; ...each carriage return a new line
+    iny
+    bne print_keys                      ; On along the page...
+    inc text_ptr_hi                     ; ...into its next page of memory
+    bne print_keys                      ; Always
+.keys_printed
+.wait_keys_released
+    lda #osbyte_scan_keyboard_from_16   ; Any key still held?
+    jsr osbyte                          ; ...X = &FF if none
+    inx
+    bne wait_keys_released              ; Yes: wait for it to be let go
+    lda #osbyte_flush_buffer            ; OSBYTE &15, X = 0: empty the keyboard buffer...
+    jsr osbyte                          ; ...of the key that chose (X is 0 here)
+    jsr osrdch                          ; Wait for a key
+.show_keys_done
+    rts
+; VDU 23, 1, 0, 0, 0, 0, 0, 0, 0, 0 (the cursor off), in reverse, for send_cursor_off_7.
+.cursor_off_vdu_7
+    equb 0, 0, 0, 0, 0, 0, 0, 0, 1, 23
+.cursor_off_vdu_end
+INCLUDE "asm/defs/key_layout_texts.asm"
 .title_end
 ASSERT title_end <= screen_start      ; MODE 2 clears the screen: nothing the title uses may lie in it
 save "Dunjunz", dasmos_start, title_end, title_start, dasmos_start

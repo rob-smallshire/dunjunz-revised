@@ -24,7 +24,7 @@ from dunjunz_revised.key_layouts import (
     SLOT_ORDER,
     layouts_asm,
 )
-from dunjunz_revised.lockstep import RETURN, hold_key, inkey_to_matrix
+from dunjunz_revised.lockstep import RETURN, answer_title, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
 from dunjunz_revised.sixtyfive import GameImage
 
@@ -119,7 +119,7 @@ def test_a_sets_keys_reach_the_hero_it_joins(disc_filepaths, players, joins):
     with launched(MACHINES["dfs226"]) as bbc:
         bbc.boot_disc(REVISED_DISC_FILEPATH)
         bbc.run_for_emulated_seconds(8)
-        hold_key(bbc, *title_key)
+        answer_title(bbc, title_key)
         bbc.debugger.run_to(labels["menu_key_loop"], timeout=120)
         bbc.run_for_emulated_seconds(0.5)
         for set_index, _ in joins:

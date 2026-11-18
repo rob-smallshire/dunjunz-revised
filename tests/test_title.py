@@ -26,7 +26,7 @@ from dunjunz_revised.build import (
     TITLE_SCREEN_PNG_FILEPATH,
     read_labels,
 )
-from dunjunz_revised.lockstep import inkey_to_matrix
+from dunjunz_revised.lockstep import answer_title, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
 from dunjunz_revised.title_picture import (
     GLYPHS,
@@ -44,7 +44,6 @@ from dunjunz_revised.title_picture import (
     version_line,
 )
 
-TITLE_LOAD_ADDRESS = 0x26C0
 FRAMES = 7
 FRAME_BYTES = 7 * 28
 
@@ -54,12 +53,12 @@ def star_frames(build_dirpath):
     image = (build_dirpath / "Dunjunz").read_bytes()
 
     def byte(address):
-        return image[address - TITLE_LOAD_ADDRESS]
+        return image[address - labels["dasmos_start"]]
 
     frames = []
     for frame in range(FRAMES):
         address = byte(labels["star_frames_lo"] + frame) | byte(labels["star_frames_hi"] + frame) << 8
-        offset = address - TITLE_LOAD_ADDRESS
+        offset = address - labels["dasmos_start"]
         frames.append(image[offset:offset + FRAME_BYTES])
     return frames
 
@@ -139,9 +138,6 @@ def test_the_title_takes_the_number_of_keyboard_players(disc_filepaths, inkey, p
         bbc.boot_disc(REVISED_DISC_FILEPATH)
         bbc.debugger.run_to(title_labels["twinkle_loop"], timeout=60)
         bbc.memory.address.bus.write(KEYBOARD_PLAYERS, bytes([0xAA]))
-        bbc.keyboard.matrix_down(*inkey_to_matrix(inkey))
-        try:
-            bbc.debugger.run_to(game_labels["startup"], timeout=60)
-        finally:
-            bbc.keyboard.matrix_up(*inkey_to_matrix(inkey))
+        answer_title(bbc, inkey_to_matrix(inkey))
+        bbc.debugger.run_to(game_labels["startup"], timeout=60)
         assert bbc.memory.address.peek[KEYBOARD_PLAYERS] == players

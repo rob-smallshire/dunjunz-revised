@@ -120,7 +120,59 @@ def layouts_asm() -> str:
     ])
 
 
+# The title's page of each layout's keys, in MODE 7 (40 columns, 25 rows).
+TITLE_TEXTS_ASM_FILEPATH = LAYOUTS_ASM_FILEPATH.with_name("key_layout_texts.asm")
+MODE_7_WIDTH = 40
+TELETEXT_YELLOW, TELETEXT_CYAN, TELETEXT_WHITE = 0x83, 0x86, 0x87
+
+
+def title_lines(players: int) -> list[tuple[int, str]]:
+    """The title's page of the keys for this many players: (colour, text) lines."""
+    lines = [(TELETEXT_YELLOW, f"DUNJUNZ: {PLAYER_COUNT_NAMES[players].upper()} AT THE KEYBOARD"), (0, "")]
+    for number, keys in enumerate(LAYOUTS[players], 1):
+        pairs = [f"{action} {display_name(keys[action])}" for action in ACTIONS]
+        for row, (left, right) in enumerate(zip(pairs[::2], pairs[1::2])):
+            label = f"KEY{number}" if row == 0 else ""
+            lines.append((TELETEXT_WHITE if row else TELETEXT_CYAN, f"{label:<6}{left:<17}{right}"))
+        lines.append((0, ""))
+    lines += [(TELETEXT_WHITE, "On the hero menu, press your fire key"),
+              (TELETEXT_WHITE, "to join, and again for another hero."),
+              (TELETEXT_WHITE, "RETURN starts the game."),
+              (0, ""),
+              (TELETEXT_YELLOW, "Press any key")]
+    return lines
+
+
+def title_texts_asm() -> str:
+    """asm/defs/key_layout_texts.asm: each layout's page of keys for the title,
+    zero-terminated text for OSASCI, and tables of where each page starts."""
+    out = [
+        "; ***************************************************************************************",
+        "; The keyboard layouts, as the title shows them",
+        ";",
+        "; Written by tools/dunjunz_revised/key_layouts.py, where the layouts are kept; do not edit.",
+        "; For N players (1-4), key_layout_texts_lo and _hi + N - 1 point at the page of keys the",
+        "; title prints in MODE 7 (show_keys): teletext colour codes and text, lines ended by",
+        "; carriage returns (OSASCI starts each new line), the page by a zero.",
+        ".key_layout_texts_lo",
+        "    equb " + ", ".join(f"<key_layout_text_{n}" for n in sorted(LAYOUTS)),
+        ".key_layout_texts_hi",
+        "    equb " + ", ".join(f">key_layout_text_{n}" for n in sorted(LAYOUTS)),
+    ]
+    for players in sorted(LAYOUTS):
+        out.append(f".key_layout_text_{players}")
+        for colour, text in title_lines(players):
+            assert len(text) + 1 < MODE_7_WIDTH, text
+            assert '"' not in text
+            if text:
+                out.append(f'    equb &{colour:02x} : equs "{text}", &0d')
+            else:
+                out.append("    equb &0d")
+        out.append("    equb 0")
+    return "\n".join(out) + "\n"
+
+
 def write_layouts_asm() -> None:
-    text = layouts_asm()
-    if not LAYOUTS_ASM_FILEPATH.exists() or LAYOUTS_ASM_FILEPATH.read_text() != text:
-        LAYOUTS_ASM_FILEPATH.write_text(text)
+    for filepath, text in ((LAYOUTS_ASM_FILEPATH, layouts_asm()), (TITLE_TEXTS_ASM_FILEPATH, title_texts_asm())):
+        if not filepath.exists() or filepath.read_text() != text:
+            filepath.write_text(text)

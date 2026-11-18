@@ -59,7 +59,9 @@ each side; four want the 1987 layout.
   fire on a stick chooses none; any other key counts as 4, so a player
   who presses SPACE out of habit gets the 1987 keys. The title leaves the
   count at &08BF in page &08 (free; it survives the reset between
-  levels), then shows the chosen layout's keys while the game loads.
+  levels), then shows the chosen layout's keys in MODE 7 and waits for a
+  key, before loading the game (which loads over all of screen memory, so
+  nothing can be shown while it loads).
 - **Each layout has one set of keys per player:** up, down, left, right,
   fire and magic (used only by the Ranger and the Magic-User). The
   4-player layout is the 1987 keys, unchanged. The 1-3 player layouts are

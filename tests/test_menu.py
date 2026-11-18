@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 
 from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
-from dunjunz_revised.lockstep import FIRE_KEYS, RETURN, SPACE, UPDATE_GAME, hold_key, inkey_to_matrix
+from dunjunz_revised.lockstep import FIRE_KEYS, RETURN, SPACE, UPDATE_GAME, answer_title, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
 
 TAB, CURSOR_DOWN = FIRE_KEYS[0], FIRE_KEYS[1]      # the fire keys of key sets 1 and 2
@@ -27,7 +27,7 @@ def to_the_menu(bbc, labels, title_key):
     """Boot, answer the title with title_key, and run to the menu's wait for keys."""
     bbc.boot_disc(REVISED_DISC_FILEPATH)
     bbc.run_for_emulated_seconds(8)
-    hold_key(bbc, *title_key)
+    answer_title(bbc, title_key)
     bbc.debugger.run_to(labels["menu_key_loop"], timeout=120)
     bbc.run_for_emulated_seconds(0.5)           # the menu waits for a key
 

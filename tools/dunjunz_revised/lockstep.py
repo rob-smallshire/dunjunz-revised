@@ -230,6 +230,15 @@ FIRE_KEYS = tuple(inkey_to_matrix(inkey) for inkey in (0x9F, 0xD6, 0x9D, 0xC9))
 HERO_ABSENT = 0x08B4            # hero_absent: 0 while the hero plays
 
 
+def answer_title(bbc, key: tuple[int, int]) -> None:
+    """Choose on the title with key (1-4, or any other for four keyboard
+    players), then, as the title shows the players their keys and waits,
+    press SPACE to go on to the game."""
+    hold_key(bbc, *key)
+    bbc.run_for_emulated_seconds(1)
+    hold_key(bbc, *SPACE)
+
+
 def run_to_pressing_space(bbc, address: int, seconds: float) -> bool:
     """Run until address, tapping SPACE every half second (to leave the title,
     and to start the game from the hero menu). True if address was reached."""

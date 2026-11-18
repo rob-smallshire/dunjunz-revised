@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 
 from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
-from dunjunz_revised.lockstep import FIRE_KEYS, RETURN, SPACE, UPDATE_GAME, hold_key
+from dunjunz_revised.lockstep import FIRE_KEYS, RETURN, SPACE, UPDATE_GAME, answer_title, hold_key
 from dunjunz_revised.machines import MACHINES, launched
 from fake_spitfire import DOWN, FIRE, RIGHT, Fake, machine_with_fake, twin_twins
 
@@ -37,7 +37,7 @@ def to_menu(bbc, labels, before_menu=None):
     bbc.run_for_emulated_seconds(8)
     if before_menu is not None:
         before_menu()
-    hold_key(bbc, *SPACE)
+    answer_title(bbc, SPACE)
     bbc.debugger.run_to(labels["menu_key_loop"], timeout=120)
     bbc.run_for_emulated_seconds(0.5)
 
