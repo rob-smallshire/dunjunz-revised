@@ -126,8 +126,7 @@ def wrap(paragraphs: list[str], width: int = README_WIDTH) -> list[str]:
     return lines
 
 
-def readme_text(hero_keys: list[tuple[str, dict[str, str]]], copyright: str,
-                version: str = __version__) -> str:
+def readme_text(layouts: list[dict], copyright: str, version: str = __version__) -> str:
     """The disc's README, every line at most README_WIDTH characters."""
     lines = [f"{GAME_NAME} {version}", ""]
     lines += wrap([
@@ -142,23 +141,36 @@ def readme_text(hero_keys: list[tuple[str, dict[str, str]]], copyright: str,
         "PAGE at &1C00 or lower. The ADFS disc is for a Master or a Master "
         "Compact.",
     ])
+    lines += ["THE TITLE", ""]
+    lines += wrap([
+        "Press 1-4 for the number of players sharing the keyboard, or fire "
+        "on a joystick if everyone plays with a stick. Any other key gives "
+        "four, with the 1987 keys. Each player at the keyboard has a set of "
+        "keys, KEY1 to KEY4, from the layout for that many players, shown "
+        "before the game loads.",
+    ])
     lines += ["THE HERO MENU", ""]
     lines += wrap([
-        "Keys 1-4 switch a hero in or out. Fire on a joystick joins with "
-        "that stick; pressing it again moves the stick on to the next hero. "
-        "5 and 6 turn the sound on and off. SPACE starts the game.",
+        "Every player joins by pressing fire, on their joystick or their set "
+        "of keys. A press takes the first free hero, and each further press "
+        "the next, past the Fighter to nobody. 5 and 6 turn the sound on and "
+        "off. RETURN starts the game.",
     ])
     lines += ["KEYS", ""]
-    lines += hero_key_lines(hero_keys) + [""]
+    for layout in layouts:
+        lines += [f"{layout['title'].upper()}:"]
+        lines += hero_key_lines([(f"KEY{n}", keys) for n, keys in enumerate(layout["sets"], 1)]) + [""]
     lines += wrap([
-        "Only the Ranger and the Magic-User cast magic. P pauses and "
-        "resumes. Hold ESCAPE for half a second to end the game.",
+        "With four players the keys are the 1987 heroes': KEY1 the "
+        "Ranger's, KEY2 the Magic-User's, KEY3 the Barbarian's and KEY4 the "
+        "Fighter's. Only the Ranger and the Magic-User cast magic. P pauses "
+        "and resumes. Hold ESCAPE for half a second to end the game.",
     ])
     lines += ["JOYSTICKS", ""]
     lines += wrap([
         "With SPItFIRE on a Master Compact, up to four sticks; otherwise two "
         "on the analogue port, or a Compact's own joystick port. A hero on "
-        "a stick can still use their keys. Hold fire and a direction "
+        "a stick plays with the stick alone. Hold fire and a direction "
         "together for half a second to cast magic.",
     ])
     lines += ["COPYRIGHT", ""]

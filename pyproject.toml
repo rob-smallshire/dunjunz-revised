@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "oaknut-dfs>=12.18.2",
     "oaknut-adfs>=13.6.1",      # the ADFS disc
+    "jinja2>=3.1.6",
 ]
 
 [project.scripts]
@@ -15,6 +16,7 @@ dr-machines = "dunjunz_revised.machines:main"
 dr-sprites = "dunjunz_revised.sprite_sheet:main"
 dr-frame-time = "dunjunz_revised.frame_time:main"
 dr-title-gif = "dunjunz_revised.title_animation:main"
+dr-readme = "dunjunz_revised.generate_readme:main"
 
 [dependency-groups]
 test = [
@@ -75,7 +77,7 @@ message = "Release v{new_version}"
 pre_commit_hooks = [
     "uv run dr-build",
     "uv run dr-title-gif",
-    "git add docs/title-screen.png docs/title-screen.gif",
+    "git add README.md docs/title-screen.png docs/title-screen.gif",
 ]
 
 [[tool.bumpversion.files]]

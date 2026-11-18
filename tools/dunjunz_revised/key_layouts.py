@@ -47,6 +47,31 @@ MENU_KEYS = ("return", "5", "6")
 LAYOUTS_ASM_FILEPATH = Path(__file__).resolve().parents[2] / "asm" / "defs" / "key_layouts.asm"
 
 
+PLAYER_COUNT_NAMES = {1: "One player", 2: "Two players", 3: "Three players", 4: "Four players"}
+ARROWS = {"up": "↑", "down": "↓", "left": "←", "right": "→"}
+
+
+def display_name(key: str) -> str:
+    """A key as the keyboard labels it, for the disc's README (MODE 7 has no
+    arrows): CAPS LOCK, CURSOR UP, ;."""
+    from dunjunz_revised.disc_files import key_name
+    return key_name(key)
+
+
+def markdown_name(key: str) -> str:
+    """A key as the keyboard labels it, for README.md: the cursor keys as
+    arrows."""
+    return ARROWS.get(key, display_name(key))
+
+
+def named_layouts(name=display_name) -> list[dict]:
+    """Each layout, its sets' keys named by name: [{players, title, sets:
+    [{action: name}]}], for the READMEs."""
+    return [dict(players=players, title=PLAYER_COUNT_NAMES[players],
+                 sets=[{action: name(keys[action]) for action in ACTIONS} for keys in LAYOUTS[players]])
+            for players in sorted(LAYOUTS)]
+
+
 def constant(key: str) -> str:
     return f"inkey_key_{key}"
 

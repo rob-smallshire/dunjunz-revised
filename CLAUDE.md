@@ -17,6 +17,7 @@ uv run dr-machines                                # PAGE per machine configurati
 uv run dr-sizes                                   # address range and size of each game module
 uv run dr-sprites [--original]                    # every sprite as an HTML table: build/sprites-*.html
 uv run dr-frame-time [--frames N] [--seed S]      # cycles per frame of scripted play, 1987 and revised
+uv run dr-readme                                  # render README.md from README.md.j2 (dr-build does too)
 uv run python -m dunjunz_revised.coverage 1500 1 2 3   # instructions never run in scripted play
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
@@ -46,6 +47,15 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   (`tools/dunjunz_revised/title_animation.py`) makes after a build by
   running the title's own star code in py65 over the picture, timed as on
   a BBC Micro; a release runs both.
+- `README.md` is generated: edit `README.md.j2`, a Jinja2 template, which
+  `tools/dunjunz_revised/generate_readme.py` renders (`uv run dr-readme`,
+  and every `dr-build`) with what comes from the game, such as the keyboard
+  layouts. `tests/test_readme.py` fails if the two differ.
+- The keyboard layouts (1-4 players sharing the keyboard, chosen on the
+  title; each set of keys joins the hero menu by its fire key) are kept in
+  `tools/dunjunz_revised/key_layouts.py`, which the build writes into
+  `asm/defs/key_layouts.asm` for the menu and Setup, and into both READMEs.
+  Design and reasons: `docs/enhancements.md`.
 - Joysticks (`docs/plan.md`, milestone 6): every key goes through `test_key`
   (`asm/core/test_key.asm`), which also takes the hero's stick bits from
   `control_bits`. The hero menu (`asm/start/joysticks.asm`) detects SPItFIRE

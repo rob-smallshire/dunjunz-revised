@@ -45,7 +45,8 @@ from dunjunz_revised.disc_files import (
     key_name,
     readme_text,
 )
-from dunjunz_revised.key_layouts import write_layouts_asm
+from dunjunz_revised.generate_readme import write_readme
+from dunjunz_revised.key_layouts import display_name, named_layouts, write_layouts_asm
 from dunjunz_revised.title_picture import PICTURE_ADDRESS, revised_picture, title_png
 
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
@@ -261,6 +262,7 @@ def write_revised_levels(output_dirpath: Path) -> list[DiscFile]:
 def build_revised() -> Path:
     """Assemble the revised game and write its disc."""
     write_layouts_asm()
+    write_readme()                      # README.md, from README.md.j2: the disc's README takes its copyright
     if REVISED_BUILD_DIRPATH.exists():
         shutil.rmtree(REVISED_BUILD_DIRPATH)
     for source_filename, saved_filenames in REVISED_SOURCES.items():
@@ -287,7 +289,7 @@ def build_revised() -> Path:
          REVISED_BUILD_DIRPATH / "Setup"),
     ]
     files += [(f, REVISED_BUILD_DIRPATH / f.name) for f in write_revised_levels(REVISED_BUILD_DIRPATH)]
-    readme = readme_text(hero_keys(REVISED_BUILD_DIRPATH), copyright_text(README_MARKDOWN_FILEPATH.read_text()))
+    readme = readme_text(named_layouts(display_name), copyright_text(README_MARKDOWN_FILEPATH.read_text()))
     (REVISED_BUILD_DIRPATH / README_FILENAME).write_bytes(acorn_text(readme))
     files.append((DiscFile(README_FILENAME, 0, 0), REVISED_BUILD_DIRPATH / README_FILENAME))
     if len(files) > DFS_CATALOGUE_LIMIT:

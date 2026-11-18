@@ -22,8 +22,9 @@ from dunjunz_revised.disc_files import (
 )
 from dunjunz_revised.machines import MACHINES, launched
 
-KEYS = [("Ranger", {"up": "CAPS LOCK", "down": "SHIFT LOCK", "magic": "CTRL"}),
-        ("Barbarian", {"up": "K", "fire": "SPACE"})]
+LAYOUTS = [dict(players=1, title="One player", sets=[{"up": "K", "fire": "L"}]),
+           dict(players=4, title="Four players",
+                sets=[{"up": "CAPS LOCK", "down": "SHIFT LOCK", "magic": "CTRL"}, {"up": "CURSOR RIGHT"}])]
 
 
 def test_image_filenames():
@@ -68,13 +69,15 @@ def test_the_url_is_broken_to_fit():
 
 
 def test_readme_fits_mode_7_and_says_where_to_report_problems():
-    text = readme_text(KEYS, "Copyright (c) someone.", "2026.1")
+    text = readme_text(LAYOUTS, "Copyright (c) someone.", "2026.1")
     lines = text.splitlines()
     assert lines[0] == "Dunjunz Revised 2026.1"
     assert all(len(line) <= README_WIDTH for line in lines)
     assert "".join(url_lines()) in "".join(lines[:12])
     assert "Report problems at" in lines
     assert "".join(lines[-len(url_lines()):]) == PROJECT_URL
+    assert "FOUR PLAYERS:" in lines
+    assert "KEY1:" in lines
     assert "  up CAPS LOCK      down SHIFT LOCK" in lines
 
 
