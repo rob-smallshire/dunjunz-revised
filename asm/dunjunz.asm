@@ -118,8 +118,9 @@ INCLUDE "asm/extra/exit.asm"
 INCLUDE "asm/extra/doors_keys_sprites.asm"
 INCLUDE "asm/core/frame.asm"
 INCLUDE "asm/core/chalice.asm"
-INCLUDE "asm/core/victory_check.asm"
 INCLUDE "asm/core/last_skull.asm"
+INCLUDE "asm/core/test_key.asm"
+INCLUDE "asm/core/render_monsters.asm"
 .mid_end
 ASSERT mid_end <= MID_END
 
@@ -131,7 +132,7 @@ INCLUDE "asm/core/loader.asm"
 INCLUDE "asm/core/level_loop.asm"
 INCLUDE "asm/low/hero_on_trapdoor.asm"
 INCLUDE "asm/low/key_in_cell.asm"
-INCLUDE "asm/low/escape.asm"
+INCLUDE "asm/low/render_low.asm"
 .low_end
 ASSERT low_end <= WORKSPACE
     copyblock LOW_START, low_end, LOW_STORE
@@ -142,6 +143,7 @@ ASSERT low_end <= WORKSPACE
     org PAGE9_START
 INCLUDE "asm/core/plot.asm"
 INCLUDE "asm/core/row_offsets.asm"
+INCLUDE "asm/core/render_marked.asm"
 INCLUDE "asm/core/room_walls.asm"
 INCLUDE "asm/core/hero_cell.asm"
 .page9_end
@@ -159,8 +161,8 @@ INCLUDE "asm/upper/wrch.asm"
 .font_end
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
-INCLUDE "asm/core/test_key.asm"
 INCLUDE "asm/core/plot_see_through.asm"
+INCLUDE "asm/core/render_floor.asm"
 .ws_end
 ASSERT ws_end <= WS_END
     copyblock WS_START, ws_end, WS_STORE
@@ -224,6 +226,7 @@ INCLUDE "asm/setup/setup.asm"
 INCLUDE "asm/upper/views.asm"
 INCLUDE "asm/upper/fs_workspace.asm"
 INCLUDE "asm/upper/load_ending.asm"
+INCLUDE "asm/core/victory_check.asm"
 .up_kept_end
 ASSERT up_kept_end <= ENDING_FILE_ADDRESS
 INCLUDE "asm/upper/move_heroes.asm"
@@ -235,6 +238,7 @@ INCLUDE "asm/upper/hero_animation.asm"
 INCLUDE "asm/upper/map_tests.asm"
 INCLUDE "asm/upper/monsters.asm"
 INCLUDE "asm/upper/object_sprites.asm"
+INCLUDE "asm/upper/render.asm"
 INCLUDE "asm/upper/workspace.asm"
 .game_file_end
 ASSERT game_file_end <= UP_END
@@ -254,6 +258,7 @@ save "GAME", game_file_start, game_file_end, startup, MID_START
 .font_overlay_start
 INCLUDE "asm/upper/steps.asm"
 INCLUDE "asm/upper/keys.asm"
+INCLUDE "asm/low/escape.asm"
 .font_overlay_end
 ASSERT font_overlay_end <= font_end
 FONT_OVERLAY_SIZE = font_overlay_end - font_overlay_start

@@ -51,7 +51,6 @@
 ;     Y: corrupted
 .update_game
     jsr read_controls                   ; Read the sticks, if any play (otherwise an RTS)
-    jsr draw_floor                      ; Redraw the floor, under the heroes in play
     jsr move_heroes                     ; Move the heroes: steps, shots, magic, pick-ups
 ; Doors: for each hero, find a door at the cell they last stepped or tried to step into, and open it if they carry its key.
     ldx #0                              ; For each hero, 0-3...
@@ -112,12 +111,10 @@
     sta monster_y + 35                  ; ...y into the spare byte at monster_y + 35...
     lda cell_x                          ; ...then the door's x...
     sta monster_x + 35                  ; ...into the spare byte at monster_x + 35
-    lda #spr_blank                      ; Erase the door from the screen...
-    sta sprite_number                   ; ...the blank as the sprite to plot
-    lda #0                              ; ...squarely on the door's cell...
+    lda #0                              ; Mark the door's cell, square...
     sta plot_offset_x                   ; ...no shift across (plot_offset_x 0)...
     sta plot_offset_y                   ; ...or down (plot_offset_y 0)
-    jsr plot_at_cell                    ; Blank the door in every view showing its room
+    jsr mark_cells                      ; ...for render, which draws the floor in its place
     lda monster_x + 35                  ; ...and recover its cell
     sta cell_x                          ; ...back into cell_x...
     lda monster_y + 35                  ; ...then the door's y...
@@ -241,7 +238,7 @@
     sta plot_offset_y                   ; ...or down (plot_offset_y 0)
     txa                                 ; Keep the key number...
     pha                                 ; ...on the stack across plot_at_cell
-    jsr plot_at_cell                    ; Blank the key in every view showing it
+    jsr mark_cells                      ; Mark the key's cell, for render to draw it afresh
     pla                                 ; Recover the key number...
     tax                                 ; ...into X: the key being picked up
     pla                                 ; Show the key icon in the hero's panel: hero...
@@ -307,6 +304,7 @@
 .update_rest
     jsr move_missiles                   ; Move the missiles a cell each
     jsr update_monsters                 ; Move the monsters
+    jsr render                          ; Draw what changed
 ; The pause key, last in each frame's update: P, read with test_keyboard, which sees it
 ; whatever other keys are held (OSBYTE &7A, which the 1987 release used, reports only the
 ; lowest-numbered key held, so a movement key could hide P). Pause until P is pressed
@@ -427,13 +425,9 @@
     lda #0                              ; ...squarely on the cell...
     sta plot_offset_x                   ; ...no shift across (plot_offset_x 0)...
     sta plot_offset_y                   ; ...or down (plot_offset_y 0)...
-    lda #spr_blank                      ; ...with the blank sprite
-    sta sprite_number                   ; ...as the sprite to plot
-    txa                                 ; Keep the hero number...
-    pha                                 ; ...on the stack across plot_at_cell
-    jsr plot_at_cell                    ; Plot the blank in every view showing them
-    pla                                 ; Recover the hero number...
-    tax                                 ; ...into X, to move them off the map
+    jsr mark_cells                      ; ...marked, for render to draw the floor there
+    lda #0                              ; Nothing of the hero on show any more...
+    sta hero_drawn_sprite,x             ; ...for render to draw
     lda #off_map                        ; Move them off the map
     sta hero_x,x                        ; ...x off the map, so nothing meets them
     lda exit_x                          ; Hide the exit while they go down it, keeping its position
@@ -565,55 +559,3 @@
     clc                                 ; Nothing here: carry clear
 .object_or_hero_done
     rts                                 ; Return, carry set if an object or hero is there
-; ***************************************************************************************
-; Draw the floor
-;
-; Draw everything that lies under the heroes in play, back to front: the trapdoors and
-; the heroes out of play (draw_trapdoors, which runs on into draw_absent_heroes), the
-; objects and the keys. update_game calls it at the start of every frame, and
-; show_hero_room when a view changes room, so a room comes up with its floor at once.
-;
-; On Exit:
-;     A: corrupted
-;     X: 0
-;     Y: corrupted
-.draw_floor
-    jsr draw_trapdoors                  ; The trapdoors and the heroes out of play...
-    jsr draw_objects                    ; ...the objects...
-    jmp draw_floor_keys                 ; ...and the keys, returning from there
-; ***************************************************************************************
-; Draw the keys on the floor
-;
-; Plot every key lying on the floor, 20 to 1, squarely in its cell. draw_floor runs it
-; after the trapdoors, the heroes out of play and the objects, so a key lies over a skull
-; and under a hero in play standing on it. A key
-; carried is off the map, which no view shows. Key 0 is never drawn.
-;
-; In the 1987 release the keys were drawn after the heroes moved, so a hero standing on a
-; key was covered by it; it was picked up at once, except that a key dropped in a swap
-; then lay under its hero.
-;
-; On Exit:
-;     A: corrupted
-;     X: 0
-;     Y: corrupted
-.draw_floor_keys
-    lda #0                              ; Keys sit squarely in their cells:
-    sta plot_offset_x                   ; ...no pixel offset across...
-    sta plot_offset_y                   ; ...or down
-    lda #spr_key                        ; The key sprite...
-    sta sprite_number                   ; ...the same for every key
-    ldx #max_key                        ; Keys 20 to 1
-.draw_floor_key
-    lda key_x,x                         ; The key's x...
-    sta cell_x                          ; ...is the column to plot at...
-    lda key_y,x                         ; ...and y (off the map if it is carried)...
-    sta cell_y                          ; ...the row
-    txa                                 ; Keep the key number...
-    pha                                 ; ...on the stack across plot_at_cell
-    jsr plot_at_cell                    ; Plot it in every view showing its cell
-    pla                                 ; Recover the key number...
-    tax                                 ; ...into X, counting down the keys
-    dex                                 ; Next key down
-    bne draw_floor_key                  ; More keys: draw the next
-    rts                                 ; Return with the keys drawn

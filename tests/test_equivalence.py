@@ -73,6 +73,7 @@ OBJECTS = 31
 
 # Offsets in the "scratch+1" state block, the same in both builds.
 HERO_X, HERO_Y, HERO_DIRECTION = 0x0F, 0x14, 0x19
+HERO_OFFSET_X, HERO_OFFSET_Y = 0x29, 0x2F
 MISSILE_X, MISSILE_Y, MISSILE_DIRECTION = 0x3F, 0x4B, 0x57
 # Offsets in the "object_x" state block: x, y, then type.
 OBJECT_X, OBJECT_Y, OBJECT_TYPE = 0, OBJECTS, 2 * OBJECTS
@@ -171,6 +172,72 @@ def masked_cells(state):
     return list(zip(state["trapdoor_x"], state["trapdoor_y"])) + absent + near
 
 
+def footprint(x, y, offset_x, offset_y):
+    """The cells a sprite at cell (x, y) covers: the cell, and the next one along
+    while it steps (a non-zero offset, negative from &80)."""
+    cells = {(x, y)}
+    if offset_x:
+        cells.add((x + (-1 if offset_x >= 0x80 else 1), y))
+    if offset_y:
+        cells.add((x, y + (-1 if offset_y >= 0x80 else 1)))
+    return cells
+
+
+def things_on_show(state):
+    """Each thing on the board, by name, with the cells it covers: floor items
+    (trapdoors, objects, keys, heroes out of play) and creatures' images
+    (heroes in play, missiles, monsters, with the cell a step reaches into)."""
+    s = state["scratch+1"]
+    things = {("trapdoor", n): {cell} for n, cell in enumerate(zip(state["trapdoor_x"], state["trapdoor_y"]))}
+    objects = state["object_x"]
+    things.update({("object", n): {(x, y)} for n, (x, y) in enumerate(
+        zip(objects[OBJECT_X:OBJECT_X + OBJECTS], objects[OBJECT_Y:OBJECT_Y + OBJECTS])) if x != OFF_MAP})
+    things.update({("key", n): {(x, y)} for n, (x, y) in enumerate(zip(state["key_x+1"], state["key_y+1"]))
+                   if x != OFF_MAP})
+    for h in range(HEROES):
+        x, y = s[HERO_X + h], s[HERO_Y + h]
+        if s[HERO_DIRECTION + h]:
+            things[("hero", h)] = footprint(x, y, s[HERO_OFFSET_X + h], s[HERO_OFFSET_Y + h])
+        elif x != OFF_MAP:
+            things[("hero", h)] = {(x, y)}
+    things.update({("missile", m): {(s[MISSILE_X + m], s[MISSILE_Y + m])} for m in range(MISSILES)
+                   if s[MISSILE_DIRECTION + m]})
+    things.update({("monster", n): footprint(x, y, ox, oy) for n, (x, y, ox, oy) in enumerate(zip(
+        state["monster_x+1"], state["monster_y+1"], state["monster_offset_x+1"], state["monster_offset_y+1"]))
+        if x != OFF_MAP})
+    return things
+
+
+def crowded_cells(state, previous=None):
+    """The cells where two or more things meet, taking each thing's cells now
+    and in the frame before together (so one leaving a cell as another arrives
+    counts). The revised game draws such a cell as one picture, each thing
+    see-through over those behind; 1987 drew them in turn, solid, the last
+    drawn hiding the rest, or rubbed one out over another. A cell where one
+    thing is, or was, must look as it did."""
+    if "trapdoor_x" not in state:
+        return []
+    things = things_on_show(state)
+    if previous is not None and "trapdoor_x" in previous:
+        for name, cells in things_on_show(previous).items():
+            things[name] = things.get(name, set()) | cells
+    seen, crowded = set(), set()
+    for cells in things.values():
+        crowded |= seen & cells
+        seen |= cells
+    return list(crowded)
+
+
+def view_rooms(state):
+    return [state["scratch+1"][VIEW_ROOM_OFFSET + 2 * view] for view in range(4)]
+
+
+def heroes_on_show(state):
+    s = state["scratch+1"]
+    return [cell for h in range(HEROES) if s[HERO_DIRECTION + h]
+            for cell in footprint(s[HERO_X + h], s[HERO_Y + h], s[HERO_OFFSET_X + h], s[HERO_OFFSET_Y + h])]
+
+
 def masked_screen(state, offsets):
     screen = bytearray(state["screen"])
     for offset in offsets:
@@ -178,12 +245,37 @@ def masked_screen(state, offsets):
     return {**state, "screen": bytes(screen)}
 
 
+# Bytes of the "scratch+1" state block left differently by the revised game's
+# drawing: cell_x, cell_y and cell_room (0-3), scratch values that plotting
+# leaves behind (render draws after play, not as it goes); and
+# previous_offset_x and previous_offset_y (7, 8), which it no longer keeps.
+UNKEPT_STATE = tuple(("scratch+1", offset) for offset in (0, 1, 2, 3, 7, 8))
+
+
+def without_unkept_state(state):
+    blocks = {name: bytearray(state[name]) for name, _ in UNKEPT_STATE if name in state}
+    for name, offset in UNKEPT_STATE:
+        if name in blocks:
+            blocks[name][offset] = 0
+    return {**state, **{name: bytes(block) for name, block in blocks.items()}}
+
+
 def first_difference(original, revised):
+    previous = None
     for frame, (a, b) in enumerate(zip(original, revised)):
         if a.keys() != b.keys():
             return f"frame {frame}: {'game over' if 'game over' in b else 'play'} revised, the other originally"
+        a, b = without_unkept_state(a), without_unkept_state(b)
         if "screen" in a:
-            offsets = cell_screen_offsets(a, masked_cells(a))
+            # Crowded cells now and in the frame before (a thing just gone, a key
+            # picked up from under a hero, say), and the heroes' cells when a view
+            # changes room (1987 drew a hero moved before the change a frame late).
+            cells = masked_cells(a) + crowded_cells(a, previous)
+            if previous and "scratch+1" in previous:
+                if view_rooms(previous) != view_rooms(a):
+                    cells += heroes_on_show(a)
+            previous = a
+            offsets = cell_screen_offsets(a, cells)
             a, b = masked_screen(a, offsets), masked_screen(b, offsets)
         for name in a:
             if a[name] != b[name]:

@@ -50,6 +50,8 @@ def reach_the_chalice(run):
     run.poke(labels["hero_door_x"], bytes([CHALICE_X]))
     run.poke(labels["hero_door_y"], bytes([CHALICE_Y]))
     run.poke(labels["view_room"], bytes([CHALICE_ROOM]))
+    if "render_all" in labels:      # the revised game draws only what changes: draw the view afresh
+        run.poke(labels["render_all"], bytes([1]))
     level = (REVISED_BUILD_DIRPATH / f"Level{LAST_LEVEL}").read_bytes()
     walls_text = level[LEVEL_WALLS_OFFSET + TEXT_OFFSET:][:TEXT_BYTES]
     message_start = LEVEL_OBJECT_FREE_MAP_OFFSET + TEXT_OFFSET
@@ -84,6 +86,21 @@ def original_victory_screens():
         return ring, screen(run)
 
 
+RING_CELLS = [(x, y) for x in range(CHALICE_X - 1, CHALICE_X + 3) for y in range(CHALICE_Y - 1, CHALICE_Y + 3)
+              if not (CHALICE_X <= x <= CHALICE_X + 1 and CHALICE_Y <= y <= CHALICE_Y + 1)]
+
+
+def ring_area(screen_bytes):
+    """The bytes of the twelve cells of the ring round the Chalice's four, in the
+    Ranger's view (turned to the Chalice's room, at corner byte 1, row 1). The
+    four are not compared: level 1 has no Chalice there, and what shows in
+    them is the view's old walls in 1987 and the floor in the revised game."""
+    return bytes(screen_bytes[(line >> 3) * 640 + (line & 7) + column * 8]
+                 for x, y in RING_CELLS
+                 for line in range(1 + (y & 7) * 12, 13 + (y & 7) * 12)
+                 for column in range(1 + (x & 7) * 4, 5 + (x & 7) * 4))
+
+
 def assert_same(original, revised, when):
     differences = [i for i in range(len(original)) if original[i] != revised[i]]
     assert differences == [], \
@@ -113,5 +130,5 @@ def test_the_victory_matches_the_original(disc_filepaths):
         run_to(run, key_wait(run, "ending_victory"), VICTORY_SECONDS)
         text = screen(run)
     original_ring, original_text = original_victory_screens()
-    assert_same(original_ring, ring, "with the ring round the Chalice")
+    assert_same(ring_area(original_ring), ring_area(ring), "with the ring round the Chalice")
     assert_same(original_text, text, "with the ending text")

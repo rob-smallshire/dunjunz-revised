@@ -1,73 +1,4 @@
 ; ***************************************************************************************
-; Draw the trapdoors
-;
-; Redraw the eight trapdoors, because erasing a creature or missile that crossed one has
-; blanked its cell. update_game calls it first in each frame, so every hero, missile and
-; monster is drawn over them. The 1987 release drew them at the start of update_monsters,
-; after the heroes and missiles, so a hero or missile on a trapdoor flickered with it.
-; draw_absent_heroes follows, so a skull on a trapdoor is drawn over it too.
-;
-; On Exit:
-;     A: corrupted
-;     X: &FF
-;     Y: corrupted
-.draw_trapdoors
-    ldx #8                              ; Redraw trapdoors 8 to 1 (sprite &2C)...
-    lda #0                              ; Trapdoors sit squarely in their cells:
-    sta plot_offset_x                   ; ...no horizontal offset...
-    sta plot_offset_y                   ; ...and no vertical offset
-    lda #spr_trapdoor                   ; The trapdoor sprite...
-    sta sprite_number                   ; ...the same for all eight
-.draw_trapdoor
-    lda trapdoor_x - 1,x                ; This trapdoor's map x...
-    sta cell_x                          ; ...as the cell to plot
-    lda trapdoor_y - 1,x                ; ...and its map y
-    sta cell_y                          ; ...as cell_y
-    txa                                 ; Keep the trapdoor number...
-    pha                                 ; ...on the stack: plot_at_cell changes X
-    jsr plot_at_cell                    ; Draw it in every view showing its cell
-    pla                                 ; Recover the trapdoor number...
-    tax                                 ; ...back in X
-    dex                                 ; Next trapdoor down
-    bne draw_trapdoor                   ; Until trapdoor 1 is drawn, then on to the skulls
-; ***************************************************************************************
-; Draw the heroes out of play
-;
-; Plot every hero who is dying, dead (a skull) or returning through a Cross with entry
-; hero_frame of hero_appearance_sprites, squarely in their cell. Reached from
-; draw_trapdoors, at the start of every frame, so these are drawn over the trapdoors and
-; under everything drawn after: a hero in play standing on a skull, a key, an object, a
-; missile, a monster. animate_absent_hero steps hero_frame in the hero's turn. A hero
-; nobody plays, or one gone down the exit (step &63), is not drawn. A hero who has just
-; died shows entry hero_frame from the next frame: their walking frame, 0 or 1, both
-; sparkles, which lose_health_point leaves as it is.
-;
-; On Exit:
-;     A: corrupted
-;     X: &FF
-;     Y: corrupted
-.draw_absent_heroes
-    ldx #3                              ; Heroes 3 to 0...
-.draw_absent_hero
-    lda hero_direction,x                ; ...out of play (no direction)?
-    bne absent_hero_drawn               ; No: in play, drawn by move_heroes
-    lda hero_step,x                     ; ...and played (not step &63)?
-    cmp #step_out_of_play               ; Nobody plays them, or they have gone down the exit?
-    beq absent_hero_drawn               ; Yes: nothing to draw
-    jsr get_hero_cell                   ; Their cell, in cell_x and cell_y
-    ldy hero_frame,x                    ; Their place in the appearance sequence...
-    lda hero_appearance_sprites,y       ; ...picks the sparkle or skull to show
-    sta sprite_number                   ; ...as the sprite to plot (offsets still 0)
-    txa                                 ; Keep the hero number...
-    pha                                 ; ...on the stack: plot_at_cell changes X
-    jsr plot_at_cell                    ; Plot it in every view that shows the hero
-    pla                                 ; Recover the hero number...
-    tax                                 ; ...back in X
-.absent_hero_drawn
-    dex                                 ; Next hero down
-    bpl draw_absent_hero                ; More heroes: draw the next
-    rts                                 ; Return with the trapdoors and absent heroes drawn
-; ***************************************************************************************
 ; Move the monsters
 ;
 ; Move every monster on by one frame of its life. update_game calls it once a frame,
@@ -113,19 +44,13 @@
 .next_monster_update
     txa                                 ; Keep the monster number...
     pha                                 ; ...on the stack while it moves
-    lda monster_x,x                     ; Erase it at its cell and offsets, remembering the cell
-    sta cell_x                          ; ...as the cell to erase...
+    jsr note_monster                    ; Note how it looks, for render (X kept)
+    lda monster_x,x                     ; Remember its cell...
+    sta cell_x                          ; ...as cell_x...
     sta previous_x                      ; ...and as where it came from
     lda monster_y,x                     ; ...and its map y...
-    sta cell_y                          ; ...as the cell to erase...
+    sta cell_y                          ; ...as cell_y...
     sta previous_y                      ; ...and as where it came from
-    lda #spr_blank                      ; The blank sprite...
-    sta sprite_number                   ; ...to rub it out
-    lda monster_offset_x,x              ; Its horizontal offset...
-    sta plot_offset_x                   ; ...for the erase
-    lda monster_offset_y,x              ; ...and its vertical offset...
-    sta plot_offset_y                   ; ...so the blank covers it where it was drawn
-    jsr plot_at_cell                    ; Rub the monster out in every view showing it
     pla                                 ; The monster number back from the stack...
     pha                                 ; ...left there for monster_done
     tax                                 ; ...in X again
@@ -250,22 +175,13 @@
     sta monster_y,x                     ; ...back in monster_y: drawn offset from there
 ; Draw the monster at its recorded cell, displaced by its offsets, as its facing sprite plus its walking frame, in every view that shows the room. The dying and reappearing paths join at monster_done, which pulls the monster number and moves on to the next.
 .draw_monster
-    lda monster_x,x                     ; Draw it: its cell, facing + frame, offsets
-    sta cell_x                          ; ...as cell_x for plot_at_cell
-    lda monster_y,x                     ; Its map y...
-    sta cell_y                          ; ...as cell_y for plot_at_cell
-    clc                                 ; Ready to add the frame
-    lda monster_sprite,x                ; Its facing sprite...
-    adc monster_frame,x                 ; ...plus walking frame 0 or 1...
-    sta sprite_number                   ; ...is the sprite to plot
-    lda monster_offset_x,x              ; How far it has slid across...
-    sta plot_offset_x                   ; ...as the horizontal offset
-    lda monster_offset_y,x              ; How far it has slid down...
-    sta plot_offset_y                   ; ...as the vertical offset
-    txa                                 ; Keep the monster number...
-    pha                                 ; ...across the plot, which changes X
-    jsr plot_at_cell                    ; Draw it in every view whose room shows it
+    txa                                 ; Keep the monster number for monster_done
+    pha                                 ; ...
 .monster_done
+    pla                                 ; The monster number...
+    pha                                 ; ...
+    tax                                 ; ...
+    jsr mark_monster_if_changed         ; ...marked if it looks different, for render
     pla                                 ; The monster number back from the stack...
     tax                                 ; ...in X, to count on down
     dex                                 ; Next monster down
@@ -282,17 +198,6 @@
     bne draw_monster_death              ; No: draw this sparkle
     jmp monster_reappears               ; Yes: bring it back at a trapdoor
 .draw_monster_death
-    txa                                 ; Draw the sparkle where the monster died...
-    pha                                 ; ...keeping the monster number across the plot
-    lda monster_x,x                     ; Its map x, where it died...
-    sta cell_x                          ; ...as cell_x for plot_at_cell
-    lda monster_y,x                     ; ...and its map y...
-    sta cell_y                          ; ...as cell_y for plot_at_cell
-    lda monster_sprite,x                ; The sparkle sprite, with no walking frame...
-    sta sprite_number                   ; ...is the sprite to plot
-    lda monster_offset_x,x              ; Offsets frozen at the moment it died...
-    sta plot_offset_x                   ; ...across, as plot_offset_x
-    lda monster_offset_y,x              ; ...and how far down it had slid...
-    sta plot_offset_y                   ; ...so it sparkles exactly where it died
-    jsr plot_at_cell                    ; Draw the sparkle in every view showing it
+    txa                                 ; Keep the monster number for monster_done
+    pha                                 ; ...(render draws the sparkle where it died)
     jmp monster_done                    ; Pull the monster number and on to the next

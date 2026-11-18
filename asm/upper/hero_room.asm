@@ -53,7 +53,8 @@
 .show_view_3
     jsr draw_view_3                     ; Hero 3: redraw the bottom-right view
 .draw_room_floor
-    jsr draw_floor                      ; Trapdoors, skulls, objects and keys, in every view
+    lda #1                              ; Everything in the view is to be drawn by render
+    sta render_all                      ; ...(the view's floor is blank)
     pla                                 ; Recover the hero...
     tax                                 ; ...into X, as the caller had it
     rts                                 ; Return with the hero's view redrawn

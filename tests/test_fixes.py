@@ -179,17 +179,14 @@ def test_standing_on_a_key_swaps_once(disc_filepaths):
 
 
 def test_a_dropped_key_is_drawn_under_the_hero(disc_filepaths):
-    """After the swap, the key left under the Ranger is drawn at the start of
-    each frame and the Ranger over it, so the hero does not flicker with it."""
+    """After the swap, the key left under the Ranger shows round them, and
+    neither is plotted again while the Ranger stands there: steady."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         x, y = ranger_on_a_key(run)
-        cell = x[0], y[0]
         for _ in range(3):
             run.next_frame(set())
-        for frame in cell_plots_per_frame(run, 4):
-            assert SPR_KEY in [sprite for sprite, *at in frame if tuple(at) == cell]
-            assert last_plotted_at(frame, cell) == RANGER_STANDING
+        assert_steady(run, (x[0], y[0]), [SPR_KEY, ranger_sprite(run)])
 
 
 def plots_per_frame(run, frames):
@@ -222,18 +219,14 @@ def put_trapdoors_under_the_ranger(run):
 
 
 def test_a_hero_on_a_trapdoor_is_drawn_over_it(disc_filepaths):
+    """The trapdoor shows round the Ranger standing on it, steady."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         put_trapdoors_under_the_ranger(run)
+        draw_everything(run)
         for _ in range(3):
             run.next_frame(set())
-        for frame in plots_per_frame(run, 4):
-            ranger = {(x, y) for sprite, x, y in frame if sprite == RANGER_STANDING}
-            assert ranger
-            last = {}
-            for sprite, x, y in frame:
-                last[(x, y)] = sprite
-            assert all(last[place] == RANGER_STANDING for place in ranger)
+        assert_steady(run, (byte(run, "hero_x"), byte(run, "hero_y")), [SPR_TRAPDOOR, ranger_sprite(run)])
 
 
 def test_a_trapdoor_a_hero_stands_on_stays_shut(disc_filepaths):
@@ -616,16 +609,16 @@ def last_plotted_at(frame, cell):
 
 def test_a_key_with_no_room_beside_the_skull_is_drawn_over_it(disc_filepaths):
     """With walls all round, the key stays in the skull's cell, not lost, and
-    is the last thing drawn there every frame: steady, and plain to see."""
+    shows over the skull, steady, plain to see."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         skull = fighter_dies_with_a_key(run)
         for dx, dy in (ABOVE, RIGHT, BELOW, LEFT):
             make_wall(run, skull[0] + dx, skull[1] + dy)
-        run.next_frame(set())
+        for _ in range(3):
+            run.next_frame(set())
         assert key_cell(run, 19) == skull                  # not lost
-        for frame in cell_plots_per_frame(run, 4):
-            assert last_plotted_at(frame, skull) == SPR_KEY
+        assert_steady(run, skull, [skull_sprite(run), SPR_KEY])
 
 
 SPR_TRAPDOOR = 0x2C
@@ -660,43 +653,118 @@ def test_a_skull_on_a_trapdoor_keeps_it_shut(disc_filepaths):
 
 
 def test_a_skull_is_drawn_over_a_trapdoor_every_frame(disc_filepaths):
-    """The skull is plotted every frame, after the trapdoor, so it stays on the
-    screen instead of alternating with the trapdoor."""
+    """The skull shows over the trapdoor, steady, instead of alternating with it."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         skull = fighter_dies_on_every_trapdoor(run)
-        run.next_frame(set())
-        skull_sprite = run.peek(run.address("hero_appearance_sprites") + 8, 1)[0]
-        for frame in cell_plots_per_frame(run, 4):
-            assert last_plotted_at(frame, skull) == skull_sprite
+        draw_everything(run)
+        for _ in range(3):
+            run.next_frame(set())
+        assert_steady(run, skull, [SPR_TRAPDOOR, skull_sprite(run)])
 
 
 def test_a_hero_in_play_is_drawn_over_a_skull(disc_filepaths):
     """The Ranger stands on the Fighter's skull. The Fighter comes later in the
     heroes' order, so the 1987 game plotted the skull over the Ranger every
-    other frame; now the Ranger is the last thing plotted there every frame."""
+    other frame; now the skull shows round the Ranger, steady."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         skull = fighter_dies_with_a_key(run)
         set_byte(run, f"hero_key+{FIGHTER}", 0)
         set_byte(run, f"hero_x+{RANGER}", skull[0])
         set_byte(run, f"hero_y+{RANGER}", skull[1])
-        run.next_frame(set())
-        for frame in cell_plots_per_frame(run, 4):
-            assert last_plotted_at(frame, skull) == RANGER_STANDING
+        turn_the_rangers_view_to(run, skull)
+        draw_everything(run)
+        for _ in range(3):
+            run.next_frame(set())
+        assert_steady(run, skull, [skull_sprite(run), ranger_sprite(run)])
 
 
 SPR_DRAINER = 0x53
 
 
 def test_a_hero_on_an_energy_drainer_still_flickers(disc_filepaths):
-    """Kept on purpose: the drainer is drawn over the hero standing on it every
-    frame, after the hero, as a warning."""
+    """Kept on purpose, as a warning: a hero standing on an energy drainer is
+    left out every other frame, so the screen shows the drainer alone and the
+    hero over it in turn."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
-        ranger_on_a_cross(run, object_type=SPR_DRAINER)
+        drainer = ranger_on_a_cross(run, object_type=SPR_DRAINER)
         cell = byte(run, "hero_x"), byte(run, "hero_y")
+        turn_the_rangers_view_to(run, cell)
+        draw_everything(run)
         run.next_frame(set())
-        for frame in cell_plots_per_frame(run, 3):
-            assert RANGER_STANDING in [sprite for sprite, *at in frame if tuple(at) == cell]
-            assert last_plotted_at(frame, cell) == SPR_DRAINER
+        alone = []
+        for _ in range(4):
+            stage = byte(run, f"object_type+{drainer}")
+            alone.append(cell_on_screen(run, cell) == composed(run, [stage]))
+            run.next_frame(set())
+        assert alone in ([True, False, True, False], [False, True, False, True])
+
+
+# Screens: the revised game draws each cell as one picture, what lies there
+# with each thing over it see-through (render), and draws a cell again only
+# when something in it changes.
+SCREEN_START = 0x3000
+VIEW_CORNERS = ((1, 1), (0x23, 1), (1, 0x67), (0x23, 0x67))   # plot_at_cell's view origins
+CELL_BYTES, CELL_ROWS = 4, 12
+
+
+def cell_on_screen(run, cell):
+    """The screen bytes of a map cell, row by row, in the first view showing it."""
+    x, y = cell
+    room = (y & 0xF8) * 4 + (x & 0xF8)
+    for view, (column, row) in enumerate(VIEW_CORNERS):
+        if byte(run, f"view_room+{2 * view}") == room:
+            plot_x, plot_y = column + (x & 7) * CELL_BYTES, row + (y & 7) * CELL_ROWS
+            return bytes(run.peek(SCREEN_START + (line >> 3) * 640 + (line & 7) + column_byte * 8, 1)[0]
+                         for line in range(plot_y, plot_y + CELL_ROWS)
+                         for column_byte in range(plot_x, plot_x + CELL_BYTES))
+    raise AssertionError(f"no view shows cell {cell}")
+
+
+def sprite_data(run, sprite):
+    address = byte(run, f"sprite_addr_hi+{sprite}") << 8 | byte(run, f"sprite_addr_lo+{sprite}")
+    return run.peek(address, CELL_BYTES * CELL_ROWS)
+
+
+def overlaid(under, over):
+    """over drawn see-through on under: each MODE 2 pixel (bits &AA left, &55
+    right) is over's unless it is black, then under's."""
+    return bytes(sum((o & mask) if o & mask else (u & mask) for mask in (0xAA, 0x55)) for u, o in zip(under, over))
+
+
+def composed(run, sprites):
+    """A cell holding sprites, back to front, each see-through over the last."""
+    picture = bytes(CELL_BYTES * CELL_ROWS)
+    for sprite in sprites:
+        picture = overlaid(picture, sprite_data(run, sprite))
+    return picture
+
+
+def ranger_sprite(run):
+    return byte(run, "hero_direction") + byte(run, "hero_frame") + byte(run, "hero_sprites")
+
+
+def skull_sprite(run):
+    return run.peek(run.address("hero_appearance_sprites") + 8, 1)[0]
+
+
+def turn_the_rangers_view_to(run, cell):
+    """Show cell's room in the Ranger's view (only cells there are looked at)."""
+    set_byte(run, "view_room", (cell[1] & 0xF8) * 4 + (cell[0] & 0xF8))
+
+
+def draw_everything(run):
+    """After poking things into place, have render draw every view afresh, as
+    when a view comes on show: it draws only what play marks as changed."""
+    set_byte(run, "render_all", 1)
+
+
+def assert_steady(run, cell, sprites):
+    """The cell shows sprites, back to front, see-through, and nothing is
+    plotted there for some frames: nothing on the screen there changes, so
+    nothing can flicker."""
+    for frame in cell_plots_per_frame(run, 4):
+        assert [sprite for sprite, *at in frame if tuple(at) == cell] == []
+        assert cell_on_screen(run, cell) == composed(run, sprites)

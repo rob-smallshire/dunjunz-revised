@@ -93,8 +93,7 @@
 ; find_open_neighbour picks the first of the cells above, right of, below and left of the
 ; hero that is free (no wall, key, object or hero); if none is, the first that is open (no
 ; wall), and the key is stacked on whatever lies there, as keys can lie on one another.
-; The key's key_x/key_y are set to that cell, so draw_floor_keys shows it from the next
-; frame; hero_key is cleared and the key icon erased from the hero's panel section. Only
+; The key's key_x/key_y are set to that cell, and it is marked for render to draw; hero_key is cleared and the key icon erased from the hero's panel section. Only
 ; with walls on all four sides is the key put off the map, lost for this level. A hero
 ; with no key moves key entry 0, which is never drawn or picked up.
 ;
@@ -122,6 +121,7 @@
     sta key_x,y                         ; ...as the key's x...
     lda cell_y                          ; ...and its y...
     sta key_y,y                         ; ...as the key's y
+    jsr mark_cell                       ; ...marked, for render to draw it there
     lda #0                              ; The hero carries no key
     sta hero_key,x                      ; ...in the hero's key slot
     lda #spr_blank_key_icon             ; Erase the key icon from the hero's panel

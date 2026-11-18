@@ -25,6 +25,10 @@
 ;     X: 0
 ;     Y: 0
 .plot_sprite
+    bit plot_mode                       ; See-through (bit 7)?
+    bpl plot_solid                      ; No: solid
+    jmp plot_see_through                ; Yes: plot_see_through (solid if not four bytes wide)
+.plot_solid
     ldx sprite_number                   ; X = sprite number, indexing the four sprite tables
     lda sprite_addr_lo,x                ; Point sprite_data_ptr at the sprite's data...
     sta sprite_data_ptr                 ; ...its low byte from sprite_addr_lo

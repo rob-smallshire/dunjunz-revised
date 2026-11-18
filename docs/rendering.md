@@ -105,22 +105,37 @@ steps two 16-bit pointers for every byte.
 
 ## Where it stands (2026-11-18)
 
-Steps 1-3 are done, on the `render` branch. Step 4 is written but parked on
-`render-wip`, because it does not fit. `render.asm` (marking, the growing of
-the marks, the floor and creature passes, and marking everything when a view
-comes on show) assembles to 939 bytes; taking out the old per-frame floor
-drawing (`draw_floor`, `draw_trapdoors`, `draw_absent_heroes`,
-`draw_objects`, `draw_floor_keys`) and the plots it replaces gives back about
-150, and the regions have about 400 free between them. Tightening the code
-might save 200 more. That leaves it some 300-500 bytes short.
+Steps 1-4 are done, on the `render` branch: play marks what changes, and
+`render` (`asm/upper/render.asm`, with pieces in other regions for room:
+`render_floor.asm`, `render_monsters.asm`, `render_marked.asm`,
+`render_low.asm`) draws the marked cells after play. Changes found on the
+way:
 
-Places to find them, largest first:
+- A creature is marked only when it looks different: a hero by comparing
+  with `hero_drawn_*` (`draw_hero`), a monster by noting it before its move
+  and comparing after (`note_monster`, `mark_monster_if_changed`). Marking
+  every creature every frame, as 1987 plotted them, would redraw a hero
+  standing on a trapdoor every frame, floor then hero, and the raster would
+  catch the floor alone: the flicker this is meant to end.
+- A creature that has not changed stands in one cell (one part way between
+  cells moves every frame), so growing the marks needs one pass over the
+  creatures' own cells.
+- Each cell is marked in the first view showing its room only (views 3 to
+  0); `plot_at_cell` draws it in every view showing it.
+- A view coming on show marks all its cells; the walls among them are left
+  as the view drew them.
+- An energy drainer keeps its warning: the hero on it is left out every
+  other frame.
+- The memory came from making the font, the WRCHV handler and the end of
+  the game non-resident in play (see `docs/memory.md`), working out sprite
+  sizes instead of two tables, and moving small modules between regions.
 
-| Where | Saves | What it takes |
-|---|---|---|
-| The game's font and its WRCHV handler (`font.asm`, `wrch.asm`) | ~400 | Nothing prints text in play (checked): only the hero menu, before play, and the ending. The ending could carry its own copy, and Setup could copy play code over the resident one at each level, after the menu. But Setup and the ending share a file, loaded whole by `load_ending`, and it would no longer fit above the stash: the ending would have to be read on its own (OSGBPB from an offset). Or the hero menu could print in the MOS's font, and the font live only in the ending: simpler, but the menu would look different. |
-| The same, without reading part of a file: the end of the game carries its own font, WRCHV handler and sprite tables (the only things it needs from &0F00-&16FF), so `load_ending` need not stash that workspace at all, and the whole of Setup (set-up code, play code for Setup to copy over the font at each level, and the end) fits in the upper region once play is over | ~400 | Tried 2026-11-18: reading only the end with OSFIND, OSARGS and OSGBPB works with NFS 3.65 but not ANFS 4.18, which rejects the handle OSFIND gives it ("Net channel 170"), so a part of a file cannot be read everywhere. Loading the whole file avoids that. |
-| The sprite size tables (`sprite_widths`, `sprite_heights`) | ~170 | All but about 25 sprites are 4 x 12, so the size can be worked out. The exit animation shrinks the leaving hero by changing these tables, so that moves into the plotter; the state comparisons, `test_plot.py` and `dr-sprites` read the tables. |
-| `render.asm` itself | ~200 | Simpler marking for a view coming on show (all its open cells, rather than everything in it), one routine for the cell a step reaches into. |
-| Sprites packed two bits a pixel | ~1,000 | Slower plotting, which the frame cannot afford. |
+The comparisons with 1987 leave out cells where two things meet, now or in
+the frame before (`crowded_cells`): those are drawn as one picture now.
+Every cell holding one thing matches.
 
+Frame times (`dr-frame-time`, 300 frames): median 119,869 cycles, 90%
+160,824, max 988,056 (a level's first frame, drawing every view). Next: mark
+each room once when views come on show, and draw a creature solid when
+nothing else is in its cells, to bring the busy frames back to the pace.
+Then step 6, a dead hero's key in the skull's cell.

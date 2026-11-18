@@ -24,8 +24,8 @@
 ; 7) sounds and the hero's frame flips. With no slot free, or no key held, the hero
 ; stands still.
 ;
-; A hero who moved or was refused is erased from where they were drawn, using
-; previous_x/y and previous_offset_x/y; every hero still in play is then drawn, and
+; Every hero still in play is then drawn (draw_hero, which notes them for render and
+; marks their cells if they look different), and
 ; collect_objects runs whenever object_free_map lets their cell hold an object, every
 ; frame they are there and not only on arrival. check_magic's delay returns from
 ; move_heroes itself, so after a cast the later heroes are not moved for three frames.
@@ -48,21 +48,17 @@
 .animate_absent
     jsr animate_absent_hero             ; Step the skull or resurrection animation
     jmp next_hero                       ; Then on to the next hero
-; In play: keep the cell and offsets now drawn, to erase the hero there and to put them back if blocked.
+; In play: keep the cell, to put the hero back there if blocked.
 .remember_hero_position
     lda hero_x,x                        ; Remember the hero's cell and offsets before moving
     sta previous_x                      ; previous_x: where to put the hero back if blocked
     lda hero_y,x                        ; The cell's y...
     sta previous_y                      ; ...in previous_y, for the same
-    lda hero_offset_x,x                 ; The horizontal pixel offset now drawn...
-    sta previous_offset_x               ; ...so erase_hero blanks the image where it is
-    lda hero_offset_y,x                 ; And the vertical pixel offset...
-    sta previous_offset_y               ; ...for the same erase
 ; A hero half way through a step arrives this frame and reads no keys; only a standing hero acts.
     lda hero_step,x                     ; Half way between cells (step 1)?
     beq check_magic_key                 ; No: standing in a cell, so read the keys
     jsr continue_hero_step              ; Yes: arrive in the next cell; no keys this frame
-    jmp erase_hero                      ; Erase the half-way image, draw the arrival
+    jmp draw_moved_hero                 ; Draw the arrival
 .check_magic_key
     cpx #2                              ; Hero 0 or 1 (the two with magic)?
     bcs read_hero_keys                  ; Barbarian or Fighter: no magic, straight to the keys
@@ -198,7 +194,7 @@
     sta hero_step,x                     ; No step under way...
     sta hero_offset_x,x                 ; ...no horizontal offset...
     sta hero_offset_y,x                 ; ...and no vertical offset
-    jmp erase_hero                      ; Erase the old image, draw the hero in their cell
+    jmp draw_moved_hero                 ; Draw the hero in their cell
 ; No wall. A monster in the cell, alive or dying, refuses the move and costs the hero one health point.
 .check_monster_in_cell
     lda #0                              ; Is a monster in the cell tried?
@@ -219,7 +215,7 @@
     sta hero_offset_x,x                 ; ...no horizontal offset...
     sta hero_offset_y,x                 ; ...and no vertical offset
     jsr lose_health_point               ; ...and pays a health point for walking into it
-    jmp erase_hero                      ; Erase the old image, draw the hero in their cell
+    jmp draw_moved_hero                 ; Draw the hero in their cell
 ; Nor a monster. Another hero in play there refuses the move at no cost; a hero out of play (a skull) does not.
 .check_hero_in_cell
     stx scratch                         ; Is another hero in play in the cell tried?
@@ -243,7 +239,7 @@
     sta hero_step,x                     ; ...no step under way...
     sta hero_offset_x,x                 ; ...no horizontal offset...
     sta hero_offset_y,x                 ; ...and no vertical offset
-    jmp erase_hero                      ; Erase the old image, draw the hero in their cell
+    jmp draw_moved_hero                 ; Draw the hero in their cell
 .next_other_hero
     iny                                 ; Next hero to compare with the cell tried
     cpy #4                              ; Checked all four?
@@ -270,29 +266,12 @@
     sta hero_offset_x,x                 ; No horizontal offset...
     sta hero_offset_y,x                 ; ...no vertical offset...
     sta hero_step,x                     ; ...and no step: one cell a frame, twice the pace
-    jmp erase_hero                      ; Erase the old position and draw the new
+    jmp draw_moved_hero                 ; Draw the hero in the new cell
 .stay_in_old_cell
     lda previous_x                      ; No boots: hero stays in the old cell, drawn half way
     sta hero_x,x                        ; ...by start_hero_step's offsets; next frame it arrives
     lda previous_y                      ; And the old y...
     sta hero_y,x                        ; ...so others still meet the hero in the old cell
-; Erase the hero's image from where it was drawn last.
-.erase_hero
-    lda #spr_blank                      ; Erase the hero's image as it was before this frame
-    sta sprite_number                   ; The blank sprite...
-    lda previous_x                      ; ...at the hero's old cell...
-    sta cell_x                          ; ...as the cell to plot at
-    lda previous_y                      ; And the old y...
-    sta cell_y                          ; ...in cell_y: where the hero was last drawn
-    lda previous_offset_x               ; With the old pixel offsets too...
-    sta plot_offset_x                   ; ...the old horizontal offset...
-    lda previous_offset_y               ; ...and the old vertical offset...
-    sta plot_offset_y                   ; ...so a half-way image is blanked where it was
-    txa                                 ; Keep the hero number...
-    pha                                 ; ...on the stack across plot_at_cell
-    jsr plot_at_cell                    ; Blank the hero in every view showing that cell
-    pla                                 ; Recover the hero number...
-    tax                                 ; ...into X, to draw the same hero
 ; Draw the hero, then pick up any object in their cell. A hero comes here on every frame they are moved, standing still or not, so a hero standing on an energy drainer loses 10 health a frame.
 .draw_moved_hero
     clc                                 ; Clear carry for the sprite sum
@@ -302,6 +281,8 @@
     adc hero_sprites,x                  ; ...+ the hero's base: Ranger, Magic-User, and so on
     sta sprite_number                   ; The sprite to draw
     jsr draw_hero                       ; Draw them in every view showing their cell
+    lda #0                              ; No energy drainer under them yet...
+    sta hero_drainer,x                  ; ...collect_objects notes one
     lda hero_x,x                        ; Can the hero's cell hold an object?
     sta cell_x                          ; The hero's cell, to test for an object...
     lda hero_y,x                        ; And the hero's y...
@@ -378,7 +359,7 @@
     sta cell_y                          ; ...in cell_y: where it was drawn last frame
     txa                                 ; Keep the missile slot...
     pha                                 ; ...on the stack across plot_at_cell
-    jsr plot_at_cell                    ; Blank it in every view showing that cell
+    jsr mark_cells                      ; Mark where it was drawn, for render
     pla                                 ; Recover the missile slot...
     tax                                 ; ...into X, to move the same missile
 .step_missile
@@ -542,7 +523,7 @@
     sta sprite_number                   ; ...is the sprite to plot
     txa                                 ; Keep the missile slot...
     pha                                 ; ...across the plot
-    jsr plot_at_cell                    ; Plot the missile in every view showing its cell
+    jsr mark_cells                      ; Mark its new cell, for render to draw it there
     pla                                 ; Recover the missile slot...
     tax                                 ; ...into X, for the slot loop
 .next_missile

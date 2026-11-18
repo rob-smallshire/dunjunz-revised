@@ -1,44 +1,4 @@
 ; ***************************************************************************************
-; Draw the level's objects
-;
-; Draw every object still on the level (treasure, food, teleporters, drainers, magic
-; items, the exit) in whichever views show it. update_game calls this at the start of
-; every frame, after the trapdoors and the heroes out of play and before the keys and
-; move_heroes, so an object that something crossed last frame is put back, and a hero in
-; play is drawn over any object in their cell (a Cross nobody is waiting for, say). An
-; energy drainer is drawn over its hero again by collect_objects. The 1987 release drew
-; the objects after the heroes, so a hero standing on any object flickered with it.
-;
-; Objects 30 (the exit) down to 1 are plotted with plot_at_cell, their type being their
-; sprite, squarely in their cells (no pixel offset). Object 0 is not drawn. A collected
-; or worn-away object has map x and y &FF (off_map), which plot_at_cell works out to a
-; room offset (&DB) that no view shows, so it is not drawn.
-;
-; On Exit:
-;     A: corrupted
-;     X: 0
-;     Y: corrupted
-.draw_objects
-    lda #0                              ; No pixel offsets
-    sta plot_offset_x                   ; ...across the cell horizontally...
-    sta plot_offset_y                   ; ...and vertically: objects sit squarely in their cells
-    ldx #max_object                     ; Objects 30 to 1: plot each at its cell
-.draw_each_object
-    lda object_x,x                      ; This object's map x...
-    sta cell_x                          ; ...is the cell to plot at...
-    lda object_y,x                      ; ...and its map y...
-    sta cell_y                          ; ...the cell's row
-    lda object_type,x                   ; Its type, which is also its sprite...
-    sta sprite_number                   ; ...as the sprite to plot
-    txa                                 ; Keep the object number...
-    pha                                 ; ...across the plot
-    jsr plot_at_cell                    ; Plot it in every view showing its cell
-    pla                                 ; Recover the object number...
-    tax                                 ; ...into X, to count down
-    dex                                 ; Next object down
-    bne draw_each_object                ; Until object 1 is drawn (object 0 is not drawn)
-    rts                                 ; Return to update_game, X = 0
-; ***************************************************************************************
 ; Pick up the object in a hero's cell
 ;
 ; Give hero X whatever lies in the cell they have just stepped into: pick up treasure,
@@ -281,15 +241,15 @@
     bcs magic_item                      ; Yes: collect the magic item
     cmp #spr_exit                       ; The exit? The main loop deals with it...
     beq next_object                     ; ...so search on for another object in the cell
-; An energy drainer (&53-&5E): draw it again over the hero, sound it by playing hit_sound with its pitch changed to &32 for the call, then take 10 health one point at a time. The drainer stays, and acts again on every frame the hero's cell is its cell. The objects are drawn under the heroes, so this plot alone makes a hero on a drainer flicker with it, a warning kept from the 1987 release, which drew every object over the heroes.
+; An energy drainer (&53-&5E): note it for render (hero_drainer) and mark the hero's cell, sound it by playing hit_sound with its pitch changed to &32 for the call, then take 10 health one point at a time. The drainer stays, and acts again on every frame the hero's cell is its cell. render leaves the hero out every other frame, so they flicker with it, a warning kept from the 1987 release, which drew every object over the heroes.
     lda object_type,y                   ; Any other type is an energy drainer: its stage...
-    sta sprite_number                   ; ...as the sprite to plot over the hero
-    lda #0                              ; Squarely in its cell, the hero's (cell_x, cell_y)...
-    sta plot_offset_x                   ; ...whatever the hero's own offsets...
-    sta plot_offset_y                   ; ...across and down
+    sta hero_drainer,x                  ; ...noted: render leaves the hero out every other frame
+    lda #0                              ; Mark the hero's cell (cell_x, cell_y), square...
+    sta plot_offset_x                   ; ...
+    sta plot_offset_y                   ; ...
+    jsr mark_cells                      ; ...so render draws them, and it, each frame
     txa                                 ; Keep the hero...
-    pha                                 ; ...across the plot and the OSWORD call
-    jsr plot_at_cell                    ; Draw the drainer in every view showing it
+    pha                                 ; ...across the OSWORD call
     lda #&32 ; '2'                      ; The drainer's noise: pitch &32...
     sta hit_sound + 4                   ; ...instead of 6 in hit_sound
     ldx #<(hit_sound)                   ; XY = hit_sound, now at the drainer's pitch...
