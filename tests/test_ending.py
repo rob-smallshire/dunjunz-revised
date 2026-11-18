@@ -13,7 +13,7 @@ level 25 keeps it, in its wall and object-free maps (the two builds keep
 level 1's maps differently in bytes play never reads); each plays the
 sequence and prints the ending text, and their screens must match
 once they wait for a key. Loading the end must leave the screen on show as it
-was, and the game's borrowed workspace as it was. The bell's envelope must be
+was, and the game's borrowed workspace as assembled (the end carries a copy). The bell's envelope must be
 exactly 8: the 1987 release set it with a stale Y.
 """
 
@@ -95,13 +95,13 @@ def test_the_victory_matches_the_original(disc_filepaths):
         reach_the_chalice(run)
         run_to(run, labels["start_victory"], 10)
         before = screen(run)
-        workspace = run.peek(WORKSPACE[0], WORKSPACE[1] - WORKSPACE[0])
         run_to(run, labels["ending_victory"], 60)
         assert screen(run) == before, "loading the end changed the screen"
-        assert run.peek(WORKSPACE[0], WORKSPACE[1] - WORKSPACE[0]) == workspace, \
-            "loading the end did not give the game its workspace back"
         stored = (REVISED_BUILD_DIRPATH / "Setup").read_bytes()[labels["setup_end"] - labels["setup_start"]:]
         assert run.peek(labels["ending_start"], len(stored)) == stored
+        image = labels["ending_workspace_image"]
+        assert run.peek(WORKSPACE[0], WORKSPACE[1] - WORKSPACE[0]) == run.peek(image, WORKSPACE[1] - WORKSPACE[0]), \
+            "loading the end did not put the game's workspace back as assembled"
         assert run.pin_randomness(seed=False) == ENDING_VIA_TIMER_READS
         run_to(run, labels["dissolve_chalice"], VICTORY_SECONDS)
         ring = screen(run)

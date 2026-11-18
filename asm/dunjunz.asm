@@ -102,10 +102,9 @@ STASH = &3000
 STARTUP = &6980                         ; Rows 23-24, which the hero menu leaves alone
 JOYSTICK_STORE = WS_STORE + STATIC_WORKSPACE_PAGES * 256  ; The joystick code's stored copies, which find_sticks copies out before the hero menu clears the screen
 SETUP_ADDRESS = &5000                   ; Setup, loaded with each level, clear of STASH and LEVEL_FILE
-; Once play is over, load_ending loads Setup again high in memory, over the code for play:
-; the stash, then the file, whose end of the game lands at ENDING_ADDRESS.
-ENDING_STASH = &7100                    ; After the code the end of the game still uses
-ENDING_FILE_ADDRESS = ENDING_STASH + STATIC_WORKSPACE_PAGES * 256
+; Once play is over, load_ending loads Setup again high in memory, over the code for play,
+; so that its end of the game lands at ENDING_ADDRESS.
+ENDING_FILE_ADDRESS = &7100             ; After the code the end of the game still uses
 
 INCLUDE "asm/defs/joystick.asm"
 INCLUDE "asm/defs/workspace.asm"
@@ -222,7 +221,7 @@ INCLUDE "asm/setup/setup.asm"
 INCLUDE "asm/upper/views.asm"
 INCLUDE "asm/upper/wrch.asm"
 .up_kept_end
-ASSERT up_kept_end <= ENDING_STASH
+ASSERT up_kept_end <= ENDING_FILE_ADDRESS
 INCLUDE "asm/upper/move_heroes.asm"
 INCLUDE "asm/upper/scoring.asm"
 INCLUDE "asm/upper/objects.asm"
@@ -252,10 +251,16 @@ ENDING_ADDRESS = ENDING_FILE_ADDRESS + setup_end - setup_start
     org ENDING_ADDRESS
 .ending_start
 INCLUDE "asm/ending/ending.asm"
+; The game's contents of the absolute workspace, as assembled (WS_STORE), for load_ending
+; to copy back: whole pages, for copy_static_workspace.
+    ALIGN &100
+.ending_workspace_image
+    skip STATIC_WORKSPACE_PAGES * 256
 .ending_end
 ASSERT ending_end <= UP_END
-ASSERT LO(ENDING_STASH) = 0 AND LO(ENDING_FILE_ADDRESS) = 0 AND LO(SETUP_ADDRESS) = 0  ; load_ending changes only high bytes
+ASSERT LO(ENDING_FILE_ADDRESS) = 0 AND LO(SETUP_ADDRESS) = 0  ; load_ending changes only the high byte
 setup_file_end = setup_end + ending_end - ending_start
 ASSERT setup_file_end <= LEVEL_FILE
+    copyblock WS_STORE, WS_STORE + STATIC_WORKSPACE_PAGES * 256, ending_workspace_image
     copyblock ending_start, ending_end, setup_end
 save "Setup", setup_start, setup_file_end, setup_level, SETUP_ADDRESS

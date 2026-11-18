@@ -62,31 +62,41 @@
 ; ***************************************************************************************
 ; Load the end of the game
 ;
-; Load Setup again, with the end of the game stored after it (asm/ending/ending.asm), at
-; ENDING_FILE_ADDRESS instead of SETUP_ADDRESS, so that the end of the game lands at
-; ENDING_ADDRESS, over the code for play, which is finished with. The stash moves there
-; too, to ENDING_STASH, so that the screen stays on show and untouched throughout. Play
-; never resumes, so neither change is undone. Only the high bytes change: both pairs of
-; addresses are page-aligned.
+; Load Setup again, with the end of the game stored after the set-up code
+; (asm/ending/ending.asm), at ENDING_FILE_ADDRESS instead of SETUP_ADDRESS, so that the end
+; of the game lands at ENDING_ADDRESS, over the code for play, which is finished with.
+; Nothing is stashed: the filing system may use its absolute workspace as it likes, and
+; the end of the game carries a copy of the game's contents of it as assembled
+; (ending_workspace_image), which is copied back once the workspace is claimed again. That
+; copy holds the font and the sprite tables, all the end of the game needs from there; it
+; does not hold what play left there (level_number, say), which it does not need, nor the
+; code Setup copies over the font for play. The screen stays on show, untouched.
 ;
 ; On Exit:
 ;     A: corrupted
 ;     X: corrupted
 ;     Y: corrupted
 .load_ending
-    lda #>(ENDING_STASH)                ; The stash, among the code for play...
-    sta stash_out_page + 1              ; ...for the copy out...
-    sta stash_back_page + 1             ; ...and the copy back
     lda #>(ENDING_FILE_ADDRESS)         ; Setup's load address, now high in memory...
     sta setup_osfile_block + 3          ; ...its high byte (the low bytes are both 0)
-    ldx #<(setup_osfile_block)          ; Load Setup and the end of the game...
-    ldy #>(setup_osfile_block)          ; ...with setup_osfile_block
-                                        ; ...and return: fall into load_file
+    lda #&15                            ; VDU 21: disable VDU output
+    jsr oswrch                          ; ...during the load
+    jsr reselect_filing_system          ; The filing system takes its workspace back
+    lda #osfile_load                    ; OSFILE &FF: load Setup and the end of the game...
+    ldx #<(setup_osfile_block)          ; ...with setup_osfile_block
+    ldy #>(setup_osfile_block)          ; ...
+    jsr osfile                          ; Load it
+    jsr claim_static_workspace          ; Take the workspace for the game again
+    lda #>(ending_workspace_image)      ; Copy the game's workspace, as assembled...
+    ldy #>(STATIC_WORKSPACE)            ; ...into it
+    jsr copy_static_workspace           ; ...the font and sprite tables are back
+    lda #6                              ; VDU 6: enable VDU output
+    jmp oswrch                          ; ...and return
 ; ***************************************************************************************
 ; Load a file while the game owns the filing system's workspace
 ;
 ; Copy the game's contents of STATIC_WORKSPACE to STASH, in screen memory, which must not
-; be on show (or to ENDING_STASH, once load_ending has moved it); reselect the filing system, which rebuilds its workspace from its private
+; be on show; reselect the filing system, which rebuilds its workspace from its private
 ; workspace; load the file with OSFILE &FF; claim the workspace again with service call
 ; &0A; and copy the game's contents back. VDU output is disabled meanwhile, so nothing the
 ; filing system prints reaches the screen (wrch_handler would print it with a font that is
@@ -105,8 +115,7 @@
     lda #&15                            ; VDU 21: disable VDU output
     jsr oswrch                          ; ...during the load
     lda #>(STATIC_WORKSPACE)            ; Copy the game's workspace pages...
-.stash_out_page
-    ldy #>(STASH)                       ; ...to the stash (load_ending moves it)
+    ldy #>(STASH)                       ; ...to the stash
     jsr copy_static_workspace           ; ...out of the filing system's way
     jsr reselect_filing_system          ; The filing system takes its workspace back
     lda #osfile_load                    ; OSFILE &FF: load the file...
@@ -114,8 +123,7 @@
     ldy load_file_block + 1             ; ...(X, Y)
     jsr osfile                          ; Load it
     jsr claim_static_workspace          ; Take the workspace for the game again
-.stash_back_page
-    lda #>(STASH)                       ; Copy the game's pages back... (load_ending moves it)
+    lda #>(STASH)                       ; Copy the game's pages back...
     ldy #>(STATIC_WORKSPACE)            ; ...from the stash to the workspace
     jsr copy_static_workspace           ; ...the game is whole again
     lda #6                              ; VDU 6: enable VDU output

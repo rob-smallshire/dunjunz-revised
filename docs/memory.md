@@ -133,23 +133,33 @@ The 6845 set-ups go through the MOS's WRCHV, saved in `saved_wrchv`:
 Game over and victory end the game for good: the title and the game are
 loaded afresh after them. Their code and text (the victory sequence, the
 game-over message, and the code that prints the messages and waits for a
-key, about 560 bytes) are therefore not resident. `load_ending` loads
-`Setup` again, at `ENDING_FILE_ADDRESS` (&7900) instead of &5000, so that
-the end of the game, stored after the set-up code, lands at
-`ENDING_ADDRESS`, where it was assembled. The stash moves from the screen
-to `ENDING_STASH` (&7100-&78FF). Both lie over the code for play, which is
-finished with; the screen stays on show, untouched, and the display is not
-blanked. `load_ending` changes the stash address in `load_file` and the
-load address in `setup_osfile_block` for good, as play never resumes.
+key) are therefore not resident. `load_ending` loads `Setup` again, at
+`ENDING_FILE_ADDRESS` (&7100) instead of &5000, so that the end of the game,
+stored after the set-up code, lands at `ENDING_ADDRESS`, where it was
+assembled, over the code for play, which is finished with.
 
-So the upper region starts with the only modules the end still uses, the
-views (`plot_at_cell`) and the font handler; everything above them, up to
-&7FFF, may be overwritten. The end also uses the plotter, the font, the
-sprite tables and the sprites, the loader, the level maps (level 25's
-ending text) and `level_number`, all in other regions.
+Nothing is stashed. The filing system may use its absolute workspace
+(&0F00-&16FF) as it likes during the load, and the end of the game carries
+a copy of the game's contents of it as assembled (`ending_workspace_image`,
+the same as GAME's stored copy at `WS_STORE`), which is copied back once the
+workspace is claimed again. It holds the font and the sprite tables, all the
+end of the game needs from there. What play left there (`level_number`, the
+sticks' state) is not restored, and is not needed. The screen stays on show,
+untouched, and the display is not blanked. `load_ending` sets the load
+address in `setup_osfile_block` for good, as play never resumes.
+
+The upper region starts with the only modules the end still uses, the views
+(`plot_at_cell`) and the font handler; everything above them, up to &7FFF,
+may be overwritten. The end also uses the plotter, the font, the sprite
+tables and the sprites, the loader, the level maps (level 25's ending text),
+all in other regions.
 
 The end is not a file of its own because a DFS catalogue holds 31 files
-and the disc has 31 (see `tools/dunjunz_revised/disc_files.py`).
+and the disc has 31 (see `tools/dunjunz_revised/disc_files.py`). Reading
+only the end's part of `Setup` (OSFIND, OSARGS, OSGBPB) was tried, to keep
+the load small; ANFS 4.18 rejects the handle OSFIND gives ("Net channel"),
+probably because its open-file tables (&1000-&10FF) lie in the workspace
+the game borrows, so the whole file is loaded.
 
 ## Closing the boot file
 
@@ -190,6 +200,6 @@ Found by searching the modules (`asm/dunjunz.asm` ASSERTs the first three):
   tables in both builds.
 - `sprite_blank` (three sprites) is a run of zeros in the &0400 image.
 - Nothing the end of the game uses may lie in the upper region above
-  `up_kept_end` (`views.asm` and `wrch.asm` lie below it), and the stash,
-  Setup and the end must fit above it (ASSERTed).
+  `up_kept_end` (`views.asm` and `wrch.asm` lie below it), and Setup with
+  the end must fit above it (ASSERTed).
 - Module sizes and places: `uv run dr-sizes`.
