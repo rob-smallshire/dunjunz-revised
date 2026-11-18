@@ -95,6 +95,24 @@ each side; four want the 1987 layout.
   keys). Setup is loaded with each level and runs in screen memory, so
   none of this costs memory in play.
 
+### The layouts
+
+Any set can join any hero, so every set has a magic key, used only when
+its hero is the Ranger or the Magic-User.
+
+The 4-player layout (decided 2026-11-18) is the 1987 keys, with magic keys
+added for the Barbarian's and the Fighter's sets, which had none:
+
+| Set | Up | Down | Left | Right | Fire | Magic |
+|---|---|---|---|---|---|---|
+| 1 (1987 Ranger) | CAPS LOCK | SHIFT LOCK | SHIFT | Z | TAB | CTRL |
+| 2 (1987 Magic-User) | → | ↑ | DELETE | COPY | ↓ | RETURN |
+| 3 (1987 Barbarian) | K | , | . | / | SPACE | L |
+| 4 (1987 Fighter) | G | B | U | I | O | P |
+
+The layouts for 1-3 players are still to be chosen; until they are, the
+layout for N players is the first N sets of this one.
+
 ### Where the code goes
 
 - **The title** (`DUNJUNZ`, a separate program) reads the choice and

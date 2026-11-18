@@ -75,6 +75,7 @@ inkey_key_return                     = &b6
 inkey_key_caps_lock                  = &bf
 inkey_key_right                      = &86
 inkey_key_k                          = &b9
+inkey_key_l                          = &a9  ; L, INKEY -87
 inkey_key_g                          = &ac
 inkey_key_shift_lock                 = &af
 inkey_key_up                         = &c6
