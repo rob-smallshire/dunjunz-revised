@@ -25,10 +25,9 @@
 ;    map, and the key is used up and its panel icon erased. At most one door opens per
 ;    hero per frame. Every hero is tested, in play or not.
 ; 4. Keys (check_keys): each hero is checked. A dead hero whose death animation has
-;    finished drops their key on a free cell beside the skull (find_open_neighbour),
-;    where it shows and the others can reach it; with none free it lies in the skull's
-;    cell, drawn over the skull. In the 1987 release it always lay in the skull's cell,
-;    and the two flickered: the key was drawn every frame, the skull every other frame.
+;    finished drops their key in the skull's cell, as in 1987, where render draws it over
+;    the skull. (The 1987 release drew the key every frame and the skull every other, so
+;    they flickered; for a while the revision put the key beside the skull instead.)
 ;    A hero in play, or still dying, who stands on a key picks it up and leaves the key
 ;    they carried, if any, in its place. hero_key_dropped remembers the key left there,
 ;    and the hero picks up no key until they are off it, so a swap happens once, on
@@ -192,12 +191,8 @@
     lda hero_frame,x                    ; Has the death animation reached its end?
     cmp #8                              ; ...frame 8 is the last of the death
     bne check_key_swap                  ; Still dying: key checks go on as if in play
-; A dead hero's death animation has ended: put their key down beside the skull, where the other heroes can see and reach it, or, if no cell beside it is free, in the skull's cell, where it is drawn over the skull.
-    clc                                 ; A free cell beside the skull?
-    jsr find_open_neighbour             ; ...carry clear if so
-    bcc drop_dead_key                   ; Yes: cell_x, cell_y are on it
-    jsr get_hero_cell                   ; None: the skull's cell, into cell_x, cell_y
-.drop_dead_key
+; A dead hero's death animation has ended: put their key down in the skull's cell, as in 1987, where render draws it over the skull.
+    jsr get_hero_cell                   ; The skull's cell, into cell_x, cell_y
     jsr drop_key_here                   ; Put the key there and erase its panel icon
     jmp next_hero_keys                  ; Key dropped: on to the next hero
 .check_key_swap

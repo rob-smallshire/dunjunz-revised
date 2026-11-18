@@ -87,21 +87,11 @@ def states_to_key_swap(before, after):
     return any(held and now and held != now for held, now in zip(before["hero_key"], after["hero_key"]))
 
 
-def a_dead_hero_drops_a_key(before, after):
-    """A dead hero's key is dropped under their skull; the revised game puts
-    it beside the skull. (A hero leaving by the exit, whose key is dropped
-    beside it in both, is moved off the map.)"""
-    a = after["scratch+1"]
-    return any(held and not now and a[HERO_DIRECTION + h] == 0 and a[HERO_X + h] != OFF_MAP
-               for h, (held, now) in enumerate(zip(before["hero_key"], after["hero_key"])))
-
-
 # (test, states to keep after the frame in which the test is first true): the
 # fixed cases the comparisons stop at, up to and including the state that still
 # matches.
 FIXED_CASES = (
     (states_to_key_swap, 1),
-    (a_dead_hero_drops_a_key, 0),
 )
 
 

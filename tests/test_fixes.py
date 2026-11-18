@@ -500,30 +500,8 @@ def test_holding_escape_ends_the_game(disc_filepaths):
         assert run.bbc.cpu.pc == title_start
 
 
-def object_may_lie(run, x, y):
-    """Whether level's object-free map leaves the cell clear for an object."""
-    address = run.labels["object_free_map"] + (y & 0xF8) * 4 + (x & 0xF8) + (y & 7)
-    return not run.peek(address, 1)[0] & (0x80 >> (x & 7))
-
-
-def mark_object(run, x, y):
-    address = run.labels["object_free_map"] + (y & 0xF8) * 4 + (x & 0xF8) + (y & 7)
-    run.poke(address, bytes([run.peek(address, 1)[0] & ~(0x80 >> (x & 7)) & 0xFF]))
-
-
 def key_cell(run, key):
     return byte(run, f"key_x+{key}"), byte(run, f"key_y+{key}")
-
-
-def free_cells_beside(run, hero):
-    """The cells beside hero, in the order tried, with no wall, key, object or
-    other hero in them."""
-    x, y = byte(run, f"hero_x+{hero}"), byte(run, f"hero_y+{hero}")
-    keys = {key_cell(run, key) for key in range(1, 21)}
-    heroes = {(byte(run, f"hero_x+{h}"), byte(run, f"hero_y+{h}")) for h in range(4)}
-    cells = [(x + dx, y + dy) for dx, dy in (ABOVE, RIGHT, BELOW, LEFT)]
-    return [c for c in cells
-            if not is_wall(run, *c) and c not in keys and not object_may_lie(run, *c) and c not in heroes]
 
 
 def fighter_dies_with_a_key(run):
@@ -551,38 +529,6 @@ def fighter_dies_with_a_key(run):
     return skull
 
 
-def test_a_dead_heros_key_is_put_down_beside_the_skull(disc_filepaths):
-    disc_filepath, labels, ranges = revised()
-    with game_run(disc_filepath, labels, ranges) as run:
-        fighter_dies_with_a_key(run)
-        free = free_cells_beside(run, FIGHTER)
-        assert free
-        run.next_frame(set())
-        assert key_cell(run, 19) == free[0]
-        assert byte(run, f"hero_key+{FIGHTER}") == 0
-    disc_filepath, labels, ranges = original()
-    with game_run(disc_filepath, labels, ranges) as run:
-        skull = fighter_dies_with_a_key(run)
-        run.next_frame(set())
-        assert key_cell(run, 19) == skull                  # under the skull
-
-
-@pytest.mark.parametrize("in_the_way", ["hero", "object"])
-def test_a_dead_heros_key_avoids_heroes_and_objects(disc_filepaths, in_the_way):
-    disc_filepath, labels, ranges = revised()
-    with game_run(disc_filepath, labels, ranges) as run:
-        fighter_dies_with_a_key(run)
-        free = free_cells_beside(run, FIGHTER)
-        assert len(free) >= 2
-        if in_the_way == "hero":
-            set_byte(run, f"hero_x+{MAGIC_USER}", free[0][0])  # the Magic-User's skull lies there
-            set_byte(run, f"hero_y+{MAGIC_USER}", free[0][1])
-        else:
-            mark_object(run, *free[0])                     # an object may lie on the first
-        run.next_frame(set())
-        assert key_cell(run, 19) == free[1]
-
-
 def cell_plots_per_frame(run, frames):
     """Each frame's sprites plotted at map cells, as (sprite, x, y) in order."""
     labels = run.labels
@@ -607,17 +553,15 @@ def last_plotted_at(frame, cell):
     return [sprite for sprite, *at in frame if tuple(at) == cell][-1]
 
 
-def test_a_key_with_no_room_beside_the_skull_is_drawn_over_it(disc_filepaths):
-    """With walls all round, the key stays in the skull's cell, not lost, and
-    shows over the skull, steady, plain to see."""
+def test_a_dead_heros_key_lies_on_the_skull(disc_filepaths):
+    """A dead hero's key is put down in the skull's cell, as in 1987, and shows
+    over the skull, steady: in 1987 the two flickered."""
     disc_filepath, labels, ranges = revised()
     with game_run(disc_filepath, labels, ranges) as run:
         skull = fighter_dies_with_a_key(run)
-        for dx, dy in (ABOVE, RIGHT, BELOW, LEFT):
-            make_wall(run, skull[0] + dx, skull[1] + dy)
         for _ in range(3):
             run.next_frame(set())
-        assert key_cell(run, 19) == skull                  # not lost
+        assert key_cell(run, 19) == skull
         assert_steady(run, skull, [skull_sprite(run), SPR_KEY])
 
 

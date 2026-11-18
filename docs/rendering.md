@@ -143,4 +143,4 @@ drawing the view, then the room's floor again with what is on it. Next:
 skip the blank floor there too when no other view shows the room, and draw
 a creature solid when nothing else is in its cells, to bring the busy
 frames back to the pace; both need memory.
-Then step 6, a dead hero's key in the skull's cell.
+Step 6 is done too: a dead hero's key lies in the skull's cell, drawn over it.

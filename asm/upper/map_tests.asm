@@ -196,8 +196,7 @@
 ; ***************************************************************************************
 ; Find a cell next to a hero for a key
 ;
-; Find where a key can be put down next to hero X: beside the exit (drop_key), or beside
-; a dead hero's skull (check_keys). The first of the cells above, to the right of, below
+; Find where a key can be put down next to hero X, beside the exit (drop_key). The first of the cells above, to the right of, below
 ; and to the left of the hero, in that order, that is open (no wall or closed door:
 ; test_wall) and, with the carry clear on entry, also free: no key (key_in_cell), no
 ; object (test_object_free: a cell that held one at the start of the level counts, as the
