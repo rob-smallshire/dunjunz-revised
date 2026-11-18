@@ -116,3 +116,8 @@ players is the same without the Ranger's set.
 Only the Ranger and the Magic-User can cast magic. P pauses and resumes the
 game; holding ESCAPE for half a second ends it. On a joystick, fire and a
 direction held together for half a second cast magic.
+
+When the game ends, R plays again at once with the same heroes, keys and
+joysticks, skipping the title and the hero menu: within ten seconds of game
+over, or as the key after the victory's ending. Any other key, or none,
+goes back to the title.

@@ -33,8 +33,11 @@
 .find_sticks
     ldx #max_sticks - 1                 ; Sticks and heroes 3 to 0
 .reset_stick
-    lda #no_stick                       ; Every hero on the keyboard
+    lda play_again_flag                 ; Playing again?
+    bne keep_hero_stick                 ; Yes: each hero keeps their stick or set of keys
+    lda #no_stick                       ; No: nobody plays any hero yet
     sta hero_stick,x
+.keep_hero_stick
     lda #0                              ; No stick usable yet
     sta stick_usable,x
     sta stick_switch,x                  ; Nothing read yet

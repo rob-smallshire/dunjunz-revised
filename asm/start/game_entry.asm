@@ -37,5 +37,13 @@
     inx                                 ; Next hero, 0-3
     cpx #4                              ; All four done?
     bne reset_each_hero                 ; No: reset the next
+    lda play_again_flag                 ; Playing again, from the end of a game?
+    beq choose_heroes                   ; No: the hero menu
+    jsr find_sticks                     ; Yes: the sticks' driver, each hero's choice kept...
+    jsr sticks_for_play                 ; ...ready for play
+    lda #0                              ; Once only
+    sta play_again_flag
+    jmp next_level                      ; Start the first level
+.choose_heroes
     jsr hero_menu                       ; Then the players choose heroes and sound
     jmp next_level                      ; Start the first level

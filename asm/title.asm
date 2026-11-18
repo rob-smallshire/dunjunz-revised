@@ -40,6 +40,7 @@ hero_score_ten_thousands = &08b0  ; Each hero's score ten-thousands digit, as a 
 hero_absent              = &08b4  ; Non-zero for each hero switched off on the menu.
 levels_started           = &08bc  ; Number of levels started, counted by the game's next_leveln levels.
 level_digits             = &08bd  ; The level number as ASCII digits for the level's filename: one digit and a space, or two digits.
+play_again_flag          = &08b8  ; Set by the end of a game to play again with the same choices; cleared here.
 keyboard_players         = &08bf  ; Players sharing the keyboard, 0-4, chosen on the title: which layout of keys the game gives them.
 system_via_t1c_l         = &fe44
 oswrch                   = &ffee
@@ -161,6 +162,7 @@ text_ptr_hi              = &79
 ; Page &08 values for the game: the level counter and filename digits next_level advances, and each hero's score digit and menu switch.
     lda #0                              ; Levels started = 0...
     sta levels_started                  ; ...in page &08, for the game
+    sta play_again_flag                 ; ...and a new game, not one played again: the hero menu
     lda #'0'                            ; Level digits = "0 "...
     sta level_digits                    ; ...first digit '0'...
     lda #' '                            ; ...second digit a space

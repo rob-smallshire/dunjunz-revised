@@ -165,6 +165,9 @@ def readme_text(layouts: list[dict], copyright: str, version: str = __version__)
         "Ranger's, KEY2 the Magic-User's, KEY3 the Barbarian's and KEY4 the "
         "Fighter's. Only the Ranger and the Magic-User cast magic. P pauses "
         "and resumes. Hold ESCAPE for half a second to end the game.",
+        "When the game ends, R plays again with the same heroes and keys: "
+        "within ten seconds of game over, or after the ending. Any other key "
+        "goes back to the title.",
     ])
     lines += ["JOYSTICKS", ""]
     lines += wrap([

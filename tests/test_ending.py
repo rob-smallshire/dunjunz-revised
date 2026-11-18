@@ -60,6 +60,9 @@ def reach_the_chalice(run):
     run.poke(labels["object_free_map"] + TEXT_OFFSET, message)
 
 
+PLAY_AGAIN_ROW, CHARACTER_ROW_BYTES = 24, 640    # show_play_again's row, in the window from the screen's top
+
+
 def run_to(run, address, seconds):
     run.bbc.debugger.run_to(address, timeout=seconds)
     assert run.bbc.cpu.pc == address, f"&{address:04X} not reached; PC &{run.bbc.cpu.pc:04X}"
@@ -131,4 +134,10 @@ def test_the_victory_matches_the_original(disc_filepaths):
         text = screen(run)
     original_ring, original_text = original_victory_screens()
     assert_same(ring_area(original_ring), ring_area(ring), "with the ring round the Chalice")
-    assert_same(original_text, text, "with the ending text")
+    # The ending text is as it was; below it, on the bottom row, the revised game
+    # offers to play again (show_play_again), where the 1987 screen is blank.
+    prompt_row = range(PLAY_AGAIN_ROW * CHARACTER_ROW_BYTES, (PLAY_AGAIN_ROW + 1) * CHARACTER_ROW_BYTES)
+    assert_same(bytes(b for i, b in enumerate(original_text) if i not in prompt_row),
+                bytes(b for i, b in enumerate(text) if i not in prompt_row), "with the ending text")
+    assert not any(original_text[i] for i in prompt_row)
+    assert any(text[i] for i in prompt_row), "no R TO PLAY AGAIN"
