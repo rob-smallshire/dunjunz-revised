@@ -420,3 +420,4 @@
 .sprite_size_height
     equb 12, 3, 12, 10, 12, 3, 12, 12, 5, 24, 3, 6, 8, 6
 sprite_size_changes = sprite_size_width - sprite_size_first
+.sprite_tables_end

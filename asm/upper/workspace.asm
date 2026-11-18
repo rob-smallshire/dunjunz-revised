@@ -67,3 +67,7 @@
     equb &00, &5f, &5f, &5f, &29, &63, &5f, &53, &2b, &53, &28, &28, &60, &60, &28, &2a  ; Not read: unpack_level copies each level's objects here
     equb &62, &28, &28, &29, &28, &2b, &2b, &2b, &2b, &29, &28, &28, &29, &28  ; ...entries 16-29, not read
     equb &51                            ; ...the exit's entry
+; Hit points a monster starts with on this level: 6 + 2 x the level number (8 on level 1).
+; (In keys.asm before keys.asm was copied over the font at each level.)
+.monster_start_hit_points
+    equb &08

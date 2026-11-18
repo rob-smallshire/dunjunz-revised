@@ -39,7 +39,4 @@
     txa                                 ; Stack the monster number...
     pha                                 ; ...for monster_done to pull
     jmp monster_done                    ; On to the next monster
-; Hit points a monster starts with on this level: 6 + 2 x the level number (8 on level 1).
-.monster_start_hit_points
-    equb &08
 ; Initial contents of page &0D, copied there at the start of every level.

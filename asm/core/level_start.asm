@@ -75,12 +75,9 @@
     ldy #0                              ; Start the next PLOT at its first byte
     dex                                 ; Count the PLOT done
     bne draw_view_frame                 ; Until all twenty are drawn
-    jsr draw_all_views                  ; Draw each hero's room inside their frame
-    lda #<(wrch_handler)                ; Point WRCHV back at wrch_handler...
-    sta wrchv                           ; ...its low byte into WRCHV...
-    lda #>(wrch_handler)                ; ...and its high byte...
-    sta wrchv + 1                       ; ...so text is drawn in the game's font again
-    rts                                 ; Return to start_level: frames and views drawn
+    jmp draw_all_views                  ; Draw each hero's room inside their frame, and return
+                                        ; (WRCHV stays the MOS's in play: nothing prints text,
+                                        ; and play code lies over wrch_handler)
 ; Twenty VDU 25 (PLOT) commands, five bytes each (plot code, then x and y as 16-bit words), that draw the frames round the four views; read by draw_view_frames through (plot_x).
 ; ***************************************************************************************
 ; View frame PLOT commands

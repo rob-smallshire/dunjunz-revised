@@ -60,40 +60,6 @@
 .mos_wrch
     jmp (saved_wrchv)                   ; The MOS's WRCH routine returns to the caller
 ; ***************************************************************************************
-; Load the end of the game
-;
-; Load Setup again, with the end of the game stored after the set-up code
-; (asm/ending/ending.asm), at ENDING_FILE_ADDRESS instead of SETUP_ADDRESS, so that the end
-; of the game lands at ENDING_ADDRESS, over the code for play, which is finished with.
-; Nothing is stashed: the filing system may use its absolute workspace as it likes, and
-; the end of the game carries a copy of the game's contents of it as assembled
-; (ending_workspace_image), which is copied back once the workspace is claimed again. That
-; copy holds the font and the sprite tables, all the end of the game needs from there; it
-; does not hold what play left there (level_number, say), which it does not need, nor the
-; code Setup copies over the font for play. The screen stays on show, untouched.
-;
-; On Exit:
-;     A: corrupted
-;     X: corrupted
-;     Y: corrupted
-.load_ending
-    lda #>(ENDING_FILE_ADDRESS)         ; Setup's load address, now high in memory...
-    sta setup_osfile_block + 3          ; ...its high byte (the low bytes are both 0)
-    lda #&15                            ; VDU 21: disable VDU output
-    jsr oswrch                          ; ...during the load
-    jsr clear_fs_workspace              ; Clear the workspace for the filing system
-    jsr reselect_filing_system          ; The filing system takes its workspace back
-    lda #osfile_load                    ; OSFILE &FF: load Setup and the end of the game...
-    ldx #<(setup_osfile_block)          ; ...with setup_osfile_block
-    ldy #>(setup_osfile_block)          ; ...
-    jsr osfile                          ; Load it
-    jsr claim_static_workspace          ; Take the workspace for the game again
-    lda #>(ending_workspace_image)      ; Copy the game's workspace, as assembled...
-    ldy #>(STATIC_WORKSPACE)            ; ...into it
-    jsr copy_static_workspace           ; ...the font and sprite tables are back
-    lda #6                              ; VDU 6: enable VDU output
-    jmp oswrch                          ; ...and return
-; ***************************************************************************************
 ; Load a file while the game owns the filing system's workspace
 ;
 ; Copy the game's contents of STATIC_WORKSPACE to STASH, in screen memory, which must not

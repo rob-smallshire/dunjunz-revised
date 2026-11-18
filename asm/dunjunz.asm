@@ -155,6 +155,7 @@ ASSERT page9_end <= PAGE9_END
 INCLUDE "asm/core/status_panel.asm"
 .font_start
 INCLUDE "asm/core/font.asm"
+INCLUDE "asm/upper/wrch.asm"
 .font_end
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
@@ -221,8 +222,8 @@ INCLUDE "asm/setup/setup.asm"
 ; overwritten by load_ending once play is over.
     org UP_START
 INCLUDE "asm/upper/views.asm"
-INCLUDE "asm/upper/wrch.asm"
 INCLUDE "asm/upper/fs_workspace.asm"
+INCLUDE "asm/upper/load_ending.asm"
 .up_kept_end
 ASSERT up_kept_end <= ENDING_FILE_ADDRESS
 INCLUDE "asm/upper/move_heroes.asm"
@@ -233,7 +234,6 @@ INCLUDE "asm/upper/magic.asm"
 INCLUDE "asm/upper/hero_animation.asm"
 INCLUDE "asm/upper/map_tests.asm"
 INCLUDE "asm/upper/monsters.asm"
-INCLUDE "asm/upper/keys.asm"
 INCLUDE "asm/upper/object_sprites.asm"
 INCLUDE "asm/upper/workspace.asm"
 .game_file_end
@@ -246,13 +246,14 @@ ASSERT LO(object_free_map) = 0          ; test_object_free likewise
 save "GAME", game_file_start, game_file_end, startup, MID_START
 
 ; ***************************************************************************************
-; Play code over the font: the font is needed only by the hero menu, before play, and by
-; the end of the game, which brings its own copy. This code is assembled where the font
+; Play code over the font and the WRCHV handler: they are needed only by the hero menu,
+; before play, and by the end of the game, which brings its own copies. This code is assembled where the font
 ; lies, stored in Setup after the set-up code, and copied over the font by setup_level
 ; at each level.
     org font_start
 .font_overlay_start
 INCLUDE "asm/upper/steps.asm"
+INCLUDE "asm/upper/keys.asm"
 .font_overlay_end
 ASSERT font_overlay_end <= font_end
 FONT_OVERLAY_SIZE = font_overlay_end - font_overlay_start
@@ -268,16 +269,18 @@ ENDING_ADDRESS = ENDING_FILE_ADDRESS + setup_end - setup_start + FONT_OVERLAY_SI
     org ENDING_ADDRESS
 .ending_start
 INCLUDE "asm/ending/ending.asm"
-; The game's contents of the absolute workspace, as assembled (WS_STORE), for load_ending
-; to copy back: whole pages, for copy_static_workspace.
-    ALIGN &100
-.ending_workspace_image
-    skip STATIC_WORKSPACE_PAGES * 256
+; What the end of the game needs from the absolute workspace, as assembled (WS_STORE), for
+; load_ending to copy back: the font and its WRCHV handler, and the sprite tables.
+.ending_font_image
+    skip font_end - font_start
+.ending_tables_image
+    skip sprite_tables_end - sprite_addr_lo
 .ending_end
 ASSERT ending_end <= UP_END
 ASSERT LO(ENDING_FILE_ADDRESS) = 0 AND LO(SETUP_ADDRESS) = 0  ; load_ending changes only the high byte
 setup_file_end = setup_end + FONT_OVERLAY_SIZE + ending_end - ending_start
 ASSERT setup_file_end <= LEVEL_FILE
-    copyblock WS_STORE, WS_STORE + STATIC_WORKSPACE_PAGES * 256, ending_workspace_image
+    copyblock WS_STORE + font_start - WS_START, WS_STORE + font_end - WS_START, ending_font_image
+    copyblock WS_STORE + sprite_addr_lo - WS_START, WS_STORE + sprite_tables_end - WS_START, ending_tables_image
     copyblock ending_start, ending_end, setup_end + FONT_OVERLAY_SIZE
 save "Setup", setup_start, setup_file_end, setup_level, SETUP_ADDRESS

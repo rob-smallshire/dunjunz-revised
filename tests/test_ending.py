@@ -13,7 +13,8 @@ level 25 keeps it, in its wall and object-free maps (the two builds keep
 level 1's maps differently in bytes play never reads); each plays the
 sequence and prints the ending text, and their screens must match
 once they wait for a key. Loading the end must leave the screen on show as it
-was, and the game's borrowed workspace as assembled (the end carries a copy). The bell's envelope must be
+was, and put back the font, its WRCHV handler and the sprite tables as
+assembled (the end carries copies; play code lies over the font). The bell's envelope must be
 exactly 8: the 1987 release set it with a stale Y.
 """
 
@@ -100,9 +101,11 @@ def test_the_victory_matches_the_original(disc_filepaths):
         stored = (REVISED_BUILD_DIRPATH / "Setup").read_bytes()[
             labels["setup_end"] - labels["setup_start"] + labels["font_overlay_end"] - labels["font_overlay_start"]:]
         assert run.peek(labels["ending_start"], len(stored)) == stored
-        image = labels["ending_workspace_image"]
-        assert run.peek(WORKSPACE[0], WORKSPACE[1] - WORKSPACE[0]) == run.peek(image, WORKSPACE[1] - WORKSPACE[0]), \
-            "loading the end did not put the game's workspace back as assembled"
+        for image, start, end in (("ending_font_image", "font_start", "font_end"),
+                                  ("ending_tables_image", "sprite_addr_lo", "sprite_tables_end")):
+            length = labels[end] - labels[start]
+            assert run.peek(labels[start], length) == run.peek(labels[image], length), \
+                f"loading the end did not put back {start} to {end} as assembled"
         assert run.pin_randomness(seed=False) == ENDING_VIA_TIMER_READS
         run_to(run, labels["dissolve_chalice"], VICTORY_SECONDS)
         ring = screen(run)

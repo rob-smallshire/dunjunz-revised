@@ -20,8 +20,7 @@
 ; the wait for it to reach 0 lasts until it comes round, up to 256 vsyncs (about 5 s),
 ; and only then are keys flushed and read.
 .ending_game_over
-    ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
-    jsr send_vdu                        ; ...cleared
+    jsr ending_text_window              ; A text window over the views, cleared, in the game's font
     ldx #0                              ; Print from the message's start
 .print_game_over
     lda game_over_message,x             ; Print game_over_message from its start (X = 0)...
@@ -56,8 +55,7 @@
 ; 128 that wrch_handler rewrites for every letter or digit it prints.
 .ending_victory
     jsr victory_sequence                ; Sparkles, rising tone, the Chalice dissolves
-    ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
-    jsr send_vdu                        ; ...cleared
+    jsr ending_text_window              ; A text window over the views, cleared, in the game's font
 ; Print the ending text: 140 bytes of level 25's wall map, then its object-free map up to a zero.
     ldx #0                              ; The ending text: 140 bytes from room_walls + &3A...
 .print_victory_text
@@ -78,6 +76,16 @@
     jsr osbyte                          ; ...so keys pressed in the sequence cannot skip the text  Flush selected class of buffer
     jsr osrdch                          ; Wait for a key once the ending text has been read
     jmp restart_game                    ; ...then load the title and the game afresh
+
+; Point WRCHV at wrch_handler, so text is drawn in the game's font (play leaves WRCHV with
+; the MOS), and set a text window over the views, short of the panel, cleared.
+.ending_text_window
+    lda #<(wrch_handler)                ; Point WRCHV at wrch_handler...
+    sta wrchv                           ; ...its low byte...
+    lda #>(wrch_handler)                ; ...and its high byte
+    sta wrchv + 1                       ; ...
+    ldx #views_window_vdu - vdu_strings ; A text window over the views, short of the panel...
+    jmp send_vdu                        ; ...cleared, and return
 
 INCLUDE "asm/ending/victory_sequence.asm"
 INCLUDE "asm/ending/game_over_text.asm"

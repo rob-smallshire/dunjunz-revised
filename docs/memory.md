@@ -85,7 +85,7 @@ from its real private page, which its table entry doesn't give.
 | &1700-&1BFF | **Untouched**: private workspace (PAGE at most &1C00) |
 | &1C00-&2FFF | The exit animation, doors and keys, sprites, the frame, the Chalice |
 | &3000-&6E7F | Screen (25 rows) |
-| &6E80-&7FFF | The views and the font handler, then heroes, missiles, objects and monsters; once play is over, the end of the game is loaded over the latter (see below) |
+| &6E80-&7FFF | The views and the loading of the end of the game, then heroes, missiles, objects and monsters; once play is over, the end of the game is loaded over the latter (see below) |
 
 `uv run dr-sizes` gives each module's place and size; `asm/dunjunz.asm`
 assembles the regions and asserts each fits.
@@ -153,19 +153,31 @@ stored after the set-up code (and the play code `setup_level` copies over
 the font), lands at `ENDING_ADDRESS`, where it was assembled, over the code
 for play, which is finished with.
 
-Nothing is stashed. The filing system may use its absolute workspace
-(&0F00-&16FF) as it likes during the load, and the end of the game carries
-a copy of the game's contents of it as assembled (`ending_workspace_image`,
-the same as GAME's stored copy at `WS_STORE`), which is copied back once the
-workspace is claimed again. It holds the font and the sprite tables, all the
-end of the game needs from there. What play left there (`level_number`, the
-sticks' state) is not restored, and is not needed. The screen stays on show,
-untouched, and the display is not blanked. `load_ending` sets the load
-address in `setup_osfile_block` for good, as play never resumes.
+Nothing is stashed. The workspace is cleared (`clear_fs_workspace`) and the
+filing system may use it as it likes during the load, and the end of the
+game carries copies of what it needs from there, as assembled: the font with
+its WRCHV handler, and the sprite tables with `sprite_size`. Once the
+workspace is claimed again `load_ending` copies them back (`ending_copies`).
+What play left there (`level_number`, the sticks' state) is not restored,
+and is not needed. The screen stays on show, untouched, and the display is
+not blanked. `load_ending` sets the load address in `setup_osfile_block` for
+good, as play never resumes. It lies with the code the end keeps, as it runs
+through the load.
 
-The upper region starts with the only modules the end still uses, the views
-(`plot_at_cell`) and the font handler; everything above them, up to &7FFF,
-may be overwritten. The end also uses the plotter, the font, the sprite
+### Play code over the font
+
+The font (`font.asm`) and its WRCHV handler (`wrch.asm`), 399 bytes in the
+borrowed workspace, are needed only by the hero menu, before play, and by
+the end of the game, which brings its own copies. So play code is assembled
+where they lie (`steps.asm`, `keys.asm`), stored in Setup after the set-up
+code, and copied over them by `setup_level` at each level. GAME holds the
+font there, for the hero menu. WRCHV stays the MOS's in play (nothing prints
+text then; a hero's shot sounds the bell with VDU 7), and the end of the
+game points it at the handler again before printing (`ending_text_window`).
+
+The upper region starts with the only modules the end still uses there: the
+views (`plot_at_cell`), `clear_fs_workspace` and `load_ending`; everything
+above them, up to &7FFF, may be overwritten. The end also uses the plotter, the font, the sprite
 tables and the sprites, the loader, the level maps (level 25's ending text),
 all in other regions.
 
@@ -215,6 +227,6 @@ Found by searching the modules (`asm/dunjunz.asm` ASSERTs the first three):
   tables in both builds.
 - `sprite_blank` (three sprites) is a run of zeros in the &0400 image.
 - Nothing the end of the game uses may lie in the upper region above
-  `up_kept_end` (`views.asm` and `wrch.asm` lie below it), and Setup with
-  the end must fit above it (ASSERTed).
+  `up_kept_end` (`views.asm`, `fs_workspace.asm` and `load_ending.asm` lie
+  below it), and Setup with the end must fit above it (ASSERTed).
 - Module sizes and places: `uv run dr-sizes`.
