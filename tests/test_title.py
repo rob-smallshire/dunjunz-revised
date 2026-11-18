@@ -15,14 +15,19 @@ keyboard players, in yellow, and the version drawn in on the bottom row
 
 from __future__ import annotations
 
+import pytest
+
 from dunjunz_revised._version import __version__
 from dunjunz_revised.build import (
     ORIGINAL_BUILD_DIRPATH,
     REFERENCE_DIRPATH,
     REVISED_BUILD_DIRPATH,
+    REVISED_DISC_FILEPATH,
     TITLE_SCREEN_PNG_FILEPATH,
     read_labels,
 )
+from dunjunz_revised.lockstep import inkey_to_matrix
+from dunjunz_revised.machines import MACHINES, launched
 from dunjunz_revised.title_picture import (
     GLYPHS,
     PICTURE_ADDRESS,
@@ -117,3 +122,26 @@ def test_every_digit_has_a_glyph():
 
 def test_the_readme_picture_is_the_revised_title_screen(disc_filepaths):
     assert TITLE_SCREEN_PNG_FILEPATH.read_bytes() == title_png((REVISED_BUILD_DIRPATH / "Screen").read_bytes())
+
+
+# The players' choice on the title: keys 1-4, or any other key for 4.
+KEYBOARD_PLAYERS = 0x08BF
+CHOICES = [(0xCF, 1), (0xCE, 2), (0xEE, 3), (0xED, 4), (0x9D, 4)]      # INKEY numbers: 1, 2, 3, 4, SPACE
+
+
+@pytest.mark.parametrize("inkey, players", CHOICES)
+def test_the_title_takes_the_number_of_keyboard_players(disc_filepaths, inkey, players):
+    """Each key leaves the number of keyboard players in page &08 for the
+    game, which is running its startup when it is checked."""
+    title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
+    game_labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
+    with launched(MACHINES["dfs090"]) as bbc:
+        bbc.boot_disc(REVISED_DISC_FILEPATH)
+        bbc.debugger.run_to(title_labels["twinkle_loop"], timeout=60)
+        bbc.memory.address.bus.write(KEYBOARD_PLAYERS, bytes([0xAA]))
+        bbc.keyboard.matrix_down(*inkey_to_matrix(inkey))
+        try:
+            bbc.debugger.run_to(game_labels["startup"], timeout=60)
+        finally:
+            bbc.keyboard.matrix_up(*inkey_to_matrix(inkey))
+        assert bbc.memory.address.peek[KEYBOARD_PLAYERS] == players

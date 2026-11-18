@@ -17,6 +17,7 @@ osbyte_escape_break_effect   = &c8
 osbyte_set_cursor_editing    = &04
 osbyte_flush_buffer          = &15
 osbyte_scan_keyboard_from_16 = &7a
+osbyte_read_adc_or_fire      = &80  ; With X = 0: the fire buttons in X bits 0-1
 osbyte_read_oshwm            = &83
 osbyte_read_tube_presence    = &ea
 highest_page                 = &1c00  ; The game keeps &1C00 up: the filing systems' private workspace must end below it
@@ -39,6 +40,7 @@ hero_score_ten_thousands = &08b0  ; Each hero's score ten-thousands digit, as a 
 hero_absent              = &08b4  ; Non-zero for each hero switched off on the menu.
 levels_started           = &08bc  ; Number of levels started, counted by the game's next_leveln levels.
 level_digits             = &08bd  ; The level number as ASCII digits for the level's filename: one digit and a space, or two digits.
+keyboard_players         = &08bf  ; Players sharing the keyboard, 0-4, chosen on the title: which layout of keys the game gives them.
 system_via_t1c_l         = &fe44
 oswrch                   = &ffee
 osbyte                   = &fff4
@@ -418,17 +420,21 @@ FOR frame, 0, 6
     equb HI(star_frame_data + frame * STAR_FRAME_BYTES)  ; Frame's address, high byte
 NEXT
 ; ***************************************************************************************
-; Twinkle stars on the title screen until a key is pressed
+; Twinkle stars on the title screen until the players choose
 ;
-; The title screen's wait for a key. Called once by title_start, after the picture is
+; The title screen's wait for the players' choice. Called once by title_start, after the picture is
 ; shown. Up to three stars twinkle at once, each at one of the eight places in
 ; star_places_x and star_places_y, picked at random. A star grows through frames 0-6 and
 ; shrinks back through 5-0, then disappears and frees its place. Each pass of the loop:
 ; when the low two bits of the System VIA's timer 1 are 0 (about one pass in four),
 ; start_star starts a star if one is free; advance_stars moves every star on a frame and
-; pauses, which sets the pace; then OSBYTE &7A scans the keyboard from key 16, so SHIFT
-; and CTRL alone do not end the title. When a key is pressed the stars still showing are
-; erased, though the MODE change that title_start makes next clears the screen anyway.
+; pauses, which sets the pace; then OSBYTE &80 reads the analogue port's fire buttons,
+; and OSBYTE &7A scans the keyboard from key 16, so SHIFT and CTRL alone do not end the
+; title. The choice is how many players share the keyboard, kept in keyboard_players for
+; the game: keys 1-4 choose 1-4; fire chooses 0, joysticks only; any other key chooses
+; 4, the 1987 keys, so "Press any key" still plays the 1987 game. Then the stars still
+; showing are erased, though the MODE change that title_start makes next clears the
+; screen anyway.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -448,11 +454,33 @@ NEXT
     jsr start_star                      ; ...start a star, if one of the three is free
 .twinkle_advance
     jsr advance_stars                   ; Grow or shrink every star a frame, then pause
+    ldx #0                              ; OSBYTE &80 with X = 0: the fire buttons...
+    lda #osbyte_read_adc_or_fire        ; ...of the analogue port
+    jsr osbyte                          ; ...in X bits 0-1, set while pressed
+    txa                                 ; Either fire button?
+    and #3                              ; ...bits 0-1
+    beq read_title_key                  ; No: look for a key
+    lda #0                              ; Fire: joysticks only, no keyboard players
+    beq players_chosen                  ; ...(always branches)
+.read_title_key
     lda #osbyte_scan_keyboard_from_16   ; OSBYTE &7A: any key other than SHIFT or CTRL?
     jsr osbyte                          ; ...X = the key number, &FF if none  Scan keyboard from key 16
     cpx #&ff                            ; ...&FF: no key held down?
     beq twinkle_loop                    ; No key: keep twinkling
-    ldy #2                              ; Yes: erase the stars still showing...
+    txa                                 ; The key's internal number
+    ldy #3                              ; Is it 1, 2, 3 or 4?
+.find_players_key
+    cmp players_keys,y                  ; ...key 4, 3, 2, 1
+    beq players_key_found               ; Yes: Y + 1 players
+    dey                                 ; ...the next key down
+    bpl find_players_key                ; Until all four are tried
+    ldy #3                              ; Any other key: four players, the 1987 keys
+.players_key_found
+    iny                                 ; Y + 1 keyboard players, 1-4
+    tya                                 ; ...into A
+.players_chosen
+    sta keyboard_players                ; For the game, in page &08
+    ldy #2                              ; Erase the stars still showing...
 .erase_stars
     lda star_showing,y                  ; ...star Y showing?
     beq erase_next_star                 ; No: nothing to erase
@@ -596,6 +624,10 @@ NEXT
     ldx #&14                            ; ...20 x 255 loops instead of 5 x 255
     bne star_pause_outer                ; ...always taken: X = 20, into the pause loop
     equb &38, &38, &3e, &3e             ; Not used
+; The internal key numbers of keys 1, 2, 3 and 4, by which the players choose how many
+; share the keyboard (twinkle_stars).
+.players_keys
+    equb &30, &31, &11, &12             ; Keys 1, 2, 3 and 4
 ; One flag per star, indexed by star 0-2: 1 while the star is showing, 0 when it is not. Cleared by twinkle_stars at the start (the bytes in the file are never read), set by start_star, cleared by advance_stars when a star shrinks away.
 .star_showing
     equb &38, &38, &3e                  ; Stars 0-2, cleared before use
