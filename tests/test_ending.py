@@ -97,7 +97,8 @@ def test_the_victory_matches_the_original(disc_filepaths):
         before = screen(run)
         run_to(run, labels["ending_victory"], 60)
         assert screen(run) == before, "loading the end changed the screen"
-        stored = (REVISED_BUILD_DIRPATH / "Setup").read_bytes()[labels["setup_end"] - labels["setup_start"]:]
+        stored = (REVISED_BUILD_DIRPATH / "Setup").read_bytes()[
+            labels["setup_end"] - labels["setup_start"] + labels["font_overlay_end"] - labels["font_overlay_start"]:]
         assert run.peek(labels["ending_start"], len(stored)) == stored
         image = labels["ending_workspace_image"]
         assert run.peek(WORKSPACE[0], WORKSPACE[1] - WORKSPACE[0]) == run.peek(image, WORKSPACE[1] - WORKSPACE[0]), \

@@ -128,6 +128,20 @@ The 6845 set-ups go through the MOS's WRCHV, saved in `saved_wrchv`:
 `wrch_handler` would print a letter or digit among the parameters (80 is
 "P") as character 128.
 
+### ANFS 4.18 and the borrowed workspace
+
+ANFS 4.18 ignores service &0A (it does not save its absolute workspace when
+the game claims it), and `*NET` does nothing while it is still selected, so
+it never rebuilds that workspace either: it goes on reading its channel
+tables (`channel_status_table` &0FC8, the channel blocks from &1000) from
+whatever the game has left there. For years of levels that was the font,
+which happened to be harmless; play code copied there (see `setup_level`)
+made it crash. So `load_file` and `load_ending` clear &0F00-&16FF
+(`clear_fs_workspace`) once the game's contents are stashed or done with,
+before reselecting the filing system: zeros are a channel table with
+nothing open. Other filing systems rebuild their workspace and do not care.
+Found from the ANFS disassembly (`~/Code/acornaeology/acorn-nfs/versions/anfs-4.18`).
+
 ### Loading the end of the game
 
 Game over and victory end the game for good: the title and the game are
@@ -135,8 +149,9 @@ loaded afresh after them. Their code and text (the victory sequence, the
 game-over message, and the code that prints the messages and waits for a
 key) are therefore not resident. `load_ending` loads `Setup` again, at
 `ENDING_FILE_ADDRESS` (&7100) instead of &5000, so that the end of the game,
-stored after the set-up code, lands at `ENDING_ADDRESS`, where it was
-assembled, over the code for play, which is finished with.
+stored after the set-up code (and the play code `setup_level` copies over
+the font), lands at `ENDING_ADDRESS`, where it was assembled, over the code
+for play, which is finished with.
 
 Nothing is stashed. The filing system may use its absolute workspace
 (&0F00-&16FF) as it likes during the load, and the end of the game carries

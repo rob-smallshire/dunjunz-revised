@@ -81,6 +81,7 @@
     sta setup_osfile_block + 3          ; ...its high byte (the low bytes are both 0)
     lda #&15                            ; VDU 21: disable VDU output
     jsr oswrch                          ; ...during the load
+    jsr clear_fs_workspace              ; Clear the workspace for the filing system
     jsr reselect_filing_system          ; The filing system takes its workspace back
     lda #osfile_load                    ; OSFILE &FF: load Setup and the end of the game...
     ldx #<(setup_osfile_block)          ; ...with setup_osfile_block
@@ -117,6 +118,7 @@
     lda #>(STATIC_WORKSPACE)            ; Copy the game's workspace pages...
     ldy #>(STASH)                       ; ...to the stash
     jsr copy_static_workspace           ; ...out of the filing system's way
+    jsr clear_fs_workspace              ; ...leaving it clear for the filing system
     jsr reselect_filing_system          ; The filing system takes its workspace back
     lda #osfile_load                    ; OSFILE &FF: load the file...
     ldx load_file_block                 ; ...with the caller's control block

@@ -153,7 +153,9 @@ ASSERT page9_end <= PAGE9_END
 ; &0E00-&16FF: stored at WS_STORE
     org WS_START
 INCLUDE "asm/core/status_panel.asm"
+.font_start
 INCLUDE "asm/core/font.asm"
+.font_end
 INCLUDE "asm/core/level_start.asm"
 INCLUDE "asm/core/sprites.asm"
 INCLUDE "asm/core/test_key.asm"
@@ -220,6 +222,7 @@ INCLUDE "asm/setup/setup.asm"
     org UP_START
 INCLUDE "asm/upper/views.asm"
 INCLUDE "asm/upper/wrch.asm"
+INCLUDE "asm/upper/fs_workspace.asm"
 .up_kept_end
 ASSERT up_kept_end <= ENDING_FILE_ADDRESS
 INCLUDE "asm/upper/move_heroes.asm"
@@ -230,7 +233,6 @@ INCLUDE "asm/upper/magic.asm"
 INCLUDE "asm/upper/hero_animation.asm"
 INCLUDE "asm/upper/map_tests.asm"
 INCLUDE "asm/upper/monsters.asm"
-INCLUDE "asm/upper/steps.asm"
 INCLUDE "asm/upper/keys.asm"
 INCLUDE "asm/upper/object_sprites.asm"
 INCLUDE "asm/upper/workspace.asm"
@@ -244,10 +246,25 @@ ASSERT LO(object_free_map) = 0          ; test_object_free likewise
 save "GAME", game_file_start, game_file_end, startup, MID_START
 
 ; ***************************************************************************************
+; Play code over the font: the font is needed only by the hero menu, before play, and by
+; the end of the game, which brings its own copy. This code is assembled where the font
+; lies, stored in Setup after the set-up code, and copied over the font by setup_level
+; at each level.
+    org font_start
+.font_overlay_start
+INCLUDE "asm/upper/steps.asm"
+.font_overlay_end
+ASSERT font_overlay_end <= font_end
+FONT_OVERLAY_SIZE = font_overlay_end - font_overlay_start
+ASSERT FONT_OVERLAY_SIZE > 256          ; setup_level copies it in two parts
+    copyblock font_overlay_start, font_overlay_end, setup_end
+    clear font_overlay_start, font_overlay_end
+
+; ***************************************************************************************
 ; The end of the game: assembled where load_ending puts it, over the code for play, and
-; stored at the end of Setup (asm/ending/ending.asm)
+; stored at the end of Setup, after the play code over the font (asm/ending/ending.asm)
     clear UP_START, UP_END
-ENDING_ADDRESS = ENDING_FILE_ADDRESS + setup_end - setup_start
+ENDING_ADDRESS = ENDING_FILE_ADDRESS + setup_end - setup_start + FONT_OVERLAY_SIZE
     org ENDING_ADDRESS
 .ending_start
 INCLUDE "asm/ending/ending.asm"
@@ -259,8 +276,8 @@ INCLUDE "asm/ending/ending.asm"
 .ending_end
 ASSERT ending_end <= UP_END
 ASSERT LO(ENDING_FILE_ADDRESS) = 0 AND LO(SETUP_ADDRESS) = 0  ; load_ending changes only the high byte
-setup_file_end = setup_end + ending_end - ending_start
+setup_file_end = setup_end + FONT_OVERLAY_SIZE + ending_end - ending_start
 ASSERT setup_file_end <= LEVEL_FILE
     copyblock WS_STORE, WS_STORE + STATIC_WORKSPACE_PAGES * 256, ending_workspace_image
-    copyblock ending_start, ending_end, setup_end
+    copyblock ending_start, ending_end, setup_end + FONT_OVERLAY_SIZE
 save "Setup", setup_start, setup_file_end, setup_level, SETUP_ADDRESS
