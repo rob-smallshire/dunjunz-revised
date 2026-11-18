@@ -139,8 +139,12 @@ three-vsync pace), 90% 161,304, max 407,090, against 1987's 132,788,
 186,370 and 322,850. A room coming on show marks only its own cells
 (`mark_room`); at a level's start, when every view has just been drawn, a
 blank floor is not plotted again. The longest frames are room changes:
-drawing the view, then the room's floor again with what is on it. Next:
-skip the blank floor there too when no other view shows the room, and draw
-a creature solid when nothing else is in its cells, to bring the busy
-frames back to the pace; both need memory.
+drawing the view, then the room's floor again with what is on it.
+
 Step 6 is done too: a dead hero's key lies in the skull's cell, drawn over it.
+
+Deferred: the slow frames are not noticeable in play, so they are left as
+they are. If memory turns up, two changes would bring them back to the
+pace: skipping the blank floor on a room change when no other view shows
+the room (about 30 bytes), and drawing a creature solid when nothing else
+is in its cells (about 100 bytes).
