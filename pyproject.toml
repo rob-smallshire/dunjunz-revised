@@ -14,6 +14,7 @@ dr-sizes = "dunjunz_revised.sizes:main"
 dr-machines = "dunjunz_revised.machines:main"
 dr-sprites = "dunjunz_revised.sprite_sheet:main"
 dr-frame-time = "dunjunz_revised.frame_time:main"
+dr-title-gif = "dunjunz_revised.title_animation:main"
 
 [dependency-groups]
 test = [
@@ -69,9 +70,13 @@ tag = true
 tag_name = "v{new_version}"
 tag_message = "Release v{new_version}"
 message = "Release v{new_version}"
-# Rebuild before committing, so that the README's picture of the title
-# screen (docs/title-screen.png) shows the new version.
-pre_commit_hooks = ["uv run dr-build", "git add docs/title-screen.png"]
+# Rebuild before committing, so that the README's pictures of the title
+# screen (docs/title-screen.png and .gif) show the new version.
+pre_commit_hooks = [
+    "uv run dr-build",
+    "uv run dr-title-gif",
+    "git add docs/title-screen.png docs/title-screen.gif",
+]
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
