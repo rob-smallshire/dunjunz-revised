@@ -115,5 +115,8 @@ def test_levels_load_over_econet(file_server_preset_filepath, client_key):
             level2 = (REVISED_BUILD_DIRPATH / "Level2").read_bytes()
             assert walls[8:] == level2[LEVEL_WALLS_OFFSET + 8:LEVEL_WALLS_OFFSET + MAP_BYTES]
             bbc.cpu.pc = labels["game_over"]
-            assert run_to(bbc, labels["wait_vsync_game_over"], 60), \
-                f"game-over message not printed; {screens(bbc, server)}"
+            reached = run_to(bbc, labels["wait_vsync_game_over"], 60)
+            peek = bbc.memory.address.peek
+            error = peek[0xFD] | peek[0xFE] << 8
+            assert reached, (f"game-over message not printed; PC &{bbc.cpu.pc:04X}; last error "
+                             f"{peek[error]:02X} {bytes(peek[error + 1:error + 40]).split(bytes(1))[0]!r}")
