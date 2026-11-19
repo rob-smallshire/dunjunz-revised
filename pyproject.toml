@@ -20,13 +20,11 @@ dr-readme = "dunjunz_revised.generate_readme:main"
 
 [dependency-groups]
 test = [
-    # Pinned to 0.18.0 for now. From 0.19.0 beebium's analogue port reads an
-    # unplugged channel as &8000, which the 1987 game's coder_start takes for a
-    # joystick (channel 1's high byte &80 twice), so it reads the Barbarian's
-    # keys and SPACE from the stick and the comparisons with it fail. Real Model
-    # Bs read other values unplugged and the game takes the keyboard.
-    "beebium[imaging]==0.18.0",
-    "beebium-server==0.18.0",
+    # 0.20.1 or later: 0.19.0 and 0.20.0 read an unplugged analogue channel as
+    # &8000, which the 1987 game's coder_start takes for a joystick, so its
+    # Barbarian's keys and SPACE were read from the stick.
+    "beebium[imaging]>=0.20.1",
+    "beebium-server>=0.20.1",
     "py65>=1.2",
     "pytest>=8",
     "pytest-timeout>=2",
