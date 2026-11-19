@@ -182,9 +182,19 @@ holding SPACE from the title to the first frame (`lockstep.py`). They
 would choose 4 on the title instead, press each set's fire in hero
 order (TAB, cursor down, SPACE, O) and start with RETURN.
 
+### Still to do
+
+- The title's "fire for joysticks only" reads only the analogue port's fire
+  buttons (OSBYTE &80 in `twinkle_stars`), not SPItFIRE's, so with SPItFIRE
+  sticks a player must press a key on the title instead (any other key gives
+  four keyboard players); the sticks still join on the hero menu. Reading
+  SPItFIRE there needs the OSWORD &3F calls the hero menu makes
+  (`asm/start/joysticks.asm`), and room: the title, at &2000, has about 20
+  bytes left below the screen, but could start at &1C00. Left for now, as
+  only one SPItFIRE board exists (2026-11-19).
+
 ### Still to decide
 
-- The 1-3 player layouts' keys.
 - Whether a `Keys` file of the players' own layouts is wanted later, and
   an editor for it in the title. The DFS disc's catalogue is full (31
   files); `Dunjunz` is a copy of `!BOOT`, and dropping it would make room.
