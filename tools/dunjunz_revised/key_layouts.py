@@ -146,17 +146,32 @@ def column_widths() -> tuple[int, int, int, int]:
             max(len(display_name(k[right])) for k in keys for _, right in PAGE_ROWS))
 
 
+def set_gaps(sets: int) -> list[int]:
+    """The blank rows above, between and below the sets on the page, so that
+    however many there are they spread over the rows between the header and
+    the prompt: as even as can be, any rows over going between the sets
+    first, then below them."""
+    spare = MODE_7_ROWS - BANNER_ROWS - 2 - sets * len(PAGE_ROWS)    # less the header and prompt
+    gaps = [spare // (sets + 1)] * (sets + 1)
+    for index in [*range(1, sets), sets, 0][:spare % (sets + 1)]:
+        gaps[index] += 1
+    return gaps
+
+
 def title_lines(players: int) -> list[str]:
     """The title's page of the keys for this many players, under the banner: its
-    lines, teletext colour codes in them as characters. The header comes straight
-    under the banner, indented clear of its graphics, and the flashing prompt,
-    centred, fills the last row. Each set's heading, in white (the colour
+    lines, teletext colour codes in them as characters, filling the screen. The
+    header comes straight under the banner, indented clear of its graphics, the
+    flashing prompt, centred, is on the bottom row, and the sets spread out
+    between (set_gaps). Each set's heading, in white (the colour
     a row starts in, so needing no code), begins its first row; then come
     columns of actions in ACTION_COLOUR and keys in KEY_COLOUR, each colour code
     standing in for the space before. The widest row, the Magic-User's cursor
     keys, fills all 40 columns."""
     action_width, key_width, right_action_width, _ = column_widths()
+    gaps = set_gaps(players)
     lines = [" " * HEADING_INDENT + chr(TELETEXT_YELLOW) + f"{PLAYER_COUNT_NAMES[players].upper()} AT THE KEYBOARD"]
+    lines += [""] * gaps[0]
     for number, keys in enumerate(LAYOUTS[players], 1):
         for row, (left, right) in enumerate(PAGE_ROWS):
             heading = f"KEY{number}" if row == 0 else " " * len(f"KEY{number}")
@@ -165,7 +180,7 @@ def title_lines(players: int) -> list[str]:
                          + chr(KEY_COLOUR) + f"{display_name(keys[left]):<{key_width}}"
                          + chr(ACTION_COLOUR) + f"{right:<{right_action_width}}"
                          + chr(KEY_COLOUR) + display_name(keys[right]))
-        lines.append("")
+        lines += [""] * gaps[number]
     prompt = chr(TELETEXT_YELLOW) + chr(TELETEXT_FLASH) + "Press any key"
     lines.append(f"{prompt:^{MODE_7_WIDTH}}".rstrip())
     return lines
@@ -211,7 +226,7 @@ def title_texts_asm() -> str:
     ]
     for players in sorted(LAYOUTS):
         lines = title_lines(players)
-        assert BANNER_ROWS + len(lines) <= MODE_7_ROWS, players
+        assert BANNER_ROWS + len(lines) == MODE_7_ROWS, players
         out.append(f".key_layout_text_{players}")
         for number, line in enumerate(lines, 1):
             assert len(line) <= MODE_7_WIDTH, line

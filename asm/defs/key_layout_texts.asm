@@ -12,37 +12,61 @@
     equb >key_layout_text_1, >key_layout_text_2, >key_layout_text_3, >key_layout_text_4
 .key_layout_text_1
     equb "        ", &83, "ONE PLAYER AT THE KEYBOARD", &0d
+    equb &0d
+    equb &0d
+    equb &0d
+    equb &0d
+    equb &0d
+    equb &0d
     equb "KEY1", &82, "left", &87, "Z           ", &82, "right", &87, "X", &0d
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, "L", &0d
     equb "    ", &82, "down", &87, "M           ", &82, "magic", &87, "SPACE", &0d
+    equb &0d
+    equb &0d
+    equb &0d
+    equb &0d
+    equb &0d
+    equb &0d
     equb &0d
     equb "            ", &83, &88, "Press any key"
     equb 0
 .key_layout_text_2
     equb "        ", &83, "TWO PLAYERS AT THE KEYBOARD", &0d
+    equb &0d
+    equb &0d
+    equb &0d
     equb "KEY1", &82, "left", &87, "A           ", &82, "right", &87, "S", &0d
     equb "    ", &82, "up  ", &87, "R           ", &82, "fire ", &87, "T", &0d
     equb "    ", &82, "down", &87, "D           ", &82, "magic", &87, "C", &0d
+    equb &0d
+    equb &0d
+    equb &0d
     equb &0d
     equb "KEY2", &82, "left", &87, "B           ", &82, "right", &87, "N", &0d
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, ";", &0d
     equb "    ", &82, "down", &87, "M           ", &82, "magic", &87, "SPACE", &0d
     equb &0d
+    equb &0d
+    equb &0d
     equb "            ", &83, &88, "Press any key"
     equb 0
 .key_layout_text_3
     equb "        ", &83, "THREE PLAYERS AT THE KEYBOARD", &0d
+    equb &0d
     equb "KEY1", &82, "left", &87, "DELETE      ", &82, "right", &87, "COPY", &0d
     equb "    ", &82, "up  ", &87, "CURSOR RIGHT", &82, "fire ", &87, "CURSOR DOWN"
     equb "    ", &82, "down", &87, "CURSOR UP   ", &82, "magic", &87, "RETURN", &0d
+    equb &0d
     equb &0d
     equb "KEY2", &82, "left", &87, ".           ", &82, "right", &87, "/", &0d
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, "SPACE", &0d
     equb "    ", &82, "down", &87, ",           ", &82, "magic", &87, "L", &0d
     equb &0d
+    equb &0d
     equb "KEY3", &82, "left", &87, "U           ", &82, "right", &87, "I", &0d
     equb "    ", &82, "up  ", &87, "G           ", &82, "fire ", &87, "O", &0d
     equb "    ", &82, "down", &87, "B           ", &82, "magic", &87, "J", &0d
+    equb &0d
     equb &0d
     equb "            ", &83, &88, "Press any key"
     equb 0
