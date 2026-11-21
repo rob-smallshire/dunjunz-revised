@@ -70,12 +70,6 @@ keyboard players, with the 1987 keys. Each player at the keyboard has a set
 of keys, KEY1 to KEY4, from the layout for that many players, shown before
 the game loads.
 
-On the hero menu, every player joins by pressing fire, on their joystick or
-their set of keys. A press takes the first free hero, and each further press
-moves on to the next, past the Fighter to nobody, so any set of keys can
-play any hero. The menu shows KEY1-KEY4 or JOY1-JOY4 against each hero who
-plays. 5 and 6 turn the sound on and off, and RETURN starts the game.
-
 The page of keys for each number of keyboard players, as the game shows it:
 
 <p align="center">
@@ -84,6 +78,12 @@ The page of keys for each number of keyboard players, as the game shows it:
 <img src="docs/key-page-3.png" width="49%" alt="Three players at the keyboard. KEY1: up →, down ↑, left DELETE, right COPY, fire ↓, magic RETURN. KEY2: up K, down ,, left ., right /, fire SPACE, magic L. KEY3: up G, down B, left U, right I, fire O, magic J.">
 <img src="docs/key-page-4.png" width="49%" alt="Four players at the keyboard. KEY1: up CAPS LOCK, down SHIFT LOCK, left SHIFT, right Z, fire TAB, magic CTRL. KEY2: up →, down ↑, left DELETE, right COPY, fire ↓, magic RETURN. KEY3: up K, down ,, left ., right /, fire SPACE, magic L. KEY4: up G, down B, left U, right I, fire O, magic J.">
 </p>
+
+On the hero menu, every player joins by pressing fire, on their joystick or
+their set of keys. A press takes the first free hero, and each further press
+moves on to the next, past the Fighter to nobody, so any set of keys can
+play any hero. The menu shows KEY1-KEY4 or JOY1-JOY4 against each hero who
+plays. 5 and 6 turn the sound on and off, and RETURN starts the game.
 
 The layout for four players is the 1987 keys, each set one 1987 hero's:
 KEY1 the Ranger's, KEY2 the Magic-User's, KEY3 the Barbarian's and KEY4 the
