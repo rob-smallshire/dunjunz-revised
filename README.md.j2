@@ -76,16 +76,14 @@ moves on to the next, past the Fighter to nobody, so any set of keys can
 play any hero. The menu shows KEY1-KEY4 or JOY1-JOY4 against each hero who
 plays. 5 and 6 turn the sound on and off, and RETURN starts the game.
 
+The page of keys for each number of keyboard players, as the game shows it:
+
+<p align="center">
 {% for layout in layouts %}
-### {{ layout.title }} at the keyboard
-
-| Keys | Up | Down | Left | Right | Fire | Magic |
-|---|---|---|---|---|---|---|
-{% for keys in layout.sets %}
-| KEY{{ loop.index }} | {{ keys.up }} | {{ keys.down }} | {{ keys.left }} | {{ keys.right }} | {{ keys.fire }} | {{ keys.magic }} |
+<img src="docs/key-page-{{ layout.players }}.png" width="49%" alt="{{ layout.title }} at the keyboard.{% for keys in layout.sets %} KEY{{ loop.index }}: up {{ keys.up }}, down {{ keys.down }}, left {{ keys.left }}, right {{ keys.right }}, fire {{ keys.fire }}, magic {{ keys.magic }}.{% endfor %}">
 {% endfor %}
+</p>
 
-{% endfor %}
 The layout for four players is the 1987 keys, each set one 1987 hero's:
 KEY1 the Ranger's, KEY2 the Magic-User's, KEY3 the Barbarian's and KEY4 the
 Fighter's, with magic keys added for the last two, as any set can now play

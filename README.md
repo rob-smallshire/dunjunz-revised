@@ -76,35 +76,14 @@ moves on to the next, past the Fighter to nobody, so any set of keys can
 play any hero. The menu shows KEY1-KEY4 or JOY1-JOY4 against each hero who
 plays. 5 and 6 turn the sound on and off, and RETURN starts the game.
 
-### One player at the keyboard
+The page of keys for each number of keyboard players, as the game shows it:
 
-| Keys | Up | Down | Left | Right | Fire | Magic |
-|---|---|---|---|---|---|---|
-| KEY1 | K | M | Z | X | L | SPACE |
-
-### Two players at the keyboard
-
-| Keys | Up | Down | Left | Right | Fire | Magic |
-|---|---|---|---|---|---|---|
-| KEY1 | R | D | A | S | T | C |
-| KEY2 | K | M | B | N | ; | SPACE |
-
-### Three players at the keyboard
-
-| Keys | Up | Down | Left | Right | Fire | Magic |
-|---|---|---|---|---|---|---|
-| KEY1 | → | ↑ | DELETE | COPY | ↓ | RETURN |
-| KEY2 | K | , | . | / | SPACE | L |
-| KEY3 | G | B | U | I | O | J |
-
-### Four players at the keyboard
-
-| Keys | Up | Down | Left | Right | Fire | Magic |
-|---|---|---|---|---|---|---|
-| KEY1 | CAPS LOCK | SHIFT LOCK | SHIFT | Z | TAB | CTRL |
-| KEY2 | → | ↑ | DELETE | COPY | ↓ | RETURN |
-| KEY3 | K | , | . | / | SPACE | L |
-| KEY4 | G | B | U | I | O | J |
+<p align="center">
+<img src="docs/key-page-1.png" width="49%" alt="One player at the keyboard. KEY1: up K, down M, left Z, right X, fire L, magic SPACE.">
+<img src="docs/key-page-2.png" width="49%" alt="Two players at the keyboard. KEY1: up R, down D, left A, right S, fire T, magic C. KEY2: up K, down M, left B, right N, fire ;, magic SPACE.">
+<img src="docs/key-page-3.png" width="49%" alt="Three players at the keyboard. KEY1: up →, down ↑, left DELETE, right COPY, fire ↓, magic RETURN. KEY2: up K, down ,, left ., right /, fire SPACE, magic L. KEY3: up G, down B, left U, right I, fire O, magic J.">
+<img src="docs/key-page-4.png" width="49%" alt="Four players at the keyboard. KEY1: up CAPS LOCK, down SHIFT LOCK, left SHIFT, right Z, fire TAB, magic CTRL. KEY2: up →, down ↑, left DELETE, right COPY, fire ↓, magic RETURN. KEY3: up K, down ,, left ., right /, fire SPACE, magic L. KEY4: up G, down B, left U, right I, fire O, magic J.">
+</p>
 
 The layout for four players is the 1987 keys, each set one 1987 hero's:
 KEY1 the Ranger's, KEY2 the Magic-User's, KEY3 the Barbarian's and KEY4 the
