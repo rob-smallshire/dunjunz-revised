@@ -22,7 +22,7 @@ jobs:
   release:
     name: Publish the release
     needs: test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     env:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/beebasm/bin
-          key: beebasm-${{ env.BEEBASM_VERSION }}-${{ runner.os }}
+          key: beebasm-${{ env.BEEBASM_VERSION }}-ubuntu-26.04
 
       - name: Build beebasm
         if: steps.beebasm-cache.outputs.cache-hit != 'true'

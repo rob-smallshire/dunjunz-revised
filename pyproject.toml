@@ -21,13 +21,12 @@ dr-banner = "dunjunz_revised.key_page_banner:main"
 
 [dependency-groups]
 test = [
-    # Pinned to 0.18.0 for now. 0.19.0 and 0.20.0 read an unplugged analogue
-    # channel as &8000, which the 1987 game's coder_start takes for a joystick,
-    # so it reads the Barbarian's keys and SPACE from the stick and the
-    # comparisons with it fail. 0.20.1 fixes that, but its beebium-server wheels
-    # need glibc 2.41 (manylinux_2_41), newer than GitHub's Ubuntu runners have.
-    "beebium[imaging]==0.18.0",
-    "beebium-server==0.18.0",
+    # 0.20.1 or later: 0.19.0 and 0.20.0 read an unplugged analogue channel as
+    # &8000, which the 1987 game's coder_start takes for a joystick, so its
+    # Barbarian's keys and SPACE were read from the stick. 0.20.1's
+    # beebium-server wheels need glibc 2.41, so CI runs on ubuntu-26.04.
+    "beebium[imaging]>=0.20.1",
+    "beebium-server>=0.20.1",
     "py65>=1.2",
     "pytest>=8",
     "pytest-timeout>=2",

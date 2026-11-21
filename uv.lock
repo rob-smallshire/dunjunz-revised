@@ -23,16 +23,16 @@ wheels = [
 
 [[package]]
 name = "beebium"
-version = "0.18.0"
+version = "0.20.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },
     { name = "stevedore" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/2c/252ccceb2bd07d4f7d7d64e8768e4202e4aa5a38adf44ac260025377ee33/beebium-0.18.0.tar.gz", hash = "sha256:ecc5bda9a31b642b32a82f09dfb47f8cd9590e2fb335f1841112637e74fa5782", size = 625599, upload-time = "2026-11-13T13:39:42.063Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/6a/abf2312dc982b8d863bab63b125856b5e97664d6a5e53cbe0b329ff922d2/beebium-0.20.1.tar.gz", hash = "sha256:a69057568cb5544cb0b6b780fe0622243358a44a18c1d1e36554e97b915d5ee4", size = 672772, upload-time = "2026-11-19T06:06:02.041Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/26/024e9a2973a7b0b0db5a9d163e033b8bbf65f47033132e16889d6a67ef70/beebium-0.18.0-py3-none-any.whl", hash = "sha256:e8514d9f8b5d997254adebed1aa7c61a48410de1a6f32b54cf598adddcb0c63a", size = 504908, upload-time = "2026-11-13T13:39:40.869Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/d1/9081baf430b95d162a010e31d337bf4e90676b43b8b8823d2663ecad7297/beebium-0.20.1-py3-none-any.whl", hash = "sha256:d2db8a3b22a5f21cf58409920e48af2fab8774392baa50819d08c6b9db4919fe", size = 541839, upload-time = "2026-11-19T06:06:00.684Z" },
 ]
 
 [package.optional-dependencies]
@@ -42,14 +42,14 @@ imaging = [
 
 [[package]]
 name = "beebium-server"
-version = "0.18.0"
+version = "0.20.1"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/e2/2253978d9af445b5e001d5a83325e639f273974672759ddd73d8b3842320/beebium_server-0.18.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:5155b7ffbb5263fed9ca0a4407270dfa4fca9e89fb5b89fdc39f03b913e7f02b", size = 73825512, upload-time = "2026-11-13T15:19:00.555Z" },
-    { url = "https://files.pythonhosted.org/packages/76/fe/04e985f7906793098aabcf140e41adf168a82179bd9afdb41ce833895f61/beebium_server-0.18.0-py3-none-macosx_12_0_x86_64.whl", hash = "sha256:49a5f3439d8e7b7e53b7ab13cea289b209ef32177416abec29fc44de6fc795de", size = 77682933, upload-time = "2026-11-13T15:19:08.476Z" },
-    { url = "https://files.pythonhosted.org/packages/db/b6/d967b5035c375e016527323c9d3a74a82e5ff48667643078dcc9b6977c6c/beebium_server-0.18.0-py3-none-manylinux_2_36_aarch64.whl", hash = "sha256:6830bd1f8dd6516dbd86f61a29573dfe6a051da0324c2e8468201ec5383a0d34", size = 92926111, upload-time = "2026-11-13T15:19:17.596Z" },
-    { url = "https://files.pythonhosted.org/packages/be/e1/cbb57ce51bd31d12d23f9348d5a47ea5183942bf95f7a4fab486946d9139/beebium_server-0.18.0-py3-none-manylinux_2_36_x86_64.whl", hash = "sha256:2f44cda59ee66e08d062aff3e1e8c02bcdcacac223c082d5282e40a5dca8c9dd", size = 94485521, upload-time = "2026-11-13T16:09:14.343Z" },
-    { url = "https://files.pythonhosted.org/packages/59/5e/3e2b5dc44798a79118bf3ac5a3fbcf52b50918a15507a348dc0a4af36ebb/beebium_server-0.18.0-py3-none-win_amd64.whl", hash = "sha256:cd6719e927d2ee76c19a0394aa02b2400ecb14e997281900316d5247a6a80d60", size = 55263298, upload-time = "2026-11-13T16:09:18.16Z" },
+    { url = "https://files.pythonhosted.org/packages/62/70/6d170d2cb23b9eff38223668db70ce5a4d50746bc451c6c3c8babcab532f/beebium_server-0.20.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:dc91c9833bbf9ba99438e577b1e798972f3724e5208b9aba43cabca3d55ef86b", size = 75193796, upload-time = "2026-11-19T07:45:36.271Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/57/93235b580ea97c552ae5ee9ce62bf984f648ae2231b121e0c6a1630ca22f/beebium_server-0.20.1-py3-none-macosx_12_0_x86_64.whl", hash = "sha256:3608f9cdcd22a73931eeeba9294752960c81a65b2dec6cd9a7835b521505daee", size = 79261587, upload-time = "2026-11-19T07:45:44.357Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/68/e2374aaf39a6a7638e382e1aba02523c450f4137e1ab888d35d6c1b9128e/beebium_server-0.20.1-py3-none-manylinux_2_41_aarch64.whl", hash = "sha256:dd0eb0d20508e11f295aeb1650f4adf21905c25e0a7751be32de1d2022eb0140", size = 95402280, upload-time = "2026-11-19T07:45:52.959Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/98/6a469df6220e417449140d9922a750b17955e108c9b15c612dd9f9873952/beebium_server-0.20.1-py3-none-manylinux_2_41_x86_64.whl", hash = "sha256:e1a65e3fdba9a78b67a35cfd4eae4e6787bf9399f15fc7c368bfe50fd98b0bf9", size = 99504122, upload-time = "2026-11-19T07:46:02.256Z" },
+    { url = "https://files.pythonhosted.org/packages/92/8c/530cf8001e672f6a61cae08b71ce86469ca942e9a72446143e95b38510bf/beebium_server-0.20.1-py3-none-win_amd64.whl", hash = "sha256:db1840e7aa5cffd20c2a649408e15f466a54857c32547fd277e394d1ea404882", size = 56081319, upload-time = "2026-11-19T07:46:08.377Z" },
 ]
 
 [[package]]
@@ -152,8 +152,8 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "beebium", extras = ["imaging"], specifier = "==0.18.0" },
-    { name = "beebium-server", specifier = "==0.18.0" },
+    { name = "beebium", extras = ["imaging"], specifier = ">=0.20.1" },
+    { name = "beebium-server", specifier = ">=0.20.1" },
     { name = "oaknut-afs", specifier = ">=13.6.1" },
     { name = "oaknut-disc", specifier = ">=13.6.1" },
     { name = "py65", specifier = ">=1.2" },
@@ -162,8 +162,8 @@ dev = [
     { name = "sextants", specifier = ">=0.3.0" },
 ]
 test = [
-    { name = "beebium", extras = ["imaging"], specifier = "==0.18.0" },
-    { name = "beebium-server", specifier = "==0.18.0" },
+    { name = "beebium", extras = ["imaging"], specifier = ">=0.20.1" },
+    { name = "beebium-server", specifier = ">=0.20.1" },
     { name = "oaknut-afs", specifier = ">=13.6.1" },
     { name = "oaknut-disc", specifier = ">=13.6.1" },
     { name = "py65", specifier = ">=1.2" },

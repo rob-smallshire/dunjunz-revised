@@ -21,7 +21,7 @@ env:
 jobs:
   test:
     name: Build and test
-    runs-on: ubuntu-24.04          # glibc 2.39: the beebium-server manylinux_2_36 wheel
+    runs-on: ubuntu-26.04          # glibc 2.41 or later, for beebium-server's manylinux_2_41 wheels (as beebium's own CI)
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6
@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/beebasm/bin
-          key: beebasm-${{ env.BEEBASM_VERSION }}-${{ runner.os }}
+          key: beebasm-${{ env.BEEBASM_VERSION }}-ubuntu-26.04
 
       - name: Build beebasm
         if: steps.beebasm-cache.outputs.cache-hit != 'true'
