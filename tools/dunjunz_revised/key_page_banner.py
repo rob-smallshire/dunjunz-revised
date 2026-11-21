@@ -4,7 +4,7 @@ from the 1987 title picture, in teletext mosaic graphics, shaded like fire.
 The logo (the picture's red and white pixels above the heroes, without the
 torch flames that reach up into it) is converted by the sextants package to
 BANNER_ROWS rows of 40 cells, each row starting with its graphics colour
-code, which the title cycles to make the logo flicker (show_keys). The
+code, shaded from yellow at the top to magenta at the bottom. The
 conversion is slow and needs sextants, so the result is checked in, as
 asm/defs/key_page_banner.asm; `uv run dr-banner` remakes it.
 """
@@ -109,7 +109,7 @@ def banner_asm(rows: list[bytes]) -> str:
         "; Written by tools/dunjunz_revised/key_page_banner.py (uv run dr-banner); do not edit.",
         "; The DUNJUNZ logo from the 1987 title picture in teletext mosaic graphics: seven full",
         "; rows of 40 cells, so the cursor moves from each to the next by itself, each row's",
-        "; graphics colour code first (cycled by show_keys), then a zero. Every byte has bit 7",
+        "; graphics colour code first, then a zero. Every byte has bit 7",
         "; set, so the MOS puts it on the screen as it is.",
         ".key_page_banner",
     ]

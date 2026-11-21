@@ -45,7 +45,7 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   the choice of keyboard players, in yellow, and the version drawn in on the
   bottom row, from `_version.py`. After the choice the title shows that
   layout's keys in MODE 7 before loading the game, under a banner of the
-  1987 logo in teletext mosaic, whose row colours it cycles while it waits
+  1987 logo in teletext mosaic
   (`tools/dunjunz_revised/key_page_banner.py` converts the logo with the
   `sextants` package; the result is checked in). The end of a game offers
   R to play again with the same choices (`asm/ending/ending.asm`). The build also

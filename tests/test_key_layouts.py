@@ -185,25 +185,15 @@ def test_the_title_shows_the_layouts_keys(disc_filepaths, players):
     assert screen[len(expected):] == b" " * (len(screen) - len(expected))
 
 
-def test_the_banner_burns_until_a_key_is_pressed(disc_filepaths):
-    """While the page waits for a key, the banner's row colours move up a row
-    at a time, the top row's to the bottom, and nothing else changes; a key
-    goes on to load the game."""
+def test_the_page_waits_for_a_key(disc_filepaths):
+    """The page stays as printed until a key is pressed, which goes on to load
+    the game."""
     title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
     with launched(MACHINES["dfs226"]) as bbc:
         run_to_the_page(bbc, title_labels, 4)
         printed = mode_7_screen(bbc)
-        colours = [printed[row * MODE_7_WIDTH] for row in range(BANNER_ROWS)]
-        seen = set()
-        for _ in range(12):
-            bbc.run_for_emulated_seconds(0.05)
-            screen = mode_7_screen(bbc)
-            now = [screen[row * MODE_7_WIDTH] for row in range(BANNER_ROWS)]
-            shift = next(n for n in range(BANNER_ROWS) if now == colours[n:] + colours[:n])
-            seen.add(shift)
-            assert [byte for index, byte in enumerate(screen) if index % MODE_7_WIDTH or index >= BANNER_ROWS * MODE_7_WIDTH] == \
-                [byte for index, byte in enumerate(printed) if index % MODE_7_WIDTH or index >= BANNER_ROWS * MODE_7_WIDTH]
-        assert len(seen) > 2
+        bbc.run_for_emulated_seconds(0.5)
+        assert mode_7_screen(bbc) == printed
         stop = bbc.debugger.add_breakpoint(title_labels["show_keys_done"])
         try:
             hold_key(bbc, *inkey_to_matrix(0x9D))               # SPACE

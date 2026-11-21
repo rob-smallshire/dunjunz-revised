@@ -4,7 +4,7 @@
 ; Written by tools/dunjunz_revised/key_page_banner.py (uv run dr-banner); do not edit.
 ; The DUNJUNZ logo from the 1987 title picture in teletext mosaic graphics: seven full
 ; rows of 40 cells, so the cursor moves from each to the next by itself, each row's
-; graphics colour code first (cycled by show_keys), then a zero. Every byte has bit 7
+; graphics colour code first, then a zero. Every byte has bit 7
 ; set, so the MOS puts it on the screen as it is.
 .key_page_banner
     equb &93, &a0, &a0, &a0, &f8, &9d, &a0, &9e, &fc, &9c, &fc, &f0, &a0, &a0, &a0, &a0, &a0, &a0, &a2, &ab, &9d, &a0, &a0, &a0, &af, &9c, &a1, &a2, &ab, &9d, &a0, &a0, &a0, &a0, &a0, &a0, &a0, &a1, &9c, &a0

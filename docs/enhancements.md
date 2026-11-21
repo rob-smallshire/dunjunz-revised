@@ -63,8 +63,7 @@ each side; four want the 1987 layout.
   key, before loading the game (which loads over all of screen memory, so
   nothing can be shown while it loads). Across the top, seven rows of
   the 1987 DUNJUNZ logo in teletext mosaic graphics, shaded yellow, red
-  and magenta, the colours moving up a row every 8 cs (after a vsync)
-  while the page waits, so the logo burns; under it the header, indented
+  and magenta, row by row; under it the header, indented
   clear of the logo, and a flashing "Press any key", centred, always on
   the bottom row. The sets spread out over the rows between, the spare
   rows shared out evenly above, between and below them (`set_gaps`). Each set takes three rows, its
