@@ -27,9 +27,16 @@ from dunjunz_revised.key_layouts import (
     layouts_asm,
     title_lines,
 )
-from dunjunz_revised.key_page_banner import BANNER_ROWS
+from dunjunz_revised.key_page_banner import (
+    BANNER_ROWS,
+    STAR_FRAMES,
+    STAR_SITES,
+    STAR_WINDOW_HEIGHT,
+    STAR_WINDOW_WIDTH,
+)
 from dunjunz_revised.lockstep import RETURN, answer_title, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
+from dunjunz_revised.page_text import unpacked
 from dunjunz_revised.sixtyfive import GameImage
 
 PLAY_KEYS = ("p", "escape")                 # pause, and ESCAPE held to end the game
@@ -146,11 +153,16 @@ def test_a_sets_keys_reach_the_hero_it_joins(disc_filepaths, players, joins):
 MODE_7_SCREEN = 0x7C00
 
 
-def banner(title_labels) -> bytes:
-    """The banner as the built title holds it, up to its zero."""
+def title_bytes(title_labels, label: str, length: int | None = None) -> bytes:
+    """Bytes of the built title from a label: length of them, or up to a zero."""
     title = (REVISED_BUILD_DIRPATH / "Dunjunz").read_bytes()
-    start = title_labels["key_page_banner"] - title_labels["dasmos_start"]
-    return title[start:title.index(0, start)]
+    start = title_labels[label] - title_labels["dasmos_start"]
+    return title[start:start + length] if length is not None else title[start:title.index(0, start)]
+
+
+def banner(title_labels) -> bytes:
+    """The banner as print_text prints it."""
+    return unpacked(title_bytes(title_labels, "key_page_banner"))
 
 
 def run_to_the_page(bbc, title_labels, players):
@@ -185,15 +197,44 @@ def test_the_title_shows_the_layouts_keys(disc_filepaths, players):
     assert screen[len(expected):] == b" " * (len(screen) - len(expected))
 
 
-def test_the_page_waits_for_a_key(disc_filepaths):
-    """The page stays as printed until a key is pressed, which goes on to load
-    the game."""
+def star_windows(screen: bytes) -> list[bytes]:
+    """Each star site's window, as on the screen."""
+    return [b"".join(screen[(site.top + row) * MODE_7_WIDTH + site.window_column:][:STAR_WINDOW_WIDTH]
+                     for row in range(STAR_WINDOW_HEIGHT)) for site in STAR_SITES]
+
+
+def outside_the_windows(screen: bytes) -> bytes:
+    cells = bytearray(screen)
+    for site in STAR_SITES:
+        for row in range(STAR_WINDOW_HEIGHT):
+            start = (site.top + row) * MODE_7_WIDTH + site.window_column
+            cells[start:start + STAR_WINDOW_WIDTH] = bytes(STAR_WINDOW_WIDTH)
+    return bytes(cells)
+
+
+def test_the_stars_twinkle_until_a_key_is_pressed(disc_filepaths):
+    """While the page waits for a key, each star site's window shows only the
+    frames made for it, every site shows a star in time, and nothing else on
+    the page changes; a key goes on to load the game."""
     title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
+    window_bytes = STAR_WINDOW_WIDTH * STAR_WINDOW_HEIGHT
+    frames = title_bytes(title_labels, "star_frames", len(STAR_SITES) * STAR_FRAMES * window_bytes)
+    site_frames = [[frames[(site * STAR_FRAMES + size) * window_bytes:][:window_bytes] for size in range(STAR_FRAMES)]
+                   for site in range(len(STAR_SITES))]
     with launched(MACHINES["dfs226"]) as bbc:
         run_to_the_page(bbc, title_labels, 4)
         printed = mode_7_screen(bbc)
-        bbc.run_for_emulated_seconds(0.5)
-        assert mode_7_screen(bbc) == printed
+        assert star_windows(printed) == [site[0] for site in site_frames]          # no star showing yet
+        shown = set()
+        for _ in range(120):                                                       # 3 s, a period or two of every site
+            bbc.run_for_emulated_seconds(0.025)
+            screen = mode_7_screen(bbc)
+            assert outside_the_windows(screen) == outside_the_windows(printed)
+            for site, window in enumerate(star_windows(screen)):
+                assert window in site_frames[site], site
+                if window != site_frames[site][0]:
+                    shown.add(site)
+        assert shown == set(range(len(STAR_SITES)))
         stop = bbc.debugger.add_breakpoint(title_labels["show_keys_done"])
         try:
             hold_key(bbc, *inkey_to_matrix(0x9D))               # SPACE

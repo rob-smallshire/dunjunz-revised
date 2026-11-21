@@ -20,6 +20,10 @@ osbyte_scan_keyboard_from_16 = &7a
 osbyte_read_adc_or_fire      = &80  ; With X = 0: the fire buttons in X bits 0-1
 osbyte_read_oshwm            = &83
 osbyte_read_tube_presence    = &ea
+osbyte_wait_for_vsync        = &13
+osbyte_inkey                 = &81  ; X, Y: the time limit in centiseconds; Y = &FF on return if no key came
+mode_7_screen                = &7c00
+MODE_7_WIDTH                 = 40
 highest_page                 = &1c00  ; The game keeps &1C00 up: the filing systems' private workspace must end below it
 
 ; Memory locations
@@ -50,6 +54,8 @@ osasci                   = &ffe3
 osrdch                   = &ffe0
 text_ptr                 = &78  ; print_text: the text being printed (sprite_data_ptr, free once the stars are gone)
 text_ptr_hi              = &79
+twinkle_site_number      = &7a  ; twinkle_stars_7: the star site (sprite_number, free once the stars are gone)
+twinkle_frame_byte       = &7b  ; twinkle_stars_7: the next byte of its frame (title_plot_reversed, likewise)
 
 
     org &2000                           ; Low enough for the pages of keys below the screen, at or above &1C00, the highest PAGE
@@ -867,8 +873,9 @@ NEXT
 ; print the banner (asm/defs/key_page_banner.asm), the DUNJUNZ logo in mosaic graphics,
 ; then under it the page of keys for the keyboard_players chosen
 ; (asm/defs/key_layout_texts.asm); wait for every key to be let go, so the key that
-; chose does not go on, then for a fresh key. With joysticks only (keyboard_players 0)
-; there are no keys to show. Called once by title_start, which
+; chose does not go on, then for a fresh key, meanwhile twinkling the banner's stars a
+; frame every STAR_TICK_CENTISECONDS (twinkle_stars_7). With joysticks only
+; (keyboard_players 0) there are no keys to show. Called once by title_start, which
 ; then selects the game's display.
 ;
 ; On Exit:
@@ -903,11 +910,76 @@ NEXT
     bne wait_keys_released              ; Yes: wait for it to be let go
     lda #osbyte_flush_buffer            ; OSBYTE &15, X = 0: empty the keyboard buffer...
     jsr osbyte                          ; ...of the key that chose (X is 0 here)
-    jsr osrdch                          ; Wait for a key
+.wait_for_page_key
+    lda #osbyte_inkey                   ; OSBYTE &81: wait up to a tick for a key
+    ldx #STAR_TICK_CENTISECONDS
+    ldy #0
+    jsr osbyte                          ; ...Y = &FF if none came
+    iny
+    bne show_keys_done                  ; A key: go on
+    lda #osbyte_wait_for_vsync          ; None: wait for the vertical sync, so that the
+    jsr osbyte                          ; ...stars are drawn before the banner's rows are
+    jsr twinkle_stars_7                 ; Move every star on a frame
+    jmp wait_for_page_key               ; And wait again
 .show_keys_done
     rts
 ; ***************************************************************************************
+; Twinkle the banner's stars
+;
+; Move each star site's count on a tick, back to 0 at its period (star_periods), and draw
+; its window for the count: a frame of its twinkle while the count is below
+; TWINKLE_FRAMES, else blank (asm/defs/key_page_banner.asm). Called by show_keys every
+; tick, just after a vertical sync.
+;
+; On Exit:
+;     A: corrupted
+;     X: corrupted
+;     Y: corrupted
+.twinkle_stars_7
+    ldx #STAR_SITES - 1                 ; Sites 4 to 0
+.twinkle_site
+    stx twinkle_site_number
+    inc star_counts,x                   ; On a tick...
+    lda star_counts,x
+    cmp star_periods,x                  ; ...to the period?
+    bcc twinkle_count_on
+    lda #0                              ; Yes: back to 0, a twinkle starting
+    sta star_counts,x
+.twinkle_count_on
+    tay                                 ; The count
+    lda #0                              ; Blank, past the twinkle...
+    cpy #TWINKLE_FRAMES
+    bcs twinkle_frame_found
+    lda twinkle_frames,y                ; ...or its frame of the twinkle
+.twinkle_frame_found
+    clc                                 ; In this site's frames
+    adc star_site_frames,x
+    sta twinkle_frame_byte
+    lda star_screen_lo,x                ; Its window on the screen
+    sta screen_ptr
+    lda star_screen_hi,x
+    sta screen_ptr_hi
+    ldy #0                              ; From the window's first cell
+.twinkle_cell
+    ldx twinkle_frame_byte              ; The frame's next cell...
+    lda star_frames,x
+    sta (screen_ptr),y                  ; ...onto the screen
+    inc twinkle_frame_byte
+    iny
+    cpy #STAR_WINDOW_WIDTH              ; The end of the window's first row?
+    bne twinkle_next_cell
+    ldy #MODE_7_WIDTH                   ; Yes: on to its second row
+.twinkle_next_cell
+    cpy #MODE_7_WIDTH + STAR_WINDOW_WIDTH  ; The end of the window?
+    bne twinkle_cell
+    ldx twinkle_site_number             ; The next site down
+    dex
+    bpl twinkle_site
+    rts
+; ***************************************************************************************
 ; Print a zero-terminated text with OSASCI
+;
+; Bytes 1 to 12 each print that many spaces (tools/dunjunz_revised/page_text.py).
 ;
 ; On Entry:
 ;     A: the text's address, low byte
@@ -923,7 +995,18 @@ NEXT
 .print_next
     lda (text_ptr),y                    ; The next byte...
     beq text_printed                    ; ...up to the zero
-    jsr osasci                          ; ...each carriage return a new line
+    cmp #&0d                            ; A run of spaces, 1 to 12?
+    bcs print_byte                      ; No: print the byte
+    tax                                 ; Yes: that many...
+.print_spaces
+    lda #' '                            ; ...spaces
+    jsr oswrch
+    dex
+    bne print_spaces
+    beq printed_byte                    ; Always
+.print_byte
+    jsr osasci                          ; Each carriage return a new line
+.printed_byte
     iny
     bne print_next                      ; On along the text...
     inc text_ptr_hi                     ; ...into its next page of memory

@@ -19,6 +19,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from dunjunz_revised.key_page_banner import BANNER_ROWS
+from dunjunz_revised.page_text import text_bytes_asm
 
 ACTIONS = ("up", "down", "left", "right", "fire", "magic")
 MAX_PLAYERS = 4
@@ -128,7 +129,7 @@ def layouts_asm() -> str:
 TITLE_TEXTS_ASM_FILEPATH = LAYOUTS_ASM_FILEPATH.with_name("key_layout_texts.asm")
 MODE_7_WIDTH = 40
 MODE_7_ROWS = 25
-TELETEXT_GREEN, TELETEXT_YELLOW, TELETEXT_WHITE, TELETEXT_FLASH = 0x82, 0x83, 0x87, 0x88
+TELETEXT_GREEN, TELETEXT_YELLOW, TELETEXT_WHITE = 0x82, 0x83, 0x87
 HEADING_INDENT = 8                  # spaces before the header's colour code, clear of the banner
 ACTION_COLOUR, KEY_COLOUR = TELETEXT_GREEN, TELETEXT_WHITE
 # Each set's keys as they lie on the page: left beside right, and up over fire over
@@ -162,7 +163,7 @@ def title_lines(players: int) -> list[str]:
     """The title's page of the keys for this many players, under the banner: its
     lines, teletext colour codes in them as characters, filling the screen. The
     header comes straight under the banner, indented clear of its graphics, the
-    flashing prompt, centred, is on the bottom row, and the sets spread out
+    prompt, centred, is on the bottom row, and the sets spread out
     between (set_gaps). Each set's heading, in white (the colour
     a row starts in, so needing no code), begins its first row; then come
     columns of actions in ACTION_COLOUR and keys in KEY_COLOUR, each colour code
@@ -181,30 +182,17 @@ def title_lines(players: int) -> list[str]:
                          + chr(ACTION_COLOUR) + f"{right:<{right_action_width}}"
                          + chr(KEY_COLOUR) + display_name(keys[right]))
         lines += [""] * gaps[number]
-    prompt = chr(TELETEXT_YELLOW) + chr(TELETEXT_FLASH) + "Press any key"
+    prompt = chr(TELETEXT_YELLOW) + "Press any key"
     lines.append(f"{prompt:^{MODE_7_WIDTH}}".rstrip())
     return lines
 
 
 def text_asm(line: str, last: bool = False) -> str:
-    """A line for OSASCI as beebasm: its codes as bytes, its text as strings, then
+    """A line for print_text as beebasm (page_text.py): its codes and text, then
     a carriage return, unless the line fills the row, after which the cursor is
     already at the start of the next, or is the last of the page, whose carriage
     return would scroll it."""
-    parts, text = [], ""
-    for character in line:
-        if ord(character) < 0x80:
-            text += character
-            continue
-        if text:
-            parts.append(f'"{text}"')
-            text = ""
-        parts.append(f"&{ord(character):02x}")
-    if text:
-        parts.append(f'"{text}"')
-    if len(line) < MODE_7_WIDTH and not last:
-        parts.append("&0d")
-    return "    equb " + ", ".join(parts)
+    return text_bytes_asm(line.encode("latin-1") + (b"\r" if len(line) < MODE_7_WIDTH and not last else b""))
 
 
 def title_texts_asm() -> str:
@@ -216,7 +204,8 @@ def title_texts_asm() -> str:
         ";",
         "; Written by tools/dunjunz_revised/key_layouts.py, where the layouts are kept; do not edit.",
         "; For N players (1-4), key_layout_texts_lo and _hi + N - 1 point at the page of keys the",
-        "; title prints in MODE 7 under the banner (show_keys): teletext colour codes and text,",
+        "; title prints in MODE 7 under the banner (show_keys), for print_text (runs of spaces",
+        "; as their lengths): teletext colour codes and text,",
         "; lines ended by carriage returns (OSASCI starts each new line), except a full row and",
         "; the last, which fills the screen's last row; the page ended by a zero.",
         ".key_layout_texts_lo",

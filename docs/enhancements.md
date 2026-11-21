@@ -63,8 +63,16 @@ each side; four want the 1987 layout.
   key, before loading the game (which loads over all of screen memory, so
   nothing can be shown while it loads). Across the top, seven rows of
   the 1987 DUNJUNZ logo in teletext mosaic graphics, shaded yellow, red
-  and magenta, row by row; under it the header, indented
-  clear of the logo, and a flashing "Press any key", centred, always on
+  and magenta, row by row, with white stars twinkling in the blank cells
+  around it, as on the title picture: five sites (left of the D, under
+  each "un", above the first, after the Z), each with codes for white,
+  separated graphics where there is room, and back to the logo's colour.
+  Each twinkles, a dot growing through two crosses to a sparkle and back,
+  at its own period (41 to 67 ticks of 3 cs), so they never keep step.
+  The logo is converted without hold or fill codes, so that the stars'
+  codes can go in any blank cell, and the page's text packs runs of spaces
+  as their lengths to make room. Under it the header, indented
+  clear of the logo, and a steady "Press any key", centred, always on
   the bottom row. The sets spread out over the rows between, the spare
   rows shared out evenly above, between and below them (`set_gaps`). Each set takes three rows, its
   KEY1-KEY4 heading beginning the first, its keys set out as they point:
