@@ -33,6 +33,7 @@ from dunjunz_revised.key_page_banner import (
     STAR_SITES,
     STAR_WINDOW_HEIGHT,
     STAR_WINDOW_WIDTH,
+    TWINKLE,
 )
 from dunjunz_revised.lockstep import RETURN, answer_title, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
@@ -226,8 +227,10 @@ def test_the_stars_twinkle_until_a_key_is_pressed(disc_filepaths):
         printed = mode_7_screen(bbc)
         assert star_windows(printed) == [site[0] for site in site_frames]          # no star showing yet
         shown = set()
-        for _ in range(120):                                                       # 3 s, a period or two of every site
-            bbc.run_for_emulated_seconds(0.025)
+        # Read the screen between ticks, at the wait for a key: during one, a window can be
+        # half copied (on the screen it is done before the display reaches the banner).
+        for _ in range(max(site.first for site in STAR_SITES) + 2 * len(TWINKLE)):
+            bbc.debugger.run_to(title_labels["wait_for_page_key"], skip_current=True, timeout=10)
             screen = mode_7_screen(bbc)
             assert outside_the_windows(screen) == outside_the_windows(printed)
             for site, window in enumerate(star_windows(screen)):
