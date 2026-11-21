@@ -161,11 +161,7 @@ def title_lines(players: int) -> list[str]:
                          + chr(ACTION_COLOUR) + f"{right:<{right_action_width}}"
                          + chr(KEY_COLOUR) + display_name(keys[right]))
         lines.append("")
-    lines += [chr(TELETEXT_WHITE) + "On the hero menu, press your fire key",
-              chr(TELETEXT_WHITE) + "to join, and again for another hero.",
-              chr(TELETEXT_WHITE) + "RETURN starts the game.",
-              "",
-              chr(TELETEXT_YELLOW) + "Press any key"]
+    lines.append(chr(TELETEXT_YELLOW) + "Press any key")
     return lines
 
 

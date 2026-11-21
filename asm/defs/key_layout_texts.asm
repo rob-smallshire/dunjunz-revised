@@ -16,10 +16,6 @@
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, "L", &0d
     equb "    ", &82, "down", &87, "M           ", &82, "magic", &87, "SPACE", &0d
     equb &0d
-    equb &87, "On the hero menu, press your fire key", &0d
-    equb &87, "to join, and again for another hero.", &0d
-    equb &87, "RETURN starts the game.", &0d
-    equb &0d
     equb &83, "Press any key", &0d
     equb 0
 .key_layout_text_2
@@ -32,10 +28,6 @@
     equb "KEY2", &82, "left", &87, "B           ", &82, "right", &87, "N", &0d
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, ";", &0d
     equb "    ", &82, "down", &87, "M           ", &82, "magic", &87, "SPACE", &0d
-    equb &0d
-    equb &87, "On the hero menu, press your fire key", &0d
-    equb &87, "to join, and again for another hero.", &0d
-    equb &87, "RETURN starts the game.", &0d
     equb &0d
     equb &83, "Press any key", &0d
     equb 0
@@ -53,10 +45,6 @@
     equb "KEY3", &82, "left", &87, "U           ", &82, "right", &87, "I", &0d
     equb "    ", &82, "up  ", &87, "G           ", &82, "fire ", &87, "O", &0d
     equb "    ", &82, "down", &87, "B           ", &82, "magic", &87, "J", &0d
-    equb &0d
-    equb &87, "On the hero menu, press your fire key", &0d
-    equb &87, "to join, and again for another hero.", &0d
-    equb &87, "RETURN starts the game.", &0d
     equb &0d
     equb &83, "Press any key", &0d
     equb 0
@@ -78,10 +66,6 @@
     equb "KEY4", &82, "left", &87, "U           ", &82, "right", &87, "I", &0d
     equb "    ", &82, "up  ", &87, "G           ", &82, "fire ", &87, "O", &0d
     equb "    ", &82, "down", &87, "B           ", &82, "magic", &87, "J", &0d
-    equb &0d
-    equb &87, "On the hero menu, press your fire key", &0d
-    equb &87, "to join, and again for another hero.", &0d
-    equb &87, "RETURN starts the game.", &0d
     equb &0d
     equb &83, "Press any key", &0d
     equb 0

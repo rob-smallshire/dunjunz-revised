@@ -155,8 +155,10 @@ def test_the_title_shows_the_layouts_keys(disc_filepaths, players):
         bbc.boot_disc(REVISED_DISC_FILEPATH)
         bbc.debugger.run_to(title_labels["twinkle_loop"], timeout=120)
         bbc.debugger.run()
-        hold_key(bbc, *title_key)
+        # The page prints in less time than a key is held: press, and run to its end.
+        bbc.keyboard.matrix_down(*title_key)
         bbc.debugger.run_to(title_labels["keys_printed"], timeout=60)
+        bbc.keyboard.matrix_up(*title_key)
         screen = bytes(bbc.memory.address.peek[MODE_7_SCREEN:MODE_7_SCREEN + MODE_7_WIDTH * MODE_7_ROWS])
     lines = title_lines(players)
     expected = b"".join(line.encode("latin-1").ljust(MODE_7_WIDTH) for line in lines)
