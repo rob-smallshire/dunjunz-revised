@@ -113,7 +113,7 @@ wheels = [
 
 [[package]]
 name = "dunjunz-revised"
-version = "2026.5"
+version = "2026.6"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
