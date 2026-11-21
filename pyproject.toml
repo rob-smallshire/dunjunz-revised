@@ -18,7 +18,7 @@ dr-frame-time = "dunjunz_revised.frame_time:main"
 dr-title-gif = "dunjunz_revised.title_animation:main"
 dr-readme = "dunjunz_revised.generate_readme:main"
 dr-banner = "dunjunz_revised.key_page_banner:main"
-dr-key-pages = "dunjunz_revised.key_page_screenshots:main"
+dr-screenshots = "dunjunz_revised.readme_screenshots:main"
 
 [dependency-groups]
 test = [

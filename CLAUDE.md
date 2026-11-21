@@ -19,7 +19,7 @@ uv run dr-sprites [--original]                    # every sprite as an HTML tabl
 uv run dr-frame-time [--frames N] [--seed S]      # cycles per frame of scripted play, 1987 and revised
 uv run dr-readme                                  # render README.md from README.md.j2 (dr-build does too)
 uv run dr-banner                                  # remake the key page's banner (asm/defs/key_page_banner.asm) with sextants
-uv run dr-key-pages                               # screenshot each page of keys for the README (docs/key-page-N.png), after a build
+uv run dr-screenshots                             # screenshots for the README: each page of keys, the hero menu (docs/), after a build
 uv run python -m dunjunz_revised.coverage 1500 1 2 3   # instructions never run in scripted play
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
@@ -61,9 +61,10 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   `tools/dunjunz_revised/generate_readme.py` renders (`uv run dr-readme`,
   and every `dr-build`) with what comes from the game, such as the keyboard
   layouts. `tests/test_readme.py` fails if the two differ. The README shows
-  the page of keys for each number of players as screenshots, which
-  `uv run dr-key-pages` (`tools/dunjunz_revised/key_page_screenshots.py`)
-  captures in beebium; run it after changing the layouts or the page.
+  the page of keys for each number of players and the hero menu as
+  screenshots, which `uv run dr-screenshots`
+  (`tools/dunjunz_revised/readme_screenshots.py`) captures in beebium; run
+  it after changing the layouts, the page or the menu.
 - The keyboard layouts (1-4 players sharing the keyboard, chosen on the
   title; each set of keys joins the hero menu by its fire key) are kept in
   `tools/dunjunz_revised/key_layouts.py`, which the build writes into
