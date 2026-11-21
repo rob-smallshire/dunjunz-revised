@@ -16,7 +16,7 @@
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, "L", &0d
     equb "    ", &82, "down", &87, "M           ", &82, "magic", &87, "SPACE", &0d
     equb &0d
-    equb &83, &88, "Press any key"
+    equb "            ", &83, &88, "Press any key"
     equb 0
 .key_layout_text_2
     equb "        ", &83, "TWO PLAYERS AT THE KEYBOARD", &0d
@@ -28,7 +28,7 @@
     equb "    ", &82, "up  ", &87, "K           ", &82, "fire ", &87, ";", &0d
     equb "    ", &82, "down", &87, "M           ", &82, "magic", &87, "SPACE", &0d
     equb &0d
-    equb &83, &88, "Press any key"
+    equb "            ", &83, &88, "Press any key"
     equb 0
 .key_layout_text_3
     equb "        ", &83, "THREE PLAYERS AT THE KEYBOARD", &0d
@@ -44,7 +44,7 @@
     equb "    ", &82, "up  ", &87, "G           ", &82, "fire ", &87, "O", &0d
     equb "    ", &82, "down", &87, "B           ", &82, "magic", &87, "J", &0d
     equb &0d
-    equb &83, &88, "Press any key"
+    equb "            ", &83, &88, "Press any key"
     equb 0
 .key_layout_text_4
     equb "        ", &83, "FOUR PLAYERS AT THE KEYBOARD", &0d
@@ -64,5 +64,5 @@
     equb "    ", &82, "up  ", &87, "G           ", &82, "fire ", &87, "O", &0d
     equb "    ", &82, "down", &87, "B           ", &82, "magic", &87, "J", &0d
     equb &0d
-    equb &83, &88, "Press any key"
+    equb "            ", &83, &88, "Press any key"
     equb 0

@@ -149,8 +149,8 @@ def column_widths() -> tuple[int, int, int, int]:
 def title_lines(players: int) -> list[str]:
     """The title's page of the keys for this many players, under the banner: its
     lines, teletext colour codes in them as characters. The header comes straight
-    under the banner, indented clear of its graphics, and the flashing prompt fills
-    the last row. Each set's heading, in white (the colour
+    under the banner, indented clear of its graphics, and the flashing prompt,
+    centred, fills the last row. Each set's heading, in white (the colour
     a row starts in, so needing no code), begins its first row; then come
     columns of actions in ACTION_COLOUR and keys in KEY_COLOUR, each colour code
     standing in for the space before. The widest row, the Magic-User's cursor
@@ -166,7 +166,8 @@ def title_lines(players: int) -> list[str]:
                          + chr(ACTION_COLOUR) + f"{right:<{right_action_width}}"
                          + chr(KEY_COLOUR) + display_name(keys[right]))
         lines.append("")
-    lines.append(chr(TELETEXT_YELLOW) + chr(TELETEXT_FLASH) + "Press any key")
+    prompt = chr(TELETEXT_YELLOW) + chr(TELETEXT_FLASH) + "Press any key"
+    lines.append(f"{prompt:^{MODE_7_WIDTH}}".rstrip())
     return lines
 
 
