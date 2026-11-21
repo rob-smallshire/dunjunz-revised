@@ -443,10 +443,10 @@
     equb &11, menu_colour, &0d
 .menu_hero_lines_end
 ASSERT menu_hero_lines_end - menu_hero_lines = 4 * HERO_LINE_BYTES
-    equb &00, &0c                       ; Column 0, row 12 (the full width: the cursor wraps)
-    equs "KEYBOARD: FIRE JOINS", &0d
-    equb &00, &0e                       ; Column 0, row 14
-    equs "JOYSTICK: FIRE JOINS", &0d
+    equb &00, &0c                       ; Column 0, row 12
+    equs "FIRE TO JOIN, AGAIN", &0d         ; Each press of a fire key or button: the next free hero
+    equb &00, &0e                       ; Column 0, row 14 (the full width: the cursor wraps)
+    equs "FOR NEXT HERO OR OUT", &0d        ; ...and past the Fighter, playing nobody (advance_stick)
     equb &00, &11                       ; Column 0, row 17
     equs "SOUND "
     equb &11                            ; VDU 17: text colour...
