@@ -17,6 +17,7 @@ dr-sprites = "dunjunz_revised.sprite_sheet:main"
 dr-frame-time = "dunjunz_revised.frame_time:main"
 dr-title-gif = "dunjunz_revised.title_animation:main"
 dr-readme = "dunjunz_revised.generate_readme:main"
+dr-banner = "dunjunz_revised.key_page_banner:main"
 
 [dependency-groups]
 test = [
@@ -33,6 +34,8 @@ test = [
 ]
 dev = [
     { include-group = "test" },
+    # Only to remake the title's key-page banner (dr-banner), which is checked in.
+    "sextants>=0.3.0",
 ]
 
 [build-system]

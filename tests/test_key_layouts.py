@@ -27,6 +27,7 @@ from dunjunz_revised.key_layouts import (
     layouts_asm,
     title_lines,
 )
+from dunjunz_revised.key_page_banner import BANNER_ROWS
 from dunjunz_revised.lockstep import RETURN, answer_title, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
 from dunjunz_revised.sixtyfive import GameImage
@@ -145,22 +146,68 @@ def test_a_sets_keys_reach_the_hero_it_joins(disc_filepaths, players, joins):
 MODE_7_SCREEN = 0x7C00
 
 
+def banner(title_labels) -> bytes:
+    """The banner as the built title holds it, up to its zero."""
+    title = (REVISED_BUILD_DIRPATH / "Dunjunz").read_bytes()
+    start = title_labels["key_page_banner"] - title_labels["dasmos_start"]
+    return title[start:title.index(0, start)]
+
+
+def run_to_the_page(bbc, title_labels, players):
+    """Boot, choose players on the title, and run until their page is printed."""
+    bbc.boot_disc(REVISED_DISC_FILEPATH)
+    bbc.debugger.run_to(title_labels["twinkle_loop"], timeout=120)
+    bbc.debugger.run()
+    # The page prints in less time than a key is held: press, and run to its end.
+    title_key = inkey_to_matrix({1: 0xCF, 2: 0xCE, 3: 0xEE, 4: 0xED}[players])
+    bbc.keyboard.matrix_down(*title_key)
+    bbc.debugger.run_to(title_labels["keys_printed"], timeout=60)
+    bbc.keyboard.matrix_up(*title_key)
+
+
+def mode_7_screen(bbc) -> bytes:
+    return bytes(bbc.memory.address.peek[MODE_7_SCREEN:MODE_7_SCREEN + MODE_7_WIDTH * MODE_7_ROWS])
+
+
 @pytest.mark.parametrize("players", sorted(LAYOUTS))
 def test_the_title_shows_the_layouts_keys(disc_filepaths, players):
-    """After the choice on the title, the page of keys fills MODE 7's screen as
-    title_lines sets it out, row for row: nothing wraps or scrolls."""
+    """After the choice on the title, the banner fills MODE 7's top rows and
+    the page of keys the rest, as title_lines sets it out, row for row:
+    nothing wraps or scrolls."""
     title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
-    title_key = inkey_to_matrix({1: 0xCF, 2: 0xCE, 3: 0xEE, 4: 0xED}[players])
     with launched(MACHINES["dfs226"]) as bbc:
-        bbc.boot_disc(REVISED_DISC_FILEPATH)
-        bbc.debugger.run_to(title_labels["twinkle_loop"], timeout=120)
-        bbc.debugger.run()
-        # The page prints in less time than a key is held: press, and run to its end.
-        bbc.keyboard.matrix_down(*title_key)
-        bbc.debugger.run_to(title_labels["keys_printed"], timeout=60)
-        bbc.keyboard.matrix_up(*title_key)
-        screen = bytes(bbc.memory.address.peek[MODE_7_SCREEN:MODE_7_SCREEN + MODE_7_WIDTH * MODE_7_ROWS])
-    lines = title_lines(players)
-    expected = b"".join(line.encode("latin-1").ljust(MODE_7_WIDTH) for line in lines)
+        run_to_the_page(bbc, title_labels, players)
+        screen = mode_7_screen(bbc)
+    rows = banner(title_labels)
+    assert len(rows) == BANNER_ROWS * MODE_7_WIDTH
+    expected = rows + b"".join(line.encode("latin-1").ljust(MODE_7_WIDTH) for line in title_lines(players))
     assert screen[:len(expected)] == expected
     assert screen[len(expected):] == b" " * (len(screen) - len(expected))
+
+
+def test_the_banner_burns_until_a_key_is_pressed(disc_filepaths):
+    """While the page waits for a key, the banner's row colours move up a row
+    at a time, the top row's to the bottom, and nothing else changes; a key
+    goes on to load the game."""
+    title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
+    with launched(MACHINES["dfs226"]) as bbc:
+        run_to_the_page(bbc, title_labels, 4)
+        printed = mode_7_screen(bbc)
+        colours = [printed[row * MODE_7_WIDTH] for row in range(BANNER_ROWS)]
+        seen = set()
+        for _ in range(12):
+            bbc.run_for_emulated_seconds(0.05)
+            screen = mode_7_screen(bbc)
+            now = [screen[row * MODE_7_WIDTH] for row in range(BANNER_ROWS)]
+            shift = next(n for n in range(BANNER_ROWS) if now == colours[n:] + colours[:n])
+            seen.add(shift)
+            assert [byte for index, byte in enumerate(screen) if index % MODE_7_WIDTH or index >= BANNER_ROWS * MODE_7_WIDTH] == \
+                [byte for index, byte in enumerate(printed) if index % MODE_7_WIDTH or index >= BANNER_ROWS * MODE_7_WIDTH]
+        assert len(seen) > 2
+        stop = bbc.debugger.add_breakpoint(title_labels["show_keys_done"])
+        try:
+            hold_key(bbc, *inkey_to_matrix(0x9D))               # SPACE
+            bbc.debugger.run_to(title_labels["show_keys_done"], timeout=10)
+        finally:
+            stop.remove()
+        assert bbc.cpu.pc == title_labels["show_keys_done"]

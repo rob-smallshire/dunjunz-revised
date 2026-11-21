@@ -18,6 +18,7 @@ uv run dr-sizes                                   # address range and size of ea
 uv run dr-sprites [--original]                    # every sprite as an HTML table: build/sprites-*.html
 uv run dr-frame-time [--frames N] [--seed S]      # cycles per frame of scripted play, 1987 and revised
 uv run dr-readme                                  # render README.md from README.md.j2 (dr-build does too)
+uv run dr-banner                                  # remake the key page's banner (asm/defs/key_page_banner.asm) with sextants
 uv run python -m dunjunz_revised.coverage 1500 1 2 3   # instructions never run in scripted play
 uv run python -m dunjunz_revised.workspace_probe KEY ...   # static workspace borrowing test
 uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, commit + tag (user pushes)
@@ -43,7 +44,10 @@ uvx bump-my-version bump minor                    # release: 2026.1 -> 2026.2, c
   (`tools/dunjunz_revised/title_picture.py`): "Press any key" replaced by
   the choice of keyboard players, in yellow, and the version drawn in on the
   bottom row, from `_version.py`. After the choice the title shows that
-  layout's keys in MODE 7 before loading the game. The end of a game offers
+  layout's keys in MODE 7 before loading the game, under a banner of the
+  1987 logo in teletext mosaic, whose row colours it cycles while it waits
+  (`tools/dunjunz_revised/key_page_banner.py` converts the logo with the
+  `sextants` package; the result is checked in). The end of a game offers
   R to play again with the same choices (`asm/ending/ending.asm`). The build also
   renders it to `docs/title-screen.png`. The README shows
   `docs/title-screen.gif` instead, which `uv run dr-title-gif`

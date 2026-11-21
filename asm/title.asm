@@ -20,6 +20,12 @@ osbyte_scan_keyboard_from_16 = &7a
 osbyte_read_adc_or_fire      = &80  ; With X = 0: the fire buttons in X bits 0-1
 osbyte_read_oshwm            = &83
 osbyte_read_tube_presence    = &ea
+osbyte_wait_for_vsync        = &13
+osbyte_inkey                 = &81  ; X, Y: the time limit in centiseconds; Y = &FF on return if no key came
+mode_7_screen                = &7c00
+MODE_7_WIDTH                 = 40
+BANNER_ROWS                  = 7      ; The banner's rows (tools/dunjunz_revised/key_page_banner.py)
+FLAME_CENTISECONDS           = 8      ; How long each of the banner's colours stays on a row
 highest_page                 = &1c00  ; The game keeps &1C00 up: the filing systems' private workspace must end below it
 
 ; Memory locations
@@ -48,7 +54,7 @@ osbyte                   = &fff4
 oscli                    = &fff7
 osasci                   = &ffe3
 osrdch                   = &ffe0
-text_ptr                 = &78  ; show_keys: the page of keys being printed (sprite_data_ptr, free once the stars are gone)
+text_ptr                 = &78  ; print_text: the text being printed (sprite_data_ptr, free once the stars are gone)
 text_ptr_hi              = &79
 
 
@@ -864,10 +870,13 @@ NEXT
 ; Show the keyboard players their keys
 ;
 ; After the choice on the title, and before the game loads over the screen: in MODE 7,
-; print the page of keys for the keyboard_players chosen (asm/defs/key_layout_texts.asm),
-; wait for every key to be let go, so the key that chose does not go on, then wait for a
-; fresh key. With joysticks only (keyboard_players 0) there are no keys to show. Called
-; once by title_start, which then selects the game's display.
+; print the banner (asm/defs/key_page_banner.asm), the DUNJUNZ logo in mosaic graphics,
+; then under it the page of keys for the keyboard_players chosen
+; (asm/defs/key_layout_texts.asm); wait for every key to be let go, so the key that
+; chose does not go on, then for a fresh key, meanwhile moving the banner's row colours
+; up a row every FLAME_CENTISECONDS, so that the logo burns. With joysticks only
+; (keyboard_players 0) there are no keys to show. Called once by title_start, which
+; then selects the game's display.
 ;
 ; On Exit:
 ;     A: corrupted
@@ -876,10 +885,6 @@ NEXT
 .show_keys
     ldx keyboard_players                ; Players at the keyboard
     beq show_keys_done                  ; None: nothing to show
-    lda key_layout_texts_lo - 1,x       ; Their page of keys...
-    sta text_ptr
-    lda key_layout_texts_hi - 1,x
-    sta text_ptr_hi
     lda #22                             ; VDU 22, 7: MODE 7
     jsr oswrch
     lda #7
@@ -890,15 +895,13 @@ NEXT
     jsr oswrch
     dex
     bpl send_cursor_off_7
-    ldy #0                              ; Print the page...
-.print_keys
-    lda (text_ptr),y                    ; ...the next byte...
-    beq keys_printed                    ; ...up to the zero
-    jsr osasci                          ; ...each carriage return a new line
-    iny
-    bne print_keys                      ; On along the page...
-    inc text_ptr_hi                     ; ...into its next page of memory
-    bne print_keys                      ; Always
+    lda #<key_page_banner               ; The banner, across the top rows
+    ldy #>key_page_banner
+    jsr print_text
+    ldx keyboard_players                ; Under it, their page of keys
+    lda key_layout_texts_lo - 1,x
+    ldy key_layout_texts_hi - 1,x
+    jsr print_text
 .keys_printed
 .wait_keys_released
     lda #osbyte_scan_keyboard_from_16   ; Any key still held?
@@ -907,13 +910,60 @@ NEXT
     bne wait_keys_released              ; Yes: wait for it to be let go
     lda #osbyte_flush_buffer            ; OSBYTE &15, X = 0: empty the keyboard buffer...
     jsr osbyte                          ; ...of the key that chose (X is 0 here)
-    jsr osrdch                          ; Wait for a key
+.burn_banner
+    lda #osbyte_wait_for_vsync          ; OSBYTE 19: wait for the vertical sync, so no row...
+    jsr osbyte                          ; ...is drawn half in one colour and half in the next
+    lda mode_7_screen                   ; The top row's colour...
+    pha                                 ; ...kept, for the bottom row
+    ldx #0                              ; Each row's colour code, at the start of the row...
+.move_flame_up
+    lda mode_7_screen + MODE_7_WIDTH,x  ; ...takes the colour of the row below
+    sta mode_7_screen,x
+    txa                                 ; On a row
+    clc
+    adc #MODE_7_WIDTH
+    tax
+    cpx #(BANNER_ROWS - 1) * MODE_7_WIDTH  ; Up to the banner's bottom row...
+    bne move_flame_up
+    pla                                 ; ...which takes the top row's
+    sta mode_7_screen + (BANNER_ROWS - 1) * MODE_7_WIDTH
+    lda #osbyte_inkey                   ; OSBYTE &81: wait up to FLAME_CENTISECONDS for a key
+    ldx #FLAME_CENTISECONDS
+    ldy #0
+    jsr osbyte                          ; ...Y = &FF if none came
+    iny
+    beq burn_banner                     ; None: burn on
 .show_keys_done
+    rts
+; ***************************************************************************************
+; Print a zero-terminated text with OSASCI
+;
+; On Entry:
+;     A: the text's address, low byte
+;     Y: the text's address, high byte
+;
+; On Exit:
+;     A: 0
+;     Y: corrupted
+.print_text
+    sta text_ptr                        ; The text
+    sty text_ptr_hi
+    ldy #0
+.print_next
+    lda (text_ptr),y                    ; The next byte...
+    beq text_printed                    ; ...up to the zero
+    jsr osasci                          ; ...each carriage return a new line
+    iny
+    bne print_next                      ; On along the text...
+    inc text_ptr_hi                     ; ...into its next page of memory
+    bne print_next                      ; Always
+.text_printed
     rts
 ; VDU 23, 1, 0, 0, 0, 0, 0, 0, 0, 0 (the cursor off), in reverse, for send_cursor_off_7.
 .cursor_off_vdu_7
     equb 0, 0, 0, 0, 0, 0, 0, 0, 1, 23
 .cursor_off_vdu_end
+INCLUDE "asm/defs/key_page_banner.asm"
 INCLUDE "asm/defs/key_layout_texts.asm"
 .title_end
 ASSERT title_end <= screen_start      ; MODE 2 clears the screen: nothing the title uses may lie in it

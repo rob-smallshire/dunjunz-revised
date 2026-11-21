@@ -61,7 +61,12 @@ each side; four want the 1987 layout.
   count at &08BF in page &08 (free; it survives the reset between
   levels), then shows the chosen layout's keys in MODE 7 and waits for a
   key, before loading the game (which loads over all of screen memory, so
-  nothing can be shown while it loads). Each set takes three rows, its
+  nothing can be shown while it loads). Across the top, seven rows of
+  the 1987 DUNJUNZ logo in teletext mosaic graphics, shaded yellow, red
+  and magenta, the colours moving up a row every 8 cs (after a vsync)
+  while the page waits, so the logo burns; under it the header, indented
+  clear of the logo, and at the bottom a flashing "Press any key", on the
+  25th row for four players. Each set takes three rows, its
   KEY1-KEY4 heading beginning the first, its keys set out as they point:
   left beside right, and up over fire over down beside them, in aligned
   columns of actions (green) and keys (white), each colour code standing
