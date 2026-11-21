@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dunjunz_revised.generate_readme import README_FILEPATH, readme_markdown
 from dunjunz_revised.key_layouts import LAYOUTS, markdown_name
-from dunjunz_revised.readme_screenshots import HERO_MENU_PNG_FILEPATH, key_page_png_filepath
+from dunjunz_revised.readme_screenshots import HERO_MENU_PNG_FILEPATH, IN_PLAY_PNG_FILEPATH, key_page_png_filepath
 
 
 def test_the_readme_is_the_template_rendered():
@@ -28,6 +28,7 @@ def test_the_readme_shows_every_layout():
             assert f"KEY{number}: {spelt}." in text, (players, number)
 
 
-def test_the_readme_shows_the_hero_menu():
-    assert HERO_MENU_PNG_FILEPATH.exists()
-    assert f'src="docs/{HERO_MENU_PNG_FILEPATH.name}"' in README_FILEPATH.read_text()
+def test_the_readme_shows_the_hero_menu_and_the_game_in_play():
+    for png_filepath in (HERO_MENU_PNG_FILEPATH, IN_PLAY_PNG_FILEPATH):
+        assert png_filepath.exists()
+        assert f'src="docs/{png_filepath.name}"' in README_FILEPATH.read_text()

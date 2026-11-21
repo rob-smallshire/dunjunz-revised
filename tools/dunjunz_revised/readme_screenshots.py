@@ -8,6 +8,9 @@
   docs/hero-menu.png. The keyboard players join by their fire keys, as
   players do. Beebium has no joystick, so the sticks' heroes are set in the
   menu's state, which 5 (sound on) then reprints.
+- The game in play: four heroes on the 1987 keys, played by lockstep's
+  scripted random walk, with the game's randomness pinned, so that every
+  run gives the same picture: docs/in-play.png.
 
 Run after a build, whenever the layouts, the page or the menu change
 (`uv run dr-screenshots`).
@@ -20,12 +23,16 @@ from pathlib import Path
 
 from dunjunz_revised.build import ASM_DIRPATH, REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, read_labels
 from dunjunz_revised.key_layouts import LAYOUTS
-from dunjunz_revised.lockstep import answer_title, hold_key, inkey_to_matrix
+from dunjunz_revised.lockstep import Script, answer_title, game_run, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
 
 PROJECT_DIRPATH = Path(__file__).resolve().parents[2]
 DOCS_DIRPATH = PROJECT_DIRPATH / "docs"
 HERO_MENU_PNG_FILEPATH = DOCS_DIRPATH / "hero-menu.png"
+IN_PLAY_PNG_FILEPATH = DOCS_DIRPATH / "in-play.png"
+# The frame of scripted play shown: the heroes apart in four rooms, a key and a door in one.
+IN_PLAY_SEED, IN_PLAY_FRAMES = 1, 150
+GAME_RANGES = ((0x0400, 0x3000), (0x6E80, 0x8000))     # where lockstep pins the randomness
 INKEY = {name: int(value, 16) for name, value in
          re.findall(r"^inkey_key_(\w+)\s*=\s*&([0-9a-f]{2})", (ASM_DIRPATH / "defs" / "constants.asm").read_text(), re.M)}
 PLAYERS_KEYS = {1: 0xCF, 2: 0xCE, 3: 0xEE, 4: 0xED}          # INKEY numbers of 1-4
@@ -65,7 +72,6 @@ def capture_key_page(players: int, png_filepath: Path) -> None:
 
 
 def capture_hero_menu(png_filepath: Path) -> None:
-    from PIL import Image
     labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
     with launched(MACHINES["dfs226"]) as bbc:
         bbc.boot_disc(REVISED_DISC_FILEPATH)
@@ -90,7 +96,24 @@ def capture_hero_menu(png_filepath: Path) -> None:
         hold_key(bbc, *FIVE)
         bbc.run_for_emulated_seconds(0.5)
         image = bbc.video.capture_frame().to_pil_image().convert("RGB")
-    image.resize((image.width * PIXEL_WIDTH, image.height * PIXEL_HEIGHT), Image.NEAREST).save(png_filepath)
+    stretched(image).save(png_filepath)
+
+
+def stretched(image):
+    """A MODE 2 capture at the screen's proportions."""
+    from PIL import Image
+    return image.resize((image.width * PIXEL_WIDTH, image.height * PIXEL_HEIGHT), Image.NEAREST)
+
+
+def capture_in_play(png_filepath: Path) -> None:
+    labels = read_labels(REVISED_BUILD_DIRPATH, "dunjunz")
+    script = Script(seed=IN_PLAY_SEED)
+    with game_run(REVISED_DISC_FILEPATH, labels, GAME_RANGES) as run:
+        for frame in range(IN_PLAY_FRAMES + 1):
+            if not run.next_frame(script.keys_for(frame)):
+                raise RuntimeError(f"the game ended at frame {frame}")
+        run.bbc.run_for_emulated_seconds(0.02)          # the frame drawn reaches the screen
+        stretched(run.bbc.video.capture_frame().to_pil_image().convert("RGB")).save(png_filepath)
 
 
 def main() -> None:
@@ -100,6 +123,8 @@ def main() -> None:
         print(f"Wrote {png_filepath.relative_to(PROJECT_DIRPATH)}")
     capture_hero_menu(HERO_MENU_PNG_FILEPATH)
     print(f"Wrote {HERO_MENU_PNG_FILEPATH.relative_to(PROJECT_DIRPATH)}")
+    capture_in_play(IN_PLAY_PNG_FILEPATH)
+    print(f"Wrote {IN_PLAY_PNG_FILEPATH.relative_to(PROJECT_DIRPATH)}")
 
 
 if __name__ == "__main__":
