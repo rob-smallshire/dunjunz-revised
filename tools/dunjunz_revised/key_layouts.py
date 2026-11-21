@@ -126,33 +126,40 @@ def layouts_asm() -> str:
 TITLE_TEXTS_ASM_FILEPATH = LAYOUTS_ASM_FILEPATH.with_name("key_layout_texts.asm")
 MODE_7_WIDTH = 40
 MODE_7_ROWS = 25
-TELETEXT_GREEN, TELETEXT_YELLOW, TELETEXT_CYAN, TELETEXT_WHITE = 0x82, 0x83, 0x86, 0x87
-HEADING_COLOUR, ACTION_COLOUR, KEY_COLOUR = TELETEXT_CYAN, TELETEXT_GREEN, TELETEXT_WHITE
+TELETEXT_GREEN, TELETEXT_YELLOW, TELETEXT_WHITE = 0x82, 0x83, 0x87
+ACTION_COLOUR, KEY_COLOUR = TELETEXT_GREEN, TELETEXT_WHITE
 # Each set's keys as they lie on the page: left beside right, and up over fire over
-# down beside them, so that the directions sit as they point. Each colour code stands
-# in for a space: the widest row, the Magic-User's cursor keys, takes 38 columns.
+# down beside them, so that the directions sit as they point.
 PAGE_ROWS = (("left", "right"), ("up", "fire"), ("down", "magic"))
 
 
-def pair(action: str, key: str) -> str:
-    """An action in ACTION_COLOUR and its key in KEY_COLOUR: the codes take the
-    places of the spaces before each."""
-    return chr(ACTION_COLOUR) + action + chr(KEY_COLOUR) + key
+def column_widths() -> tuple[int, int, int, int]:
+    """The widths of the page's columns of actions and keys, left then right,
+    the same in every layout."""
+    keys = [keys for layout in LAYOUTS.values() for keys in layout]
+    return (max(len(left) for left, _ in PAGE_ROWS),
+            max(len(display_name(k[left])) for k in keys for left, _ in PAGE_ROWS),
+            max(len(right) for _, right in PAGE_ROWS),
+            max(len(display_name(k[right])) for k in keys for _, right in PAGE_ROWS))
 
 
 def title_lines(players: int) -> list[str]:
     """The title's page of the keys for this many players: its lines, teletext
-    colour codes in them as characters. Each set's heading begins its first row,
-    and the second column of pairs lines up across every layout."""
-    pairs = {players: [[(pair(left, display_name(keys[left])), pair(right, display_name(keys[right])))
-                        for left, right in PAGE_ROWS] for keys in layout]
-             for players, layout in LAYOUTS.items()}
-    left_width = max(len(left) for layout in pairs.values() for rows in layout for left, _ in rows)
+    colour codes in them as characters. Each set's heading, in white (the colour
+    a row starts in, so needing no code), begins its first row; then come
+    columns of actions in ACTION_COLOUR and keys in KEY_COLOUR, each colour code
+    standing in for the space before. The widest row, the Magic-User's cursor
+    keys, fills all 40 columns."""
+    action_width, key_width, right_action_width, _ = column_widths()
     lines = [chr(TELETEXT_YELLOW) + f"DUNJUNZ: {PLAYER_COUNT_NAMES[players].upper()} AT THE KEYBOARD", ""]
-    for number, rows in enumerate(pairs[players], 1):
-        for row, (left, right) in enumerate(rows):
-            heading = chr(HEADING_COLOUR) + f"KEY{number}" if row == 0 else " " * len(f"KEY{number}") + " "
-            lines.append(heading + f"{left:<{left_width}}" + right)
+    for number, keys in enumerate(LAYOUTS[players], 1):
+        for row, (left, right) in enumerate(PAGE_ROWS):
+            heading = f"KEY{number}" if row == 0 else " " * len(f"KEY{number}")
+            lines.append(heading
+                         + chr(ACTION_COLOUR) + f"{left:<{action_width}}"
+                         + chr(KEY_COLOUR) + f"{display_name(keys[left]):<{key_width}}"
+                         + chr(ACTION_COLOUR) + f"{right:<{right_action_width}}"
+                         + chr(KEY_COLOUR) + display_name(keys[right]))
         lines.append("")
     lines += [chr(TELETEXT_WHITE) + "On the hero menu, press your fire key",
               chr(TELETEXT_WHITE) + "to join, and again for another hero.",
@@ -164,7 +171,8 @@ def title_lines(players: int) -> list[str]:
 
 def text_asm(line: str) -> str:
     """A line for OSASCI as beebasm: its codes as bytes, its text as strings, then
-    a carriage return."""
+    a carriage return, unless the line fills the row, after which the cursor is
+    already at the start of the next."""
     parts, text = [], ""
     for character in line:
         if ord(character) < 0x80:
@@ -176,7 +184,9 @@ def text_asm(line: str) -> str:
         parts.append(f"&{ord(character):02x}")
     if text:
         parts.append(f'"{text}"')
-    return "    equb " + ", ".join(parts + ["&0d"]) if parts else "    equb &0d"
+    if len(line) < MODE_7_WIDTH:
+        parts.append("&0d")
+    return "    equb " + ", ".join(parts)
 
 
 def title_texts_asm() -> str:
@@ -197,12 +207,11 @@ def title_texts_asm() -> str:
     ]
     for players in sorted(LAYOUTS):
         lines = title_lines(players)
-        # The last line's carriage return must not scroll the page, and no line may reach
-        # the last column, from which the cursor moves on to the next row by itself.
+        # The last line's carriage return must not scroll the page.
         assert len(lines) < MODE_7_ROWS, players
         out.append(f".key_layout_text_{players}")
         for line in lines:
-            assert len(line) < MODE_7_WIDTH, line
+            assert len(line) <= MODE_7_WIDTH, line
             assert '"' not in line
             out.append(text_asm(line))
         out.append("    equb 0")
