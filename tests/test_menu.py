@@ -20,7 +20,7 @@ TAB, CURSOR_DOWN = FIRE_KEYS[0], FIRE_KEYS[1]      # the fire keys of key sets 1
 KEY_2 = inkey_to_matrix(0xCE)                         # on the title: two keyboard players
 INKEY_SEMICOLON = 0xA8
 GREEN, YELLOW, BLACK = 2, 3, 0
-HERO_LINE_COLOUR, HERO_LINE_ENTRY, HERO_LINE_BYTES = 3, 18, 25   # in each hero's line on the menu
+HERO_LINE_COLOUR, HERO_LINE_ENTRY, HERO_LINE_BYTES = 3, 16, 23   # in each hero's line on the menu
 
 
 def to_the_menu(bbc, labels, title_key):

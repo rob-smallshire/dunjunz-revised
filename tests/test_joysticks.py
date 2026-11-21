@@ -16,6 +16,7 @@ from dunjunz_revised.build import REVISED_BUILD_DIRPATH, REVISED_DISC_FILEPATH, 
 from dunjunz_revised.lockstep import FIRE_KEYS, RETURN, SPACE, UPDATE_GAME, answer_title, hold_key
 from dunjunz_revised.machines import MACHINES, launched
 from fake_spitfire import DOWN, FIRE, RIGHT, Fake, machine_with_fake, twin_twins
+from test_menu import HERO_LINE_BYTES, HERO_LINE_ENTRY
 
 RTS = 0x60
 NO_STICK = 0xFF
@@ -44,8 +45,9 @@ def to_menu(bbc, labels, before_menu=None):
 
 def entries(bbc, labels) -> list[bytes]:
     """Each hero's entry on the menu: NO, KEYn or JOYn."""
-    start = labels["menu_hero_lines"] + 18                  # each line's entry, 25 bytes apart
-    return [bytes(bbc.memory.address.peek[start + 25 * hero:start + 25 * hero + 4]) for hero in range(4)]
+    start = labels["menu_hero_lines"] + HERO_LINE_ENTRY
+    return [bytes(bbc.memory.address.peek[start + HERO_LINE_BYTES * hero:start + HERO_LINE_BYTES * hero + 4])
+            for hero in range(4)]
 
 
 def spitfire_line(bbc, labels) -> bytes:

@@ -419,26 +419,27 @@
     equb &0c, &02                       ; Column 12, row 2
     equs "PLAYING", &0d
 ; Each hero's line, HERO_LINE_BYTES long: column and row, VDU 17 and the line's colour,
-; the hero's number and name padded to column 14, their entry, and back to green.
+; the hero's name, indented to set the table off from the text below, padded to column
+; 14, their entry, and back to green.
 .menu_hero_lines
-    equb &00, &04                       ; Column 0, row 4
+    equb &02, &04                       ; Column 2, row 4
     equb &11, menu_colour               ; The line's colour (yellow while the hero plays)
-    equs "RANGER        "
+    equs "RANGER      "
     equs "NO  "                         ; The entry: NO, KEYn or JOYn
     equb &11, menu_colour, &0d          ; Back to green
-    equb &00, &06                       ; Column 0, row 6
+    equb &02, &06                       ; Column 2, row 6
     equb &11, menu_colour
-    equs "MAGIC-USER    "
+    equs "MAGIC-USER  "
     equs "NO  "
     equb &11, menu_colour, &0d
-    equb &00, &08                       ; Column 0, row 8
+    equb &02, &08                       ; Column 2, row 8
     equb &11, menu_colour
-    equs "BARBARIAN     "
+    equs "BARBARIAN   "
     equs "NO  "
     equb &11, menu_colour, &0d
-    equb &00, &0a                       ; Column 0, row 10
+    equb &02, &0a                       ; Column 2, row 10
     equb &11, menu_colour
-    equs "FIGHTER       "
+    equs "FIGHTER     "
     equs "NO  "
     equb &11, menu_colour, &0d
 .menu_hero_lines_end
