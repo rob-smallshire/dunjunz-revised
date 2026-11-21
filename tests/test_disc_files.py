@@ -17,6 +17,7 @@ from dunjunz_revised.disc_files import (
     adfs_title,
     dfs_title,
     disc_filename,
+    how_to_play_lines,
     readme_text,
     url_lines,
 )
@@ -69,7 +70,7 @@ def test_the_url_is_broken_to_fit():
 
 
 def test_readme_fits_mode_7_and_says_where_to_report_problems():
-    text = readme_text(LAYOUTS, "Copyright (c) someone.", "2026.1")
+    text = readme_text(LAYOUTS, ["Play it."], "Copyright (c) someone.", "2026.1")
     lines = text.splitlines()
     assert lines[0] == "Dunjunz Revised 2026.1"
     assert all(len(line) <= README_WIDTH for line in lines)
@@ -79,6 +80,19 @@ def test_readme_fits_mode_7_and_says_where_to_report_problems():
     assert "FOUR PLAYERS:" in lines
     assert "KEY1:" in lines
     assert "  up CAPS LOCK      down SHIFT LOCK" in lines
+
+
+def test_the_readme_carries_the_repository_readmes_instructions():
+    """Every heading, paragraph and table row of README.md's How to play,
+    wrapped to fit MODE 7; a table the disc has no form for fails here."""
+    from dunjunz_revised.generate_readme import README_FILEPATH
+    lines = how_to_play_lines(README_FILEPATH.read_text())
+    assert all(len(line) <= README_WIDTH for line in lines)
+    for heading in ("THE QUEST", "THE HEROES", "MOVING AND FIGHTING", "THINGS IN THE DUNJUNZ", "FROM LEVEL TO LEVEL"):
+        assert heading in lines
+    assert "Ranger: arrows, 3 in flight, damage 2," in lines
+    assert "Treasure: 20 points." in lines
+    assert not any(mark in line for line in lines for mark in "*|#")
 
 
 def disc_files(image_filepath):

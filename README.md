@@ -108,3 +108,101 @@ When the game ends, R plays again at once with the same heroes, keys and
 joysticks, skipping the title and the hero menu: within ten seconds of game
 over, or as the key after the victory's ending. Any other key, or none,
 goes back to the title.
+
+## How to play
+
+These instructions are rewritten from the 1987 ones and checked against the
+game's code. The 1987 text swapped the Ranger and the Magic-User, gave the
+Cross of Resurrection the Magic Helmet's description, and got several
+numbers wrong.
+
+### The quest
+
+Mackscrane the Great Demon has hidden the Chalice of Binding at the bottom
+of the Dunjunz, 25 levels down. Four heroes go after it: the Ranger, the
+Magic-User, the Barbarian and the Fighter. On level 25, walk into the
+Chalice to win.
+
+Each hero has a quarter of the screen, which always shows the room they are
+in: the Ranger top left, the Magic-User top right, the Barbarian bottom left
+and the Fighter bottom right. Watch your own quarter, even when you appear
+in someone else's. Down the right of the screen, each hero's panel shows
+their face and armour rating (on the shield), their missile damage, a
+missile icon for each missile they can have in flight, their health, their
+score, the key they carry, and a lightning bolt while they wear the Boots
+of Speed.
+
+### The heroes
+
+| Hero | Weapon | In flight | Damage | Armour | Magic |
+|---|---|---|---|---|---|
+| Ranger | arrows | 3 | 2 | 3 | costs 6 health |
+| Magic-User | fireballs | 2 | 3 | 1 | costs 3 health |
+| Barbarian | axe | 1 | 9 | 4 | none |
+| Fighter | swords | 2 | 5 | 6 | none |
+
+*In flight* is how many of the hero's missiles can be in the air at once.
+*Damage* is the hit points a missile takes from a monster, or the health it
+takes from a hero. *Armour* is shown on the shield: a monster's blow costs
+the hero 10 minus their armour in health, so it costs the Magic-User 9 and
+the Fighter 4. Every hero starts each level on 99 health and dies when it
+runs out.
+
+The 1987 instructions suggest the Barbarian for a first game: on level 1
+the axe kills a monster with one throw.
+
+### Moving and fighting
+
+Holding a direction moves the hero. A move into a wall is refused, but the
+hero still turns to face that way, so you can turn on the spot to aim.
+Fire throws a missile the way the hero faces, along a row or a column. A
+direction held at the same time as fire wins, so stand still to shoot.
+
+Monsters come out of the eight trapdoors on each level, all 30 at once at
+the start, and a killed monster comes back at the next trapdoor in turn.
+Each one has 6 hit points plus 2 for every level so far, so 8 on level 1
+and 56 on level 25. A monster stepping onto a hero deals a blow. A hero
+walking into a monster loses 1 health, whatever their armour. A trapdoor
+stays shut while a hero stands on it.
+
+Missiles hurt heroes too, the thrower included: one that comes back off an
+energy drainer can hit the hero who threw it. A dead hero's skull stops
+missiles, which makes it a shield.
+
+Magic, for the Ranger and the Magic-User, kills every monster in the room
+the caster is in, for a point each, and costs the caster health. A cast
+that would use up the caster's last health kills the caster, and then
+nothing else dies.
+
+### Things in the Dunjunz
+
+| Object | What it does | Points |
+|---|---|---|
+| Treasure | | 20 |
+| Food | 10 more health, to at most 99 | 5 |
+| Magic Sword | missile damage 1 higher, to at most 9 | 10 |
+| Pile of Weapons | one more missile in flight, to at most 3 | 10 |
+| Magic Helmet | armour 1 higher, to at most 7 | 10 |
+| Boots of Speed | a whole cell per step, twice the speed, until the hero finds any other object | 10 |
+| Potion of Healing | health becomes the last digit of the score twice over: 77 for a score ending in 7, and 00 (one point from death) for one ending in 0 | 10 |
+| Cross of Resurrection | brings back the first hero to die on this level, with 32 health, where they fell; wasted if nobody has died | 10 |
+| Teleporter | sends the hero to another teleporter on the level, arriving on the cell above it, whatever is there | |
+| Energy drainer | takes 10 health for every frame the hero is on it, so 20 to walk across; shooting one wears it down and scores, but the missile bounces back | 1 per hit |
+| Door | opens when walked into with its key, which is used up | 7 |
+| Key | each opens one door; a hero carries one key at a time | |
+| Exit | a square hole that leads down to the next level | |
+
+Killing a monster with a missile or magic scores 1.
+
+Walking onto a key picks it up, and drops the key the hero was carrying in
+its place. A hero who goes down the exit leaves their key beside it, and a
+hero who dies leaves theirs on the skull.
+
+### From level to level
+
+A level ends when every hero has either gone down the exit or died. If any
+hero went down the exit, everyone goes on to the next level, the dead
+included. Every hero starts the next level on full health. Those who
+survived keep their score and everything they found. Those who died come
+back as new, with a score of 0 and their starting weapons and armour. If
+every hero dies on a level, the game is over.

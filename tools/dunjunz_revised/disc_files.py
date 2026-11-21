@@ -13,8 +13,8 @@ the machine, can tell which version it is:
   ValueError is raised, never a silent truncation;
 - the disc carries a README, which *TYPE shows: the version, the project's
   address, how to start and play the game (the keys read from the game's
-  own tables, so they cannot drift), and the copyright message from the
-  repository's README.md.
+  own tables, so they cannot drift), and the instructions ("How to play")
+  and the copyright message from the repository's README.md.
 
 There is no separate version file or LICENSE on the disc. A DFS catalogue
 holds 31 files, and the game's 30 (!BOOT, Dunjunz, Screen, GAME, Setup and
@@ -113,20 +113,73 @@ def copyright_text(readme_markdown: str) -> str:
     """The repository README's "Credits and copyright" section, as plain
     text: no Markdown emphasis, and (c) for the copyright sign, which MODE 7
     cannot show."""
-    match = re.search(r"^## Credits and copyright\n(.*?)(?=^## |\Z)", readme_markdown, re.M | re.S)
+    return markdown_section(readme_markdown, "Credits and copyright").replace("*", "").replace("©", "(c)")
+
+
+def markdown_section(readme_markdown: str, heading: str) -> str:
+    """A "## heading" section of the repository README, without its heading."""
+    match = re.search(rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)", readme_markdown, re.M | re.S)
     if match is None:
-        raise ValueError("README.md has no Credits and copyright section")
-    return match.group(1).strip().replace("*", "").replace("©", "(c)")
+        raise ValueError(f"README.md has no {heading} section")
+    return match.group(1).strip()
+
+
+# How each README table in "How to play" reads on the disc, one entry a row: the tables
+# are too wide for 39 columns. Keyed by the table's header row.
+TABLE_ROWS = {
+    ("Hero", "Weapon", "In flight", "Damage", "Armour", "Magic"):
+        lambda hero, weapon, flight, damage, armour, magic:
+            f"{hero}: {weapon}, {flight} in flight, damage {damage}, armour {armour}, "
+            + ("no magic." if magic == "none" else f"magic {magic}."),
+    ("Object", "What it does", "Points"):
+        lambda thing, does, points:
+            " ".join(part for part in (f"{thing}:", f"{does}." if does else "",
+                                       f"{points} points." if points.isdigit() else
+                                       f"Scores {points}." if points else "") if part),
+}
+
+
+def table_rows(block: str) -> list[str]:
+    """A Markdown table as one entry a row, as TABLE_ROWS has it."""
+    rows = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in block.splitlines()]
+    header, rule, *rows = rows
+    if not all(set(cell) <= {"-", ":"} for cell in rule):
+        raise ValueError(f"not a Markdown table: {block!r}")
+    try:
+        row_text = TABLE_ROWS[tuple(header)]
+    except KeyError:
+        raise ValueError(f"no disc form for the README table {header}") from None
+    return [row_text(*row) for row in rows]
+
+
+def how_to_play_lines(readme_markdown: str, width: int = README_WIDTH) -> list[str]:
+    """The repository README's "How to play" section as plain text: each
+    subheading in capitals, emphasis in quotes, paragraphs wrapped, and
+    each row of a table an entry whose further lines are indented."""
+    lines = []
+    for block in re.split(r"\n\s*\n", markdown_section(readme_markdown, "How to play")):
+        block = re.sub(r"\*(.+?)\*", r'"\1"', block.strip())    # emphasis, as quotes
+        if re.search(r"`|\]\(|<|_", block):
+            raise ValueError(f"Markdown the disc README cannot show: {block!r}")
+        if block.startswith("### "):
+            lines += [block[4:].upper(), ""]
+        elif block.startswith("|"):
+            for entry in table_rows(block):
+                lines += textwrap.wrap(entry, width, subsequent_indent="  ", break_on_hyphens=False)
+            lines += [""]
+        else:
+            lines += wrap([block], width)
+    return lines
 
 
 def wrap(paragraphs: list[str], width: int = README_WIDTH) -> list[str]:
     lines = []
     for paragraph in paragraphs:
-        lines += textwrap.wrap(" ".join(paragraph.split()), width) + [""]
+        lines += textwrap.wrap(" ".join(paragraph.split()), width, break_on_hyphens=False) + [""]
     return lines
 
 
-def readme_text(layouts: list[dict], copyright: str, version: str = __version__) -> str:
+def readme_text(layouts: list[dict], how_to_play: list[str], copyright: str, version: str = __version__) -> str:
     """The disc's README, every line at most README_WIDTH characters."""
     lines = [f"{GAME_NAME} {version}", ""]
     lines += wrap([
@@ -176,6 +229,7 @@ def readme_text(layouts: list[dict], copyright: str, version: str = __version__)
         "a stick plays with the stick alone. Hold fire and a direction "
         "together for half a second to cast magic.",
     ])
+    lines += ["HOW TO PLAY", "=" * len("HOW TO PLAY"), ""] + how_to_play    # over its own headings
     lines += ["COPYRIGHT", ""]
     lines += wrap(copyright.split("\n\n"))
     lines += ["Report problems at"] + url_lines()

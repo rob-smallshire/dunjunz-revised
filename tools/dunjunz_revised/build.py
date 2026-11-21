@@ -40,6 +40,7 @@ from dunjunz_revised.disc_files import (
     acorn_text,
     adfs_title,
     copyright_text,
+    how_to_play_lines,
     dfs_title,
     disc_filename,
     key_name,
@@ -289,7 +290,8 @@ def build_revised() -> Path:
          REVISED_BUILD_DIRPATH / "Setup"),
     ]
     files += [(f, REVISED_BUILD_DIRPATH / f.name) for f in write_revised_levels(REVISED_BUILD_DIRPATH)]
-    readme = readme_text(named_layouts(display_name), copyright_text(README_MARKDOWN_FILEPATH.read_text()))
+    readme_markdown = README_MARKDOWN_FILEPATH.read_text()
+    readme = readme_text(named_layouts(display_name), how_to_play_lines(readme_markdown), copyright_text(readme_markdown))
     (REVISED_BUILD_DIRPATH / README_FILENAME).write_bytes(acorn_text(readme))
     files.append((DiscFile(README_FILENAME, 0, 0), REVISED_BUILD_DIRPATH / README_FILENAME))
     if len(files) > DFS_CATALOGUE_LIMIT:
