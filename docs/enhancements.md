@@ -61,7 +61,12 @@ each side; four want the 1987 layout.
   count at &08BF in page &08 (free; it survives the reset between
   levels), then shows the chosen layout's keys in MODE 7 and waits for a
   key, before loading the game (which loads over all of screen memory, so
-  nothing can be shown while it loads).
+  nothing can be shown while it loads). Each set has a cyan KEY1-KEY4
+  heading, with its keys below in three rows, set out as they point:
+  left beside right, and up over fire over down beside them; actions are
+  green and keys white. The heading has its own row because, beside the
+  keys, the widest rows (the Magic-User's cursor keys) would need 41
+  columns.
 - **Each layout has one set of keys per player:** up, down, left, right,
   fire and magic (used only by the Ranger and the Magic-User). The
   4-player layout is the 1987 keys, unchanged. The 1-3 player layouts are

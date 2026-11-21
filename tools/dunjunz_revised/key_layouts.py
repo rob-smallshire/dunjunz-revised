@@ -120,27 +120,64 @@ def layouts_asm() -> str:
     ])
 
 
-# The title's page of each layout's keys, in MODE 7 (40 columns, 25 rows).
+# The title's page of each layout's keys, in MODE 7 (40 columns, 25 rows). A teletext
+# colour code takes a character cell, shown as a space, and colours the rest of its
+# row, up to the next code; each row starts white.
 TITLE_TEXTS_ASM_FILEPATH = LAYOUTS_ASM_FILEPATH.with_name("key_layout_texts.asm")
 MODE_7_WIDTH = 40
-TELETEXT_YELLOW, TELETEXT_CYAN, TELETEXT_WHITE = 0x83, 0x86, 0x87
+MODE_7_ROWS = 25
+TELETEXT_GREEN, TELETEXT_YELLOW, TELETEXT_CYAN, TELETEXT_WHITE = 0x82, 0x83, 0x86, 0x87
+HEADING_COLOUR, ACTION_COLOUR, KEY_COLOUR = TELETEXT_CYAN, TELETEXT_GREEN, TELETEXT_WHITE
+# Each set's keys as they lie on the page: left beside right, and up over fire over
+# down beside them, so that the directions sit as they point.
+PAGE_ROWS = (("left", "right"), ("up", "fire"), ("down", "magic"))
 
 
-def title_lines(players: int) -> list[tuple[int, str]]:
-    """The title's page of the keys for this many players: (colour, text) lines."""
-    lines = [(TELETEXT_YELLOW, f"DUNJUNZ: {PLAYER_COUNT_NAMES[players].upper()} AT THE KEYBOARD"), (0, "")]
+def key_row(keys: dict[str, str], widths: tuple[int, int, int]) -> str:
+    """One row of a set on the title's page: each action in ACTION_COLOUR, then its
+    key in KEY_COLOUR, the codes in the gaps; widths are the left action's, the left
+    key's and the right action's."""
+    (left, right), (action_width, key_width, right_width) = keys, widths
+    return (" " + chr(ACTION_COLOUR) + f"{left[0]:<{action_width}}" + chr(KEY_COLOUR) + f"{left[1]:<{key_width}}"
+            + chr(ACTION_COLOUR) + f"{right[0]:<{right_width}}" + chr(KEY_COLOUR) + right[1])
+
+
+def title_lines(players: int) -> list[str]:
+    """The title's page of the keys for this many players: its lines, teletext
+    colour codes in them as characters. The columns line up across every layout."""
+    widths = (max(len(left) for left, _ in PAGE_ROWS),
+              max(len(display_name(keys[left])) for layout in LAYOUTS.values() for keys in layout
+                  for left, _ in PAGE_ROWS),
+              max(len(right) for _, right in PAGE_ROWS))
+    lines = [chr(TELETEXT_YELLOW) + f"DUNJUNZ: {PLAYER_COUNT_NAMES[players].upper()} AT THE KEYBOARD", ""]
     for number, keys in enumerate(LAYOUTS[players], 1):
-        pairs = [f"{action} {display_name(keys[action])}" for action in ACTIONS]
-        for row, (left, right) in enumerate(zip(pairs[::2], pairs[1::2])):
-            label = f"KEY{number}" if row == 0 else ""
-            lines.append((TELETEXT_WHITE if row else TELETEXT_CYAN, f"{label:<6}{left:<17}{right}"))
-        lines.append((0, ""))
-    lines += [(TELETEXT_WHITE, "On the hero menu, press your fire key"),
-              (TELETEXT_WHITE, "to join, and again for another hero."),
-              (TELETEXT_WHITE, "RETURN starts the game."),
-              (0, ""),
-              (TELETEXT_YELLOW, "Press any key")]
+        lines.append(chr(HEADING_COLOUR) + f"KEY{number}")
+        lines += [key_row(((left, display_name(keys[left])), (right, display_name(keys[right]))), widths)
+                  for left, right in PAGE_ROWS]
+    lines += ["",
+              chr(TELETEXT_WHITE) + "On the hero menu, press your fire key",
+              chr(TELETEXT_WHITE) + "to join, and again for another hero.",
+              chr(TELETEXT_WHITE) + "RETURN starts the game.",
+              "",
+              chr(TELETEXT_YELLOW) + "Press any key"]
     return lines
+
+
+def text_asm(line: str) -> str:
+    """A line for OSASCI as beebasm: its codes as bytes, its text as strings, then
+    a carriage return."""
+    parts, text = [], ""
+    for character in line:
+        if ord(character) < 0x80:
+            text += character
+            continue
+        if text:
+            parts.append(f'"{text}"')
+            text = ""
+        parts.append(f"&{ord(character):02x}")
+    if text:
+        parts.append(f'"{text}"')
+    return "    equb " + ", ".join(parts + ["&0d"]) if parts else "    equb &0d"
 
 
 def title_texts_asm() -> str:
@@ -160,14 +197,15 @@ def title_texts_asm() -> str:
         "    equb " + ", ".join(f">key_layout_text_{n}" for n in sorted(LAYOUTS)),
     ]
     for players in sorted(LAYOUTS):
+        lines = title_lines(players)
+        # The last line's carriage return must not scroll the page, and no line may reach
+        # the last column, from which the cursor moves on to the next row by itself.
+        assert len(lines) < MODE_7_ROWS, players
         out.append(f".key_layout_text_{players}")
-        for colour, text in title_lines(players):
-            assert len(text) + 1 < MODE_7_WIDTH, text
-            assert '"' not in text
-            if text:
-                out.append(f'    equb &{colour:02x} : equs "{text}", &0d')
-            else:
-                out.append("    equb &0d")
+        for line in lines:
+            assert len(line) < MODE_7_WIDTH, line
+            assert '"' not in line
+            out.append(text_asm(line))
         out.append("    equb 0")
     return "\n".join(out) + "\n"
 

@@ -21,8 +21,11 @@ from dunjunz_revised.key_layouts import (
     LAYOUTS,
     LAYOUTS_ASM_FILEPATH,
     MENU_KEYS,
+    MODE_7_ROWS,
+    MODE_7_WIDTH,
     SLOT_ORDER,
     layouts_asm,
+    title_lines,
 )
 from dunjunz_revised.lockstep import RETURN, answer_title, hold_key, inkey_to_matrix
 from dunjunz_revised.machines import MACHINES, launched
@@ -137,3 +140,25 @@ def test_a_sets_keys_reach_the_hero_it_joins(disc_filepaths, players, joins):
             assert slots == [INKEY[keys[action]] for action in SLOT_ORDER[:5]], (set_index, hero)
             if hero < 2:
                 assert peek[labels["hero_magic_key"] + hero] == INKEY[keys["magic"]]
+
+
+MODE_7_SCREEN = 0x7C00
+
+
+@pytest.mark.parametrize("players", sorted(LAYOUTS))
+def test_the_title_shows_the_layouts_keys(disc_filepaths, players):
+    """After the choice on the title, the page of keys fills MODE 7's screen as
+    title_lines sets it out, row for row: nothing wraps or scrolls."""
+    title_labels = read_labels(REVISED_BUILD_DIRPATH, "title")
+    title_key = inkey_to_matrix({1: 0xCF, 2: 0xCE, 3: 0xEE, 4: 0xED}[players])
+    with launched(MACHINES["dfs226"]) as bbc:
+        bbc.boot_disc(REVISED_DISC_FILEPATH)
+        bbc.debugger.run_to(title_labels["twinkle_loop"], timeout=120)
+        bbc.debugger.run()
+        hold_key(bbc, *title_key)
+        bbc.debugger.run_to(title_labels["keys_printed"], timeout=60)
+        screen = bytes(bbc.memory.address.peek[MODE_7_SCREEN:MODE_7_SCREEN + MODE_7_WIDTH * MODE_7_ROWS])
+    lines = title_lines(players)
+    expected = b"".join(line.encode("latin-1").ljust(MODE_7_WIDTH) for line in lines)
+    assert screen[:len(expected)] == expected
+    assert screen[len(expected):] == b" " * (len(screen) - len(expected))
